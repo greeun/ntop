@@ -1,0 +1,1 @@
+// kill_dialog widget
