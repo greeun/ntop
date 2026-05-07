@@ -152,10 +152,15 @@ pub struct App {
     pub tick_count: u64,
     /// Whether this is the first process load (for default expand-all).
     pub first_load: bool,
+    /// Refresh interval in seconds (adjustable at runtime).
+    pub refresh_secs: u64,
+    /// Whether refresh interval was changed and event loop needs restart.
+    pub refresh_changed: bool,
 }
 
 impl App {
     pub fn new(config: Config) -> Self {
+        let refresh = config.general.refresh_interval;
         Self {
             config,
             process_trees: Vec::new(),
@@ -180,6 +185,8 @@ impl App {
             kill_in_progress: None,
             tick_count: 0,
             first_load: true,
+            refresh_secs: refresh,
+            refresh_changed: false,
         }
     }
 

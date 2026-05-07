@@ -251,9 +251,23 @@ fn handle_normal_key(app: &mut App, key: KeyEvent) {
             app.filter_text.clear();
         }
 
-        // Sort
+        // Sort column cycle
         KeyCode::Char('s') => {
             app.toggle_sort();
+        }
+        // Reverse sort direction
+        KeyCode::Char('r') => {
+            app.sort_ascending = !app.sort_ascending;
+        }
+
+        // Refresh interval adjustment
+        KeyCode::Char('+') => {
+            app.refresh_secs = (app.refresh_secs + 1).min(60);
+            app.refresh_changed = true;
+        }
+        KeyCode::Char('-') => {
+            app.refresh_secs = (app.refresh_secs.saturating_sub(1)).max(1);
+            app.refresh_changed = true;
         }
 
         // Kill (single)

@@ -44,6 +44,12 @@ pub fn render_top_bar(f: &mut Frame, area: Rect, app: &App) {
             Style::default().fg(Color::White),
         ),
         Span::styled("  |  ", Style::default().fg(Color::DarkGray)),
+        Span::styled("Refresh: ", Style::default().fg(Color::Gray)),
+        Span::styled(
+            format!("{}s", app.refresh_secs),
+            Style::default().fg(Color::White),
+        ),
+        Span::styled("  |  ", Style::default().fg(Color::DarkGray)),
         Span::styled("[H]", Style::default().fg(Color::Yellow)),
         Span::styled("elp", Style::default().fg(Color::Gray)),
     ];

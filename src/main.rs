@@ -98,6 +98,11 @@ async fn run_tui(config: Config) -> anyhow::Result<()> {
                     break;
                 }
 
+                if app.refresh_changed {
+                    app.refresh_changed = false;
+                    events = EventHandler::new(Duration::from_secs(app.refresh_secs));
+                }
+
                 // If the selected process changed and Log tab is active,
                 // update the log streamer
                 if app.active_tab == DetailTab::Log {
