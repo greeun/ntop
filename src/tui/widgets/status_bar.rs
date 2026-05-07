@@ -77,7 +77,13 @@ pub fn render_bottom_bar(f: &mut Frame, area: Rect, app: &App) {
         }
     } else if app.filter_active {
         vec![
-            key_hint("Type", "Filter"),
+            Span::styled(" /", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                format!("{}", app.filter_text),
+                Style::default().fg(Color::White).add_modifier(Modifier::BOLD),
+            ),
+            Span::styled("█", Style::default().fg(Color::Yellow)),
+            Span::styled("  ", Style::default()),
             separator(),
             key_hint("Enter", "Apply"),
             separator(),
