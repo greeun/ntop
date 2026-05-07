@@ -17,7 +17,7 @@ pub fn render_top_bar(f: &mut Frame, area: Rect, app: &App) {
 
     let spans = vec![
         Span::styled(
-            format!(" nsm v{}", version),
+            format!(" ntop v{}", version),
             Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
         ),
         Span::styled("  |  ", Style::default().fg(Color::DarkGray)),
@@ -58,6 +58,11 @@ pub fn render_top_bar(f: &mut Frame, area: Rect, app: &App) {
 pub fn render_bottom_bar(f: &mut Frame, area: Rect, app: &App) {
     let spans = if app.dialog.is_some() {
         match app.dialog.as_ref().unwrap() {
+            DialogKind::Help => {
+                vec![
+                    key_hint("Esc", "Close"),
+                ]
+            }
             DialogKind::KillConfirm | DialogKind::KillTreeConfirm | DialogKind::ForceKillPrompt => {
                 vec![
                     key_hint("Enter", "Confirm"),

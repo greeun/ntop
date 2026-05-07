@@ -3,6 +3,7 @@ pub mod framework;
 pub mod tree;
 pub mod killer;
 pub mod network;
+pub mod platform;
 
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -159,6 +160,79 @@ impl ProcessInfo {
         } else {
             format!("{} B", self.memory_rss)
         }
+    }
+
+    /// Derive a display name from the command for better identification.
+    pub fn display_name(&self) -> String {
+        if self.command.is_empty() {
+            return self.name.clone();
+        }
+
+        let all_parts: Vec<&str> = self.command.split_whitespace().collect();
+        if all_parts.is_empty() {
+            return self.name.clone();
+        }
+
+        let binary = all_parts[0].rsplit('/').next().unwrap_or(all_parts[0]);
+
+        fn is_subcommand(s: &str) -> bool {
+            s.len() <= 20
+                && s.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_')
+                && s.chars().next().map(|c| c.is_alphabetic()).unwrap_or(false)
+        }
+
+        fn is_script(s: &str) -> bool {
+            let name = s.rsplit('/').next().unwrap_or(s);
+            name.ends_with(".js") || name.ends_with(".ts") || name.ends_with(".mjs")
+                || name.ends_with(".cjs") || name.ends_with(".sh")
+        }
+
+        fn is_package(s: &str) -> bool {
+            s.starts_with('@') && s.len() <= 40
+        }
+
+        // Find node_modules tool if present
+        let modules_tool = all_parts[1..].iter()
+            .find(|s| s.contains("node_modules/"))
+            .map(|s| s.rsplit('/').next().unwrap_or(s));
+
+        // Collect clean args: stop at first JSON/env blob
+        let mut clean_args: Vec<&str> = Vec::new();
+        for s in &all_parts[1..] {
+            if s.starts_with('{') || s.starts_with('"') || s.contains("\":") {
+                break;
+            }
+            if s.contains("node_modules/") {
+                continue;
+            }
+            let name = s.rsplit('/').next().unwrap_or(s);
+            if is_subcommand(name) || is_script(name) || is_package(name) {
+                clean_args.push(name);
+                if clean_args.len() >= 2 {
+                    break;
+                }
+            }
+        }
+
+        if binary != "node" {
+            if clean_args.is_empty() {
+                return binary.to_string();
+            }
+            return format!("{} {}", binary, clean_args.join(" "));
+        }
+
+        // node process — prefer node_modules tool name
+        if let Some(tool) = modules_tool {
+            if clean_args.is_empty() {
+                return tool.to_string();
+            }
+            return format!("{} {}", tool, clean_args.join(" "));
+        }
+
+        if clean_args.is_empty() {
+            return self.name.clone();
+        }
+        format!("node {}", clean_args.join(" "))
     }
 
     /// Get the health status of this process based on its metrics and status.

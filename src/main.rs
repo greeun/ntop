@@ -10,18 +10,18 @@ use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use sysinfo::System;
 
-use nsm::cli::{Cli, Commands, ListFormat};
-use nsm::config::Config;
-use nsm::log::streamer::LogStreamer;
-use nsm::process::framework::FrameworkDetector;
-use nsm::process::killer::{GracefulResult, KillSignal, ProcessKiller};
-use nsm::process::network::NetworkInspector;
-use nsm::process::scanner::ProcessScanner;
-use nsm::process::tree::TreeBuilder;
-use nsm::process::ProcessInfo;
-use nsm::tui::app::{App, DetailTab};
-use nsm::tui::event::{AppEvent, EventHandler};
-use nsm::tui::ui;
+use ntop::cli::{Cli, Commands, ListFormat};
+use ntop::config::Config;
+use ntop::log::streamer::LogStreamer;
+use ntop::process::framework::FrameworkDetector;
+use ntop::process::killer::{GracefulResult, KillSignal, ProcessKiller};
+use ntop::process::network::NetworkInspector;
+use ntop::process::scanner::ProcessScanner;
+use ntop::process::tree::TreeBuilder;
+use ntop::process::ProcessInfo;
+use ntop::tui::app::{App, DetailTab};
+use ntop::tui::event::{AppEvent, EventHandler};
+use ntop::tui::ui;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -182,7 +182,7 @@ fn update_log_streamer(app: &mut App) {
 
 // ─── CLI Command Handlers ──────────────────────────────────────────────
 
-/// `nsm list` — scan processes and output in table/json/csv format.
+/// `ntop list` — scan processes and output in table/json/csv format.
 fn cmd_list(config: &Config, json: bool, format: Option<ListFormat>) -> anyhow::Result<()> {
     let scanner = ProcessScanner::new(config);
     let mut processes = scanner.scan();
@@ -253,7 +253,7 @@ fn print_table(flat: &[(&ProcessInfo, usize)]) {
             "{:<8} {}{:<width$} {:<12} {:<10} {:<8} {:<10} {:<12}",
             proc.pid,
             indent,
-            proc.name,
+            proc.display_name(),
             proc.framework,
             ports_str,
             format!("{:.1}%", proc.cpu_percent),
@@ -322,7 +322,7 @@ fn print_csv(flat: &[(&ProcessInfo, usize)]) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// `nsm kill` — kill process(es) by PID, tree, or all.
+/// `ntop kill` — kill process(es) by PID, tree, or all.
 fn cmd_kill(
     config: &Config,
     pid: Option<u32>,
@@ -441,7 +441,7 @@ fn find_in_trees(trees: &[ProcessInfo], pid: u32) -> Option<&ProcessInfo> {
     None
 }
 
-/// `nsm info` — display detailed info about a specific process.
+/// `ntop info` — display detailed info about a specific process.
 fn cmd_info(config: &Config, pid: u32) -> anyhow::Result<()> {
     let scanner = ProcessScanner::new(config);
     let processes = scanner.scan();
@@ -486,6 +486,15 @@ fn cmd_info(config: &Config, pid: u32) -> anyhow::Result<()> {
             println!("  Health:    {}", process.health());
             println!("  CWD:       {}", process.cwd);
             println!("  Command:   {}", process.command);
+            println!("  Open FDs:  {}", process.open_fds);
+
+            if !process.env_vars.is_empty() {
+                println!("\nEnvironment Variables ({})", process.env_vars.len());
+                println!("{}", "-".repeat(40));
+                for (k, v) in &process.env_vars {
+                    println!("  {}={}", k, v);
+                }
+            }
 
             if !connections.is_empty() {
                 println!("\nNetwork Connections");
@@ -510,7 +519,7 @@ fn cmd_info(config: &Config, pid: u32) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// `nsm log` — stream log output for a process.
+/// `ntop log` — stream log output for a process.
 fn cmd_log(config: &Config, pid: u32) -> anyhow::Result<()> {
     let scanner = ProcessScanner::new(config);
     let processes = scanner.scan();
@@ -562,7 +571,7 @@ fn cmd_log(config: &Config, pid: u32) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// `nsm config` — show config file path and current settings.
+/// `ntop config` — show config file path and current settings.
 fn cmd_config() -> anyhow::Result<()> {
     let config = Config::load();
     let path = Config::config_path()

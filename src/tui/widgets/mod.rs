@@ -4,6 +4,7 @@ pub mod info_tab;
 pub mod log_tab;
 pub mod net_tab;
 pub mod env_tab;
+pub mod help_dialog;
 pub mod kill_dialog;
 pub mod signal_picker;
 pub mod status_bar;

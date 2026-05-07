@@ -44,7 +44,7 @@ pub fn render_empty_state(f: &mut Frame, area: Rect, tick_count: u64) {
             Block::default()
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(Color::DarkGray))
-                .title(" nsm ")
+                .title(" ntop ")
                 .title_alignment(Alignment::Center),
         );
 

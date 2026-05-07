@@ -1,5 +1,5 @@
-use nsm::process::framework::FrameworkDetector;
-use nsm::process::FrameworkKind;
+use ntop::process::framework::FrameworkDetector;
+use ntop::process::FrameworkKind;
 use std::fs;
 use tempfile::TempDir;
 

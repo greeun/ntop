@@ -55,10 +55,10 @@ pub fn render_detail_panel(f: &mut Frame, area: Rect, app: &App) {
     // Render active tab content
     if let Some(process) = app.selected_process() {
         match app.active_tab {
-            DetailTab::Info => info_tab::render_info_tab(f, content_area, process),
+            DetailTab::Info => info_tab::render_info_tab(f, content_area, process, app.detail_scroll),
             DetailTab::Log => log_tab::render_log_tab(f, content_area, app),
-            DetailTab::Net => net_tab::render_net_tab(f, content_area, process),
-            DetailTab::Env => env_tab::render_env_tab(f, content_area, process, &app.config),
+            DetailTab::Net => net_tab::render_net_tab(f, content_area, process, app.detail_scroll),
+            DetailTab::Env => env_tab::render_env_tab(f, content_area, process, &app.config, app.detail_scroll),
         }
     } else {
         // No process selected

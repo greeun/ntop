@@ -9,7 +9,7 @@ use crate::process::killer::KillSignal;
 use crate::process::tree::TreeBuilder;
 use crate::process::ProcessInfo;
 
-/// Which detail tab is active in the right panel.
+/// Which detail tab is active in the detail panel.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DetailTab {
     Info,
@@ -58,6 +58,7 @@ pub enum DialogKind {
     KillTreeConfirm,
     SignalPicker,
     ForceKillPrompt,
+    Help,
 }
 
 /// Column by which the process list can be sorted.
@@ -65,19 +66,27 @@ pub enum DialogKind {
 pub enum SortColumn {
     Pid,
     Name,
+    Port,
+    Threads,
     Cpu,
     Memory,
-    Port,
+    User,
+    Status,
+    Uptime,
 }
 
 impl SortColumn {
     pub fn next(&self) -> Self {
         match self {
             SortColumn::Pid => SortColumn::Name,
-            SortColumn::Name => SortColumn::Cpu,
+            SortColumn::Name => SortColumn::Port,
+            SortColumn::Port => SortColumn::Threads,
+            SortColumn::Threads => SortColumn::Cpu,
             SortColumn::Cpu => SortColumn::Memory,
-            SortColumn::Memory => SortColumn::Port,
-            SortColumn::Port => SortColumn::Pid,
+            SortColumn::Memory => SortColumn::User,
+            SortColumn::User => SortColumn::Status,
+            SortColumn::Status => SortColumn::Uptime,
+            SortColumn::Uptime => SortColumn::Pid,
         }
     }
 
@@ -85,9 +94,13 @@ impl SortColumn {
         match self {
             SortColumn::Pid => "PID",
             SortColumn::Name => "NAME",
+            SortColumn::Port => "PORT",
+            SortColumn::Threads => "THR",
             SortColumn::Cpu => "CPU",
             SortColumn::Memory => "MEM",
-            SortColumn::Port => "PORT",
+            SortColumn::User => "USER",
+            SortColumn::Status => "STATUS",
+            SortColumn::Uptime => "UPTIME",
         }
     }
 }
@@ -103,7 +116,7 @@ pub struct App {
     pub selected_index: usize,
     /// PIDs that are multi-selected (via Space).
     pub selected_pids: HashSet<u32>,
-    /// Active detail tab on the right panel.
+    /// Active detail tab on the bottom panel.
     pub active_tab: DetailTab,
     /// PIDs whose children are expanded in tree view.
     pub expanded_pids: HashSet<u32>,
@@ -123,6 +136,8 @@ pub struct App {
     pub log_streamer: Option<LogStreamer>,
     /// Scroll offset for the log tab.
     pub log_scroll: u16,
+    /// Scroll offset for the detail panel.
+    pub detail_scroll: u16,
     /// Whether the app should quit.
     pub should_quit: bool,
     /// System-wide CPU usage percentage.
@@ -135,6 +150,8 @@ pub struct App {
     pub kill_in_progress: Option<(u32, Instant)>,
     /// Tick counter for animations (e.g. spinner).
     pub tick_count: u64,
+    /// Whether this is the first process load (for default expand-all).
+    pub first_load: bool,
 }
 
 impl App {
@@ -155,12 +172,14 @@ impl App {
             sort_ascending: true,
             log_streamer: None,
             log_scroll: 0,
+            detail_scroll: 0,
             should_quit: false,
             system_cpu: 0.0,
             system_memory_used: 0,
             system_memory_total: 0,
             kill_in_progress: None,
             tick_count: 0,
+            first_load: true,
         }
     }
 
@@ -178,33 +197,56 @@ impl App {
             });
         }
 
-        // Sort before building trees
-        match self.sort_column {
-            SortColumn::Pid => processes.sort_by(|a, b| {
-                if self.sort_ascending { a.pid.cmp(&b.pid) } else { b.pid.cmp(&a.pid) }
-            }),
-            SortColumn::Name => processes.sort_by(|a, b| {
-                let cmp = a.name.to_lowercase().cmp(&b.name.to_lowercase());
-                if self.sort_ascending { cmp } else { cmp.reverse() }
-            }),
-            SortColumn::Cpu => processes.sort_by(|a, b| {
-                let cmp = a.cpu_percent.partial_cmp(&b.cpu_percent).unwrap_or(std::cmp::Ordering::Equal);
-                if self.sort_ascending { cmp } else { cmp.reverse() }
-            }),
-            SortColumn::Memory => processes.sort_by(|a, b| {
-                let cmp = a.memory_rss.cmp(&b.memory_rss);
-                if self.sort_ascending { cmp } else { cmp.reverse() }
-            }),
-            SortColumn::Port => processes.sort_by(|a, b| {
-                let port_a = a.ports.first().copied().unwrap_or(0);
-                let port_b = b.ports.first().copied().unwrap_or(0);
-                let cmp = port_a.cmp(&port_b);
-                if self.sort_ascending { cmp } else { cmp.reverse() }
-            }),
-        }
-
-        // Build trees
+        // Build trees first, then sort at each level
         self.process_trees = TreeBuilder::build(processes);
+
+        let asc = self.sort_ascending;
+        let sort_cmp: Box<dyn Fn(&ProcessInfo, &ProcessInfo) -> std::cmp::Ordering> =
+            match self.sort_column {
+                SortColumn::Pid => Box::new(move |a: &ProcessInfo, b: &ProcessInfo| {
+                    let cmp = a.pid.cmp(&b.pid);
+                    if asc { cmp } else { cmp.reverse() }
+                }),
+                SortColumn::Name => Box::new(move |a: &ProcessInfo, b: &ProcessInfo| {
+                    let cmp = a.name.to_lowercase().cmp(&b.name.to_lowercase());
+                    if asc { cmp } else { cmp.reverse() }
+                }),
+                SortColumn::Port => Box::new(move |a: &ProcessInfo, b: &ProcessInfo| {
+                    let cmp = a.ports.first().copied().unwrap_or(0).cmp(&b.ports.first().copied().unwrap_or(0));
+                    if asc { cmp } else { cmp.reverse() }
+                }),
+                SortColumn::Threads => Box::new(move |a: &ProcessInfo, b: &ProcessInfo| {
+                    let cmp = a.threads.cmp(&b.threads);
+                    if asc { cmp } else { cmp.reverse() }
+                }),
+                SortColumn::Cpu => Box::new(move |a: &ProcessInfo, b: &ProcessInfo| {
+                    let cmp = a.cpu_percent.partial_cmp(&b.cpu_percent).unwrap_or(std::cmp::Ordering::Equal);
+                    if asc { cmp } else { cmp.reverse() }
+                }),
+                SortColumn::Memory => Box::new(move |a: &ProcessInfo, b: &ProcessInfo| {
+                    let cmp = a.memory_rss.cmp(&b.memory_rss);
+                    if asc { cmp } else { cmp.reverse() }
+                }),
+                SortColumn::User => Box::new(move |a: &ProcessInfo, b: &ProcessInfo| {
+                    let cmp = a.user.cmp(&b.user);
+                    if asc { cmp } else { cmp.reverse() }
+                }),
+                SortColumn::Status => Box::new(move |a: &ProcessInfo, b: &ProcessInfo| {
+                    let cmp = a.status.cmp(&b.status);
+                    if asc { cmp } else { cmp.reverse() }
+                }),
+                SortColumn::Uptime => Box::new(move |a: &ProcessInfo, b: &ProcessInfo| {
+                    let cmp = a.uptime.cmp(&b.uptime);
+                    if asc { cmp } else { cmp.reverse() }
+                }),
+            };
+        TreeBuilder::sort_recursive(&mut self.process_trees, &sort_cmp);
+
+        // First load: expand all by default
+        if self.first_load {
+            self.first_load = false;
+            Self::collect_all_pids(&self.process_trees, &mut self.expanded_pids);
+        }
 
         // Flatten for display, respecting expanded state
         self.flat_list = Self::flatten_with_expand(&self.process_trees, &self.expanded_pids);
@@ -296,6 +338,50 @@ impl App {
         }
     }
 
+    /// Expand the selected node (Right arrow). If already expanded, move to first child.
+    pub fn expand_selected(&mut self) {
+        if let Some((proc, _)) = self.flat_list.get(self.selected_index) {
+            let pid = proc.pid;
+            if self.has_children_in_tree(pid) {
+                if self.expanded_pids.contains(&pid) {
+                    if self.selected_index + 1 < self.flat_list.len() {
+                        self.selected_index += 1;
+                        self.on_selection_changed();
+                    }
+                } else {
+                    self.expanded_pids.insert(pid);
+                    self.flat_list = Self::flatten_with_expand(&self.process_trees, &self.expanded_pids);
+                }
+            }
+        }
+    }
+
+    /// Collapse the selected node (Left arrow). If already collapsed, move to parent.
+    pub fn collapse_selected(&mut self) {
+        if let Some((proc, depth)) = self.flat_list.get(self.selected_index) {
+            let pid = proc.pid;
+            let depth = *depth;
+            if self.expanded_pids.contains(&pid) {
+                self.expanded_pids.remove(&pid);
+                self.flat_list = Self::flatten_with_expand(&self.process_trees, &self.expanded_pids);
+                if self.selected_index >= self.flat_list.len() && !self.flat_list.is_empty() {
+                    self.selected_index = self.flat_list.len() - 1;
+                }
+            } else if depth > 0 {
+                // Move to parent
+                for i in (0..self.selected_index).rev() {
+                    if let Some((_, d)) = self.flat_list.get(i) {
+                        if *d < depth {
+                            self.selected_index = i;
+                            self.on_selection_changed();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     /// Check if a PID has children anywhere in the tree.
     fn has_children_in_tree(&self, pid: u32) -> bool {
         fn find(trees: &[ProcessInfo], pid: u32) -> bool {
@@ -310,6 +396,28 @@ impl App {
             false
         }
         find(&self.process_trees, pid)
+    }
+
+    fn collect_all_pids(trees: &[ProcessInfo], set: &mut HashSet<u32>) {
+        for tree in trees {
+            if !tree.children.is_empty() {
+                set.insert(tree.pid);
+                Self::collect_all_pids(&tree.children, set);
+            }
+        }
+    }
+
+    /// Toggle between expand-all and collapse-all.
+    pub fn toggle_expand_all(&mut self) {
+        if self.expanded_pids.is_empty() {
+            Self::collect_all_pids(&self.process_trees, &mut self.expanded_pids);
+        } else {
+            self.expanded_pids.clear();
+        }
+        self.flat_list = Self::flatten_with_expand(&self.process_trees, &self.expanded_pids);
+        if self.selected_index >= self.flat_list.len() && !self.flat_list.is_empty() {
+            self.selected_index = self.flat_list.len() - 1;
+        }
     }
 
     /// Toggle multi-select for the selected process.
@@ -327,11 +435,13 @@ impl App {
     /// Cycle to the next detail tab.
     pub fn next_tab(&mut self) {
         self.active_tab = self.active_tab.next();
+        self.detail_scroll = 0;
     }
 
     /// Cycle to the previous detail tab.
     pub fn prev_tab(&mut self) {
         self.active_tab = self.active_tab.prev();
+        self.detail_scroll = 0;
     }
 
     /// Toggle sort column and direction.
@@ -354,7 +464,7 @@ impl App {
     /// Called when the selection changes to update log streamer.
     fn on_selection_changed(&mut self) {
         self.log_scroll = 0;
-        // Log streamer will be updated on next tick if tab is Log
+        self.detail_scroll = 0;
     }
 
     /// Find a process in the original trees by PID (for getting full children info).

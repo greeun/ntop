@@ -1,4 +1,4 @@
-use nsm::process::{FrameworkKind, HealthStatus, ProcessInfo};
+use ntop::process::{FrameworkKind, HealthStatus, ProcessInfo};
 use std::time::Duration;
 
 #[test]

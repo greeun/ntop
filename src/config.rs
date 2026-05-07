@@ -81,7 +81,7 @@ impl Default for Config {
 impl Config {
     /// Returns the path to the config file: `~/.config/nsm/config.toml`
     pub fn config_path() -> Option<PathBuf> {
-        dirs::config_dir().map(|p| p.join("nsm").join("config.toml"))
+        dirs::config_dir().map(|p| p.join("ntop").join("config.toml"))
     }
 
     /// Load config from `~/.config/nsm/config.toml`, returning defaults if the file

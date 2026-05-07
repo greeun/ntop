@@ -1,4 +1,4 @@
-use nsm::config::Config;
+use ntop::config::Config;
 use std::time::Duration;
 
 #[test]

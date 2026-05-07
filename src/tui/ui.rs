@@ -8,7 +8,7 @@ use crate::process::killer::{KillSignal, ProcessKiller};
 use crate::process::tree::TreeBuilder;
 use crate::tui::app::{App, DialogKind};
 use crate::tui::widgets::{
-    detail_panel, empty_state, kill_dialog, process_list, signal_picker, status_bar,
+    detail_panel, empty_state, help_dialog, kill_dialog, process_list, signal_picker, status_bar,
 };
 
 /// Main render function — lays out all panels and dialogs.
@@ -34,15 +34,15 @@ pub fn render(f: &mut Frame, app: &mut App) {
         // Empty state
         empty_state::render_empty_state(f, main_content, app.tick_count);
     } else {
-        // Horizontal split: 60% process list, 40% detail panel
-        let [left_panel, right_panel] = Layout::horizontal([
-            Constraint::Percentage(60),
-            Constraint::Percentage(40),
+        // Vertical split: 55% process list (top), 45% detail panel (bottom)
+        let [top_panel, bottom_panel] = Layout::vertical([
+            Constraint::Percentage(55),
+            Constraint::Percentage(45),
         ])
         .areas(main_content);
 
-        process_list::render_process_list(f, left_panel, app);
-        detail_panel::render_detail_panel(f, right_panel, app);
+        process_list::render_process_list(f, top_panel, app);
+        detail_panel::render_detail_panel(f, bottom_panel, app);
     }
 
     // Modal dialogs rendered on top
@@ -50,6 +50,9 @@ pub fn render(f: &mut Frame, app: &mut App) {
         match dialog {
             DialogKind::SignalPicker => {
                 signal_picker::render_signal_picker(f, area, app.signal_picker_index);
+            }
+            DialogKind::Help => {
+                help_dialog::render_help_dialog(f, area);
             }
             _ => {
                 let process = app.selected_process().cloned();
@@ -148,6 +151,13 @@ fn handle_dialog_key(app: &mut App, key: KeyEvent, dialog: &DialogKind) {
             }
         }
 
+        DialogKind::Help => match key.code {
+            KeyCode::Esc | KeyCode::Char('H') | KeyCode::Char('q') => {
+                app.dialog = None;
+            }
+            _ => {}
+        },
+
         DialogKind::ForceKillPrompt => match key.code {
             KeyCode::Enter => {
                 if let Some(proc) = app.selected_process() {
@@ -210,6 +220,17 @@ fn handle_normal_key(app: &mut App, key: KeyEvent) {
         KeyCode::Enter => {
             app.toggle_expand();
         }
+        KeyCode::Right | KeyCode::Char('l') => {
+            app.expand_selected();
+        }
+        KeyCode::Left | KeyCode::Char('h') => {
+            app.collapse_selected();
+        }
+
+        // Toggle expand/collapse all
+        KeyCode::Char('e') => {
+            app.toggle_expand_all();
+        }
 
         // Tab switching
         KeyCode::Tab => {
@@ -249,6 +270,11 @@ fn handle_normal_key(app: &mut App, key: KeyEvent) {
             }
         }
 
+        // Help
+        KeyCode::Char('H') => {
+            app.dialog = Some(DialogKind::Help);
+        }
+
         // Signal picker
         KeyCode::Char('S') => {
             if app.selected_process().is_some() {
@@ -257,11 +283,13 @@ fn handle_normal_key(app: &mut App, key: KeyEvent) {
             }
         }
 
-        // Log scrolling (when Log tab is active)
+        // Detail panel scrolling
         KeyCode::PageUp => {
+            app.detail_scroll = app.detail_scroll.saturating_sub(10);
             app.log_scroll = app.log_scroll.saturating_sub(10);
         }
         KeyCode::PageDown => {
+            app.detail_scroll = app.detail_scroll.saturating_add(10);
             app.log_scroll = app.log_scroll.saturating_add(10);
         }
 

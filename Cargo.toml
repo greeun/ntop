@@ -1,15 +1,15 @@
 [package]
-name = "nsm"
+name = "ntop"
 version = "0.1.0"
 edition = "2021"
-description = "Node Server Manager - TUI tool for monitoring and managing Node.js/Next.js processes"
+description = "Node Top - TUI tool for monitoring and managing Node.js/Next.js processes"
 license = "MIT"
-repository = "https://github.com/withwiz/nsm"
+repository = "https://github.com/greeun/ntop"
 keywords = ["node", "process", "tui", "monitor", "nextjs"]
 categories = ["command-line-utilities", "development-tools"]
 
 [[bin]]
-name = "nsm"
+name = "ntop"
 path = "src/main.rs"
 
 [dependencies]

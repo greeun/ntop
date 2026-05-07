@@ -1,5 +1,5 @@
-use nsm::config::Config;
-use nsm::process::scanner::ProcessScanner;
+use ntop::config::Config;
+use ntop::process::scanner::ProcessScanner;
 
 #[test]
 fn test_scanner_returns_vec() {

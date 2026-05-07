@@ -9,7 +9,7 @@ use crate::process::network::NetworkInspector;
 use crate::process::ProcessInfo;
 
 /// Render the Net tab with network connections for the selected process.
-pub fn render_net_tab(f: &mut Frame, area: Rect, process: &ProcessInfo) {
+pub fn render_net_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, scroll: u16) {
     let connections = NetworkInspector::connections_for_pid(process.pid);
 
     if connections.is_empty() {
@@ -29,6 +29,7 @@ pub fn render_net_tab(f: &mut Frame, area: Rect, process: &ProcessInfo) {
 
     let rows: Vec<Row> = connections
         .iter()
+        .skip(scroll as usize)
         .map(|conn| {
             let local = format!("  {}", conn.local_addr);
             let remote = conn

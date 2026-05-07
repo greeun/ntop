@@ -3,7 +3,7 @@
 use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Parser, Debug)]
-#[command(name = "nsm", version, about = "Node Server Manager - Monitor and manage Node.js/Next.js processes")]
+#[command(name = "ntop", version, about = "Node Top - Monitor and manage Node.js/Next.js processes")]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Option<Commands>,

@@ -159,8 +159,7 @@ pub fn render_kill_dialog(
             (" Force Kill ", lines)
         }
 
-        DialogKind::SignalPicker => {
-            // Signal picker is handled by its own widget
+        DialogKind::SignalPicker | DialogKind::Help => {
             return;
         }
     };

@@ -74,6 +74,17 @@ impl TreeBuilder {
         }
     }
 
+    /// Sort trees recursively at each level using the given comparator.
+    pub fn sort_recursive<F>(trees: &mut [ProcessInfo], cmp: &F)
+    where
+        F: Fn(&ProcessInfo, &ProcessInfo) -> std::cmp::Ordering,
+    {
+        trees.sort_by(cmp);
+        for tree in trees.iter_mut() {
+            Self::sort_recursive(&mut tree.children, cmp);
+        }
+    }
+
     /// Collect the node's PID and all descendant PIDs recursively.
     pub fn collect_pids(node: &ProcessInfo) -> Vec<u32> {
         let mut pids = vec![node.pid];

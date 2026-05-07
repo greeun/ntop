@@ -1,5 +1,5 @@
-use nsm::process::tree::TreeBuilder;
-use nsm::process::ProcessInfo;
+use ntop::process::tree::TreeBuilder;
+use ntop::process::ProcessInfo;
 
 fn make_process(pid: u32, ppid: u32, name: &str) -> ProcessInfo {
     let mut p = ProcessInfo::new(pid, name);

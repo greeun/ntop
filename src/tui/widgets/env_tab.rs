@@ -30,7 +30,7 @@ fn is_sensitive(key: &str) -> bool {
 }
 
 /// Render the Env tab with KEY=VALUE pairs.
-pub fn render_env_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, config: &Config) {
+pub fn render_env_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, config: &Config, scroll: u16) {
     if process.env_vars.is_empty() {
         let msg = ratatui::widgets::Paragraph::new("  No environment variables available.")
             .style(Style::default().fg(Color::DarkGray));
@@ -63,6 +63,8 @@ pub fn render_env_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, config: 
         })
         .collect();
 
-    let paragraph = Paragraph::new(lines).wrap(Wrap { trim: false });
+    let paragraph = Paragraph::new(lines)
+        .wrap(Wrap { trim: false })
+        .scroll((scroll, 0));
     f.render_widget(paragraph, area);
 }
