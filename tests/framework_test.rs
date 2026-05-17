@@ -16,6 +16,18 @@ fn test_detect_nextjs_by_process_name() {
 }
 
 #[test]
+fn test_detect_nuxt_by_process_name() {
+    assert_eq!(
+        FrameworkDetector::detect_by_name("nuxt"),
+        Some(FrameworkKind::Nuxt)
+    );
+    assert_eq!(
+        FrameworkDetector::detect_by_name("nuxi"),
+        Some(FrameworkKind::Nuxt)
+    );
+}
+
+#[test]
 fn test_detect_framework_by_command() {
     assert_eq!(
         FrameworkDetector::detect_by_command("node node_modules/.bin/next start"),
@@ -138,6 +150,21 @@ fn test_detect_framework_by_package_json() {
         assert_eq!(kind, Some(FrameworkKind::NextJs));
         assert_eq!(version, Some("13.0.0".to_string()));
     }
+
+    // Test Nuxt.js detection
+    {
+        let dir = TempDir::new().unwrap();
+        let pkg = serde_json::json!({
+            "name": "my-app",
+            "dependencies": {
+                "nuxt": "3.0.0"
+            }
+        });
+        fs::write(dir.path().join("package.json"), pkg.to_string()).unwrap();
+        let (kind, version) = FrameworkDetector::detect_by_package_json(dir.path().to_str().unwrap());
+        assert_eq!(kind, Some(FrameworkKind::Nuxt));
+        assert_eq!(version, Some("3.0.0".to_string()));
+    }
 }
 
 #[test]
@@ -150,6 +177,38 @@ fn test_detect_combined_priority() {
         dir.path().to_str().unwrap(),
     );
     assert_eq!(kind, FrameworkKind::NextJs);
+}
+
+#[test]
+fn test_detect_nuxt_by_process_name_priority() {
+    // nuxt process name takes priority over other command signals
+    let dir = TempDir::new().unwrap();
+    let (kind, _version) = FrameworkDetector::detect(
+        "nuxt",
+        "node node_modules/.bin/next start",
+        dir.path().to_str().unwrap(),
+    );
+    assert_eq!(kind, FrameworkKind::Nuxt);
+}
+
+#[test]
+fn test_detect_nuxt_by_package_json() {
+    // node process with nuxt in package.json triggers package.json scan and returns version
+    let dir = TempDir::new().unwrap();
+    let pkg = serde_json::json!({
+        "name": "my-nuxt-app",
+        "dependencies": {
+            "nuxt": "3.5.0"
+        }
+    });
+    fs::write(dir.path().join("package.json"), pkg.to_string()).unwrap();
+    let (kind, version) = FrameworkDetector::detect(
+        "node",
+        "node .output/server/index.mjs",
+        dir.path().to_str().unwrap(),
+    );
+    assert_eq!(kind, FrameworkKind::Nuxt);
+    assert_eq!(version, Some("3.5.0".to_string()));
 }
 
 #[test]

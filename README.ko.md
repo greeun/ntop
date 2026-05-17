@@ -1,6 +1,6 @@
 # ntop
 
-Node.js / Next.js 서버 프로세스를 실시간으로 모니터링하고 관리하는 터미널 TUI 도구입니다.
+Node.js / Next.js / Nuxt.js 서버 프로세스를 실시간으로 모니터링하고 관리하는 터미널 TUI 도구입니다.
 
 Rust로 개발되어 빠른 실행과 최소한의 리소스 사용을 보장합니다.
 
@@ -9,7 +9,7 @@ Rust로 개발되어 빠른 실행과 최소한의 리소스 사용을 보장합
 ## 주요 기능
 
 - **실시간 프로세스 모니터링** - 설정 가능한 갱신 주기
-- **프레임워크 자동 감지** - Next.js, Express, Fastify, NestJS, Nuxt, Koa, Hapi
+- **프레임워크 자동 감지** - Next.js, Nuxt.js, Express, Fastify, NestJS, Koa, Hapi
 - **프로세스 트리 뷰** - 부모-자식 관계를 접기/펼치기로 탐색
 - **분할 패널 TUI** - 프로세스 목록 + 탭형 상세 패널 (Info / Log / Net / Env)
 - **로그 스트리밍** - 감지된 로그 파일의 실시간 tail
@@ -46,7 +46,7 @@ ntop
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ ntop v0.1.0  |  CPU: 12.3%  MEM: 4.2GB  |  Nodes: 7  | [H]elp│
+│ ntop v0.1.1  |  CPU: 12.3%  MEM: 4.2GB  |  Nodes: 7  | [H]elp│
 ├──────────────────────────┬──────────────────────────────────────┤
 │  프로세스 목록            │  [Info] [Log] [Net] [Env]           │
 │                          │                                      │
@@ -141,7 +141,7 @@ include_ts_node = false        # ts-node 런타임 포함
 | Express | package.json의 `express` |
 | Fastify | package.json의 `fastify` |
 | NestJS | package.json의 `@nestjs/core` |
-| Nuxt | 커맨드의 `nuxt`, package.json의 `nuxt` |
+| Nuxt.js | `nuxt`, `nuxi` 프로세스명, 커맨드의 `nuxt`, package.json의 `nuxt` |
 | Koa | package.json의 `koa` |
 | Hapi | package.json의 `@hapi/hapi` |
 

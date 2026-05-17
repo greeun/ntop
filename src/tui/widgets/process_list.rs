@@ -7,10 +7,10 @@ use ratatui::widgets::{Block, Borders, Row, Table};
 use ratatui::Frame;
 
 use crate::process::HealthStatus;
-use crate::tui::app::{App, SortColumn};
+use crate::tui::app::{App, FocusPanel, SortColumn};
 
 /// Render the process list in the left panel.
-pub fn render_process_list(f: &mut Frame, area: Rect, app: &App) {
+pub fn render_process_list(f: &mut Frame, area: Rect, app: &mut App) {
     // Column headers with sort indicators
     let sort_indicator = |col: SortColumn| -> &'static str {
         if app.sort_column == col {
@@ -170,12 +170,18 @@ pub fn render_process_list(f: &mut Frame, area: Rect, app: &App) {
         " Processes ".to_string()
     };
 
+    let border_color = if app.focus == FocusPanel::ProcessList {
+        Color::Cyan
+    } else {
+        Color::Gray
+    };
+
     let table = Table::new(rows, &widths)
         .header(header)
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::Gray))
+                .border_style(Style::default().fg(border_color))
                 .title(title),
         )
         .column_spacing(1)
@@ -185,5 +191,5 @@ pub fn render_process_list(f: &mut Frame, area: Rect, app: &App) {
                 .add_modifier(Modifier::BOLD),
         );
 
-    f.render_widget(table, area);
+    f.render_stateful_widget(table, area, &mut app.table_state);
 }

@@ -6,7 +6,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 use ratatui::Frame;
 
-use crate::tui::app::{App, DialogKind};
+use crate::tui::app::{App, DialogKind, FocusPanel};
 
 /// Render the top status bar.
 pub fn render_top_bar(f: &mut Frame, area: Rect, app: &App) {
@@ -100,15 +100,33 @@ pub fn render_bottom_bar(f: &mut Frame, area: Rect, app: &App) {
             separator(),
             key_hint("Esc", "Cancel"),
         ]
+    } else if app.focus == FocusPanel::DetailPanel {
+        vec![
+            key_hint("Esc", "List"),
+            separator(),
+            key_hint("Tab", "Next Tab"),
+            separator(),
+            key_hint("S-Tab", "Prev Tab"),
+            separator(),
+            key_hint("Up/Down", "Scroll"),
+            separator(),
+            key_hint("PgUp/Dn", "Page"),
+            separator(),
+            key_hint("x", "Kill"),
+            separator(),
+            key_hint("S", "Signal"),
+        ]
     } else {
         vec![
             key_hint("q", "Quit"),
             separator(),
             key_hint("Up/Down", "Navigate"),
             separator(),
+            key_hint("PgUp/Dn", "Page"),
+            separator(),
             key_hint("Enter", "Expand"),
             separator(),
-            key_hint("Tab", "Detail Tab"),
+            key_hint("Tab", "Details"),
             separator(),
             key_hint("Space", "Select"),
             separator(),
@@ -117,8 +135,6 @@ pub fn render_bottom_bar(f: &mut Frame, area: Rect, app: &App) {
             key_hint("s", "Sort"),
             separator(),
             key_hint("x", "Kill"),
-            separator(),
-            key_hint("K", "Tree Kill"),
             separator(),
             key_hint("S", "Signal"),
         ]

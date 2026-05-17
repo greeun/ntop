@@ -64,8 +64,51 @@ mod macos {
 #[cfg(target_os = "macos")]
 pub use macos::{open_fd_count, thread_count};
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(windows)]
+mod windows {
+    use windows_sys::Win32::Foundation::CloseHandle;
+    use windows_sys::Win32::System::Diagnostics::ToolHelp::{
+        CreateToolhelp32Snapshot, Thread32First, Thread32Next,
+        TH32CS_SNAPTHREAD, THREADENTRY32,
+    };
+
+    pub fn thread_count(pid: u32) -> u32 {
+        unsafe {
+            let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+            if snapshot.is_null() {
+                return 0;
+            }
+
+            let mut entry: THREADENTRY32 = std::mem::zeroed();
+            entry.dwSize = std::mem::size_of::<THREADENTRY32>() as u32;
+
+            let mut count = 0u32;
+            if Thread32First(snapshot, &mut entry) != 0 {
+                loop {
+                    if entry.th32OwnerProcessID == pid {
+                        count += 1;
+                    }
+                    if Thread32Next(snapshot, &mut entry) == 0 {
+                        break;
+                    }
+                }
+            }
+
+            CloseHandle(snapshot);
+            count
+        }
+    }
+
+    pub fn open_fd_count(_pid: u32) -> u32 {
+        0
+    }
+}
+
+#[cfg(windows)]
+pub use windows::{open_fd_count, thread_count};
+
+#[cfg(not(any(target_os = "macos", windows)))]
 pub fn thread_count(_pid: u32) -> u32 { 0 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", windows)))]
 pub fn open_fd_count(_pid: u32) -> u32 { 0 }

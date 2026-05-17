@@ -1,6 +1,6 @@
 # ntop
 
-A fast, real-time TUI tool for monitoring and managing Node.js / Next.js server processes.
+A fast, real-time TUI tool for monitoring and managing Node.js / Next.js / Nuxt.js server processes.
 
 Built with Rust for instant startup and minimal resource usage.
 
@@ -9,7 +9,7 @@ Built with Rust for instant startup and minimal resource usage.
 ## Features
 
 - **Real-time process monitoring** with configurable refresh rate
-- **Framework auto-detection** — Next.js, Express, Fastify, NestJS, Nuxt, Koa, Hapi
+- **Framework auto-detection** — Next.js, Nuxt.js, Express, Fastify, NestJS, Koa, Hapi
 - **Process tree view** — parent-child relationships with expand/collapse
 - **Split-panel TUI** — process list + tabbed detail panel (Info / Log / Net / Env)
 - **Log streaming** — real-time tail from detected log files
@@ -46,7 +46,7 @@ Launches the interactive dashboard:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ ntop v0.1.0  |  CPU: 12.3%  MEM: 4.2GB  |  Nodes: 7  | [H]elp│
+│ ntop v0.1.1  |  CPU: 12.3%  MEM: 4.2GB  |  Nodes: 7  | [H]elp│
 ├──────────────────────────┬──────────────────────────────────────┤
 │  PROCESS LIST            │  [Info] [Log] [Net] [Env]           │
 │                          │                                      │
@@ -141,7 +141,7 @@ include_ts_node = false
 | Express | `express` in package.json |
 | Fastify | `fastify` in package.json |
 | NestJS | `@nestjs/core` in package.json |
-| Nuxt | `nuxt` in command, `nuxt` in package.json |
+| Nuxt.js | `nuxt`, `nuxi` process name, `nuxt` in command, `nuxt` in package.json |
 | Koa | `koa` in package.json |
 | Hapi | `@hapi/hapi` in package.json |
 

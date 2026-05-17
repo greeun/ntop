@@ -103,6 +103,11 @@ async fn run_tui(config: Config) -> anyhow::Result<()> {
                     events = EventHandler::new(Duration::from_secs(app.refresh_secs));
                 }
 
+                if app.needs_rescan {
+                    app.needs_rescan = false;
+                    do_scan(&mut app, &mut sys, &config);
+                }
+
                 // If the selected process changed and Log tab is active,
                 // update the log streamer
                 if app.active_tab == DetailTab::Log {

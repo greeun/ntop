@@ -3,6 +3,8 @@
 use std::collections::HashSet;
 use std::time::Instant;
 
+use ratatui::widgets::TableState;
+
 use crate::config::Config;
 use crate::log::streamer::LogStreamer;
 use crate::process::killer::KillSignal;
@@ -59,6 +61,13 @@ pub enum DialogKind {
     SignalPicker,
     ForceKillPrompt,
     Help,
+}
+
+/// Which panel currently has keyboard focus.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FocusPanel {
+    ProcessList,
+    DetailPanel,
 }
 
 /// Column by which the process list can be sorted.
@@ -138,6 +147,10 @@ pub struct App {
     pub log_scroll: u16,
     /// Scroll offset for the detail panel.
     pub detail_scroll: u16,
+    /// Total content lines in the detail panel (set during render).
+    pub detail_content_lines: u16,
+    /// Visible height of the detail content area (set during render).
+    pub detail_view_height: u16,
     /// Whether the app should quit.
     pub should_quit: bool,
     /// System-wide CPU usage percentage.
@@ -156,6 +169,12 @@ pub struct App {
     pub refresh_secs: u64,
     /// Whether refresh interval was changed and event loop needs restart.
     pub refresh_changed: bool,
+    /// Whether a rescan is needed (e.g. after killing a process).
+    pub needs_rescan: bool,
+    /// Table state for scrolling the process list.
+    pub table_state: TableState,
+    /// Which panel currently has keyboard focus.
+    pub focus: FocusPanel,
 }
 
 impl App {
@@ -178,6 +197,8 @@ impl App {
             log_streamer: None,
             log_scroll: 0,
             detail_scroll: 0,
+            detail_content_lines: 0,
+            detail_view_height: 0,
             should_quit: false,
             system_cpu: 0.0,
             system_memory_used: 0,
@@ -187,6 +208,9 @@ impl App {
             first_load: true,
             refresh_secs: refresh,
             refresh_changed: false,
+            needs_rescan: false,
+            table_state: TableState::default().with_selected(Some(0)),
+            focus: FocusPanel::ProcessList,
         }
     }
 
@@ -266,6 +290,7 @@ impl App {
         } else {
             self.selected_index = 0;
         }
+        self.sync_table_state();
     }
 
     /// Flatten trees, only expanding children whose parent PID is in expanded_pids.
@@ -329,18 +354,17 @@ impl App {
     pub fn toggle_expand(&mut self) {
         if let Some((proc, _)) = self.flat_list.get(self.selected_index) {
             let pid = proc.pid;
-            // Check if this process has children in the tree
             if self.has_children_in_tree(pid) {
                 if self.expanded_pids.contains(&pid) {
                     self.expanded_pids.remove(&pid);
                 } else {
                     self.expanded_pids.insert(pid);
                 }
-                // Rebuild flat list
                 self.flat_list = Self::flatten_with_expand(&self.process_trees, &self.expanded_pids);
                 if self.selected_index >= self.flat_list.len() && !self.flat_list.is_empty() {
                     self.selected_index = self.flat_list.len() - 1;
                 }
+                self.sync_table_state();
             }
         }
     }
@@ -358,6 +382,7 @@ impl App {
                 } else {
                     self.expanded_pids.insert(pid);
                     self.flat_list = Self::flatten_with_expand(&self.process_trees, &self.expanded_pids);
+                    self.sync_table_state();
                 }
             }
         }
@@ -374,8 +399,8 @@ impl App {
                 if self.selected_index >= self.flat_list.len() && !self.flat_list.is_empty() {
                     self.selected_index = self.flat_list.len() - 1;
                 }
+                self.sync_table_state();
             } else if depth > 0 {
-                // Move to parent
                 for i in (0..self.selected_index).rev() {
                     if let Some((_, d)) = self.flat_list.get(i) {
                         if *d < depth {
@@ -425,6 +450,7 @@ impl App {
         if self.selected_index >= self.flat_list.len() && !self.flat_list.is_empty() {
             self.selected_index = self.flat_list.len() - 1;
         }
+        self.sync_table_state();
     }
 
     /// Toggle multi-select for the selected process.
@@ -468,10 +494,32 @@ impl App {
         signals[self.signal_picker_index % signals.len()]
     }
 
+    /// Sync table_state.selected with selected_index.
+    fn sync_table_state(&mut self) {
+        if self.flat_list.is_empty() {
+            self.table_state.select(None);
+        } else {
+            self.table_state.select(Some(self.selected_index));
+        }
+    }
+
     /// Called when the selection changes to update log streamer.
     fn on_selection_changed(&mut self) {
         self.log_scroll = 0;
         self.detail_scroll = 0;
+        self.sync_table_state();
+    }
+
+    /// Max scroll offset for the detail panel.
+    pub fn detail_max_scroll(&self) -> u16 {
+        self.detail_content_lines.saturating_sub(self.detail_view_height)
+    }
+
+    /// Clamp detail/log scroll to valid range.
+    pub fn clamp_detail_scroll(&mut self) {
+        let max = self.detail_max_scroll();
+        self.detail_scroll = self.detail_scroll.min(max);
+        self.log_scroll = self.log_scroll.min(max);
     }
 
     /// Find a process in the original trees by PID (for getting full children info).

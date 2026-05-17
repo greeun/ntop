@@ -30,12 +30,13 @@ fn is_sensitive(key: &str) -> bool {
 }
 
 /// Render the Env tab with KEY=VALUE pairs.
-pub fn render_env_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, config: &Config, scroll: u16) {
+/// Returns total content line count.
+pub fn render_env_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, config: &Config, scroll: u16) -> u16 {
     if process.env_vars.is_empty() {
         let msg = ratatui::widgets::Paragraph::new("  No environment variables available.")
             .style(Style::default().fg(Color::DarkGray));
         f.render_widget(msg, area);
-        return;
+        return 1;
     }
 
     let should_mask = config.display.mask_env_values;
@@ -63,8 +64,10 @@ pub fn render_env_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, config: 
         })
         .collect();
 
+    let line_count = lines.len() as u16;
     let paragraph = Paragraph::new(lines)
         .wrap(Wrap { trim: false })
         .scroll((scroll, 0));
     f.render_widget(paragraph, area);
+    line_count
 }

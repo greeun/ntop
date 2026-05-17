@@ -9,7 +9,8 @@ use ratatui::Frame;
 use crate::tui::app::App;
 
 /// Render the Log tab.
-pub fn render_log_tab(f: &mut Frame, area: Rect, app: &App) {
+/// Returns total content line count.
+pub fn render_log_tab(f: &mut Frame, area: Rect, app: &App) -> u16 {
     match &app.log_streamer {
         Some(streamer) if streamer.has_source() => {
             let source_path = streamer
@@ -34,6 +35,7 @@ pub fn render_log_tab(f: &mut Frame, area: Rect, app: &App) {
                 ];
                 let paragraph = Paragraph::new(lines);
                 f.render_widget(paragraph, area);
+                3
             } else {
                 // Build log lines with source header
                 let mut lines: Vec<Line> = Vec::new();
@@ -62,15 +64,16 @@ pub fn render_log_tab(f: &mut Frame, area: Rect, app: &App) {
                     )));
                 }
 
+                let line_count = lines.len() as u16;
                 let paragraph = Paragraph::new(lines)
                     .wrap(Wrap { trim: false })
                     .scroll((app.log_scroll, 0));
 
                 f.render_widget(paragraph, area);
+                line_count
             }
         }
         _ => {
-            // No log source detected
             let lines = vec![
                 Line::from(""),
                 Line::from(Span::styled(
@@ -81,7 +84,7 @@ pub fn render_log_tab(f: &mut Frame, area: Rect, app: &App) {
                 )),
                 Line::from(""),
                 Line::from(Span::styled(
-                    "  NSM looks for log files in the process working directory:",
+                    "  ntop looks for log files in the process working directory:",
                     Style::default().fg(Color::DarkGray),
                 )),
                 Line::from(Span::styled(
@@ -89,8 +92,10 @@ pub fn render_log_tab(f: &mut Frame, area: Rect, app: &App) {
                     Style::default().fg(Color::DarkGray),
                 )),
             ];
+            let line_count = lines.len() as u16;
             let paragraph = Paragraph::new(lines);
             f.render_widget(paragraph, area);
+            line_count
         }
     }
 }

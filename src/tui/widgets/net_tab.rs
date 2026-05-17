@@ -9,14 +9,15 @@ use crate::process::network::NetworkInspector;
 use crate::process::ProcessInfo;
 
 /// Render the Net tab with network connections for the selected process.
-pub fn render_net_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, scroll: u16) {
+/// Returns total content line count.
+pub fn render_net_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, scroll: u16) -> u16 {
     let connections = NetworkInspector::connections_for_pid(process.pid);
 
     if connections.is_empty() {
         let msg = ratatui::widgets::Paragraph::new("  No active network connections found.")
             .style(Style::default().fg(Color::DarkGray));
         f.render_widget(msg, area);
-        return;
+        return 1;
     }
 
     let header = Row::new(vec!["  LOCAL", "REMOTE", "STATE"])
@@ -60,9 +61,12 @@ pub fn render_net_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, scroll: 
         Constraint::Percentage(20),
     ];
 
+    let line_count = (connections.len() + 1) as u16; // +1 for header
+
     let table = Table::new(rows, widths)
         .header(header)
         .column_spacing(1);
 
     f.render_widget(table, area);
+    line_count
 }

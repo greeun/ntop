@@ -29,7 +29,7 @@ impl fmt::Display for FrameworkKind {
             FrameworkKind::Express => write!(f, "Express"),
             FrameworkKind::Fastify => write!(f, "Fastify"),
             FrameworkKind::NestJs => write!(f, "NestJs"),
-            FrameworkKind::Nuxt => write!(f, "Nuxt"),
+            FrameworkKind::Nuxt => write!(f, "Nuxt.js"),
             FrameworkKind::Koa => write!(f, "Koa"),
             FrameworkKind::Hapi => write!(f, "Hapi"),
             FrameworkKind::Generic => write!(f, "Generic"),

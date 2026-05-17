@@ -6,7 +6,7 @@ use ratatui::Frame;
 
 use crate::process::killer::{KillSignal, ProcessKiller};
 use crate::process::tree::TreeBuilder;
-use crate::tui::app::{App, DialogKind};
+use crate::tui::app::{App, DialogKind, FocusPanel};
 use crate::tui::widgets::{
     detail_panel, empty_state, help_dialog, kill_dialog, process_list, signal_picker, status_bar,
 };
@@ -99,6 +99,7 @@ fn handle_dialog_key(app: &mut App, key: KeyEvent, dialog: &DialogKind) {
                     ProcessKiller::send_signal(pid, KillSignal::Term);
                 }
                 app.dialog = None;
+                app.needs_rescan = true;
             }
             KeyCode::Esc => {
                 app.dialog = None;
@@ -116,6 +117,7 @@ fn handle_dialog_key(app: &mut App, key: KeyEvent, dialog: &DialogKind) {
                     }
                 }
                 app.dialog = None;
+                app.needs_rescan = true;
             }
             KeyCode::Esc => {
                 app.dialog = None;
@@ -143,6 +145,7 @@ fn handle_dialog_key(app: &mut App, key: KeyEvent, dialog: &DialogKind) {
                         ProcessKiller::send_signal(pid, signal);
                     }
                     app.dialog = None;
+                    app.needs_rescan = true;
                 }
                 KeyCode::Esc => {
                     app.dialog = None;
@@ -165,6 +168,7 @@ fn handle_dialog_key(app: &mut App, key: KeyEvent, dialog: &DialogKind) {
                     ProcessKiller::force_kill(pid);
                 }
                 app.dialog = None;
+                app.needs_rescan = true;
             }
             KeyCode::Esc => {
                 app.dialog = None;
@@ -203,20 +207,104 @@ fn handle_normal_key(app: &mut App, key: KeyEvent) {
         return;
     }
 
+    // Global keys (available in both panels)
     match key.code {
-        KeyCode::Char('q') | KeyCode::Esc => {
+        KeyCode::Char('q') => {
+            app.should_quit = true;
+            return;
+        }
+        KeyCode::Char('/') => {
+            app.filter_active = true;
+            app.filter_text.clear();
+            return;
+        }
+        KeyCode::Char('s') => {
+            app.toggle_sort();
+            return;
+        }
+        KeyCode::Char('r') => {
+            app.sort_ascending = !app.sort_ascending;
+            return;
+        }
+        KeyCode::Char('+') => {
+            app.refresh_secs = (app.refresh_secs + 1).min(60);
+            app.refresh_changed = true;
+            return;
+        }
+        KeyCode::Char('-') => {
+            app.refresh_secs = (app.refresh_secs.saturating_sub(1)).max(1);
+            app.refresh_changed = true;
+            return;
+        }
+        KeyCode::Char('x') => {
+            if app.selected_process().is_some() {
+                app.dialog = Some(DialogKind::KillConfirm);
+            }
+            return;
+        }
+        KeyCode::Char('K') => {
+            if app.selected_process().is_some() {
+                app.dialog = Some(DialogKind::KillTreeConfirm);
+            }
+            return;
+        }
+        KeyCode::Char('H') => {
+            app.dialog = Some(DialogKind::Help);
+            return;
+        }
+        KeyCode::Char('S') => {
+            if app.selected_process().is_some() {
+                app.signal_picker_index = 0;
+                app.dialog = Some(DialogKind::SignalPicker);
+            }
+            return;
+        }
+        KeyCode::Char('e') => {
+            app.toggle_expand_all();
+            return;
+        }
+        _ => {}
+    }
+
+    // Panel-specific keys
+    match app.focus {
+        FocusPanel::ProcessList => handle_list_key(app, key),
+        FocusPanel::DetailPanel => handle_detail_key(app, key),
+    }
+}
+
+/// Handle keys when the process list has focus.
+fn handle_list_key(app: &mut App, key: KeyEvent) {
+    match key.code {
+        KeyCode::Esc => {
             app.should_quit = true;
         }
-
-        // Navigation
         KeyCode::Up | KeyCode::Char('k') => {
             app.move_up();
         }
         KeyCode::Down | KeyCode::Char('j') => {
             app.move_down();
         }
-
-        // Expand/collapse tree node
+        KeyCode::PageUp => {
+            for _ in 0..10 {
+                app.move_up();
+            }
+        }
+        KeyCode::PageDown => {
+            for _ in 0..10 {
+                app.move_down();
+            }
+        }
+        KeyCode::Home => {
+            app.selected_index = 0;
+            app.table_state.select(Some(0));
+        }
+        KeyCode::End => {
+            if !app.flat_list.is_empty() {
+                app.selected_index = app.flat_list.len() - 1;
+                app.table_state.select(Some(app.selected_index));
+            }
+        }
         KeyCode::Enter => {
             app.toggle_expand();
         }
@@ -226,78 +314,37 @@ fn handle_normal_key(app: &mut App, key: KeyEvent) {
         KeyCode::Left | KeyCode::Char('h') => {
             app.collapse_selected();
         }
-
-        // Toggle expand/collapse all
-        KeyCode::Char('e') => {
-            app.toggle_expand_all();
-        }
-
-        // Tab switching
-        KeyCode::Tab => {
-            app.next_tab();
-        }
-        KeyCode::BackTab => {
-            app.prev_tab();
-        }
-
-        // Multi-select
         KeyCode::Char(' ') => {
             app.toggle_select();
         }
+        KeyCode::Tab => {
+            app.focus = FocusPanel::DetailPanel;
+        }
+        _ => {}
+    }
+}
 
-        // Filter
-        KeyCode::Char('/') => {
-            app.filter_active = true;
-            app.filter_text.clear();
+/// Handle keys when the detail panel has focus.
+fn handle_detail_key(app: &mut App, key: KeyEvent) {
+    match key.code {
+        KeyCode::Esc => {
+            app.focus = FocusPanel::ProcessList;
         }
-
-        // Sort column cycle
-        KeyCode::Char('s') => {
-            app.toggle_sort();
+        KeyCode::Tab | KeyCode::Right | KeyCode::Char('l') => {
+            app.next_tab();
         }
-        // Reverse sort direction
-        KeyCode::Char('r') => {
-            app.sort_ascending = !app.sort_ascending;
+        KeyCode::BackTab | KeyCode::Left | KeyCode::Char('h') => {
+            app.prev_tab();
         }
-
-        // Refresh interval adjustment
-        KeyCode::Char('+') => {
-            app.refresh_secs = (app.refresh_secs + 1).min(60);
-            app.refresh_changed = true;
+        KeyCode::Up | KeyCode::Char('k') => {
+            app.detail_scroll = app.detail_scroll.saturating_sub(1);
+            app.log_scroll = app.log_scroll.saturating_sub(1);
         }
-        KeyCode::Char('-') => {
-            app.refresh_secs = (app.refresh_secs.saturating_sub(1)).max(1);
-            app.refresh_changed = true;
+        KeyCode::Down | KeyCode::Char('j') => {
+            app.detail_scroll = app.detail_scroll.saturating_add(1);
+            app.log_scroll = app.log_scroll.saturating_add(1);
+            app.clamp_detail_scroll();
         }
-
-        // Kill (single)
-        KeyCode::Char('x') => {
-            if app.selected_process().is_some() {
-                app.dialog = Some(DialogKind::KillConfirm);
-            }
-        }
-
-        // Kill tree
-        KeyCode::Char('K') => {
-            if app.selected_process().is_some() {
-                app.dialog = Some(DialogKind::KillTreeConfirm);
-            }
-        }
-
-        // Help
-        KeyCode::Char('H') => {
-            app.dialog = Some(DialogKind::Help);
-        }
-
-        // Signal picker
-        KeyCode::Char('S') => {
-            if app.selected_process().is_some() {
-                app.signal_picker_index = 0;
-                app.dialog = Some(DialogKind::SignalPicker);
-            }
-        }
-
-        // Detail panel scrolling
         KeyCode::PageUp => {
             app.detail_scroll = app.detail_scroll.saturating_sub(10);
             app.log_scroll = app.log_scroll.saturating_sub(10);
@@ -305,18 +352,12 @@ fn handle_normal_key(app: &mut App, key: KeyEvent) {
         KeyCode::PageDown => {
             app.detail_scroll = app.detail_scroll.saturating_add(10);
             app.log_scroll = app.log_scroll.saturating_add(10);
+            app.clamp_detail_scroll();
         }
-
-        // Home/End for list navigation
         KeyCode::Home => {
-            app.selected_index = 0;
+            app.detail_scroll = 0;
+            app.log_scroll = 0;
         }
-        KeyCode::End => {
-            if !app.flat_list.is_empty() {
-                app.selected_index = app.flat_list.len() - 1;
-            }
-        }
-
         _ => {}
     }
 }

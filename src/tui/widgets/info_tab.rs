@@ -9,7 +9,8 @@ use ratatui::Frame;
 use crate::process::ProcessInfo;
 
 /// Render the Info tab with key-value pairs about the process.
-pub fn render_info_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, scroll: u16) {
+/// Returns total content line count.
+pub fn render_info_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, scroll: u16) -> u16 {
     let ports_str = if process.ports.is_empty() {
         "-".to_string()
     } else {
@@ -61,11 +62,13 @@ pub fn render_info_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, scroll:
         })
         .collect();
 
+    let line_count = lines.len() as u16;
     let paragraph = Paragraph::new(lines)
         .wrap(Wrap { trim: false })
         .scroll((scroll, 0));
 
     f.render_widget(paragraph, area);
+    line_count
 }
 
 fn format_bytes(bytes: u64) -> String {

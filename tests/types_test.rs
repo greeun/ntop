@@ -7,7 +7,7 @@ fn test_framework_kind_display() {
     assert_eq!(format!("{}", FrameworkKind::Express), "Express");
     assert_eq!(format!("{}", FrameworkKind::Fastify), "Fastify");
     assert_eq!(format!("{}", FrameworkKind::NestJs), "NestJs");
-    assert_eq!(format!("{}", FrameworkKind::Nuxt), "Nuxt");
+    assert_eq!(format!("{}", FrameworkKind::Nuxt), "Nuxt.js");
     assert_eq!(format!("{}", FrameworkKind::Koa), "Koa");
     assert_eq!(format!("{}", FrameworkKind::Hapi), "Hapi");
     assert_eq!(format!("{}", FrameworkKind::Generic), "Generic");

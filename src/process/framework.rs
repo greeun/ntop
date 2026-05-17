@@ -9,6 +9,8 @@ const NAME_MAP: &[(&str, FrameworkKind)] = &[
     ("next-server", FrameworkKind::NextJs),
     ("next-router-worker", FrameworkKind::NextJs),
     ("next-router-page-worker", FrameworkKind::NextJs),
+    ("nuxt", FrameworkKind::Nuxt),
+    ("nuxi", FrameworkKind::Nuxt),
 ];
 
 /// Keywords found in command strings that indicate a framework.
@@ -54,14 +56,32 @@ impl FrameworkDetector {
             return (kind, None);
         }
 
-        // Priority 3: package.json
-        let (kind, version) = Self::detect_by_package_json(cwd);
-        if let Some(kind) = kind {
-            return (kind, version);
+        // Priority 3: package.json — only for actual Node.js/runtime processes
+        // to avoid misdetecting parent processes (e.g. "claude") that happen
+        // to run in a directory with a framework's package.json.
+        if Self::is_js_runtime(name, command) {
+            let (kind, version) = Self::detect_by_package_json(cwd);
+            if let Some(kind) = kind {
+                return (kind, version);
+            }
         }
 
         // Fallback
         (FrameworkKind::Generic, None)
+    }
+
+    fn is_js_runtime(name: &str, command: &str) -> bool {
+        const RUNTIME_NAMES: &[&str] = &[
+            "node", "bun", "tsx", "ts-node", "deno",
+            "next-server", "next-router-worker", "next-router-page-worker",
+            "nuxt", "nuxi",
+        ];
+        if RUNTIME_NAMES.iter().any(|n| name == *n) {
+            return true;
+        }
+        let binary = command.split_whitespace().next().unwrap_or("");
+        let binary_name = binary.rsplit('/').next().unwrap_or(binary);
+        RUNTIME_NAMES.iter().any(|n| binary_name == *n)
     }
 
     /// Detect framework by matching the process name against known names.
