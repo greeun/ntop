@@ -65,6 +65,54 @@ fn test_flatten_tree() {
 }
 
 #[test]
+fn test_sort_recursive_sorts_roots_by_comparator() {
+    // Descending comparator: build() pre-sorts ascending by PID, so only a
+    // working sort_recursive can produce descending order.
+    let procs = vec![
+        make_process(300, 1, "c"),
+        make_process(100, 1, "a"),
+        make_process(200, 1, "b"),
+    ];
+    let mut trees = TreeBuilder::build(procs);
+    TreeBuilder::sort_recursive(&mut trees, &|a, b| b.pid.cmp(&a.pid));
+    assert_eq!(trees[0].pid, 300);
+    assert_eq!(trees[1].pid, 200);
+    assert_eq!(trees[2].pid, 100);
+}
+
+#[test]
+fn test_sort_recursive_also_sorts_children() {
+    // Descending comparator: build() groups children in ascending PID order,
+    // so [103,102,101] proves sort_recursive actually recursed into children.
+    let procs = vec![
+        make_process(100, 1, "parent"),
+        make_process(103, 100, "child-c"),
+        make_process(101, 100, "child-a"),
+        make_process(102, 100, "child-b"),
+    ];
+    let mut trees = TreeBuilder::build(procs);
+    TreeBuilder::sort_recursive(&mut trees, &|a, b| b.pid.cmp(&a.pid));
+    let children = &trees[0].children;
+    assert_eq!(children[0].pid, 103);
+    assert_eq!(children[1].pid, 102);
+    assert_eq!(children[2].pid, 101);
+}
+
+#[test]
+fn test_sort_recursive_by_name() {
+    let procs = vec![
+        make_process(1, 0, "zebra"),
+        make_process(2, 0, "apple"),
+        make_process(3, 0, "mango"),
+    ];
+    let mut trees = TreeBuilder::build(procs);
+    TreeBuilder::sort_recursive(&mut trees, &|a, b| a.name.cmp(&b.name));
+    assert_eq!(trees[0].name, "apple");
+    assert_eq!(trees[1].name, "mango");
+    assert_eq!(trees[2].name, "zebra");
+}
+
+#[test]
 fn test_collect_subtree_pids() {
     let procs = vec![
         make_process(100, 1, "node-a"),

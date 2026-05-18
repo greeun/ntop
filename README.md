@@ -46,7 +46,7 @@ Launches the interactive dashboard:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ ntop v0.1.1  |  CPU: 12.3%  MEM: 4.2GB  |  Nodes: 7  | [H]elp│
+│ ntop v0.1.2  |  CPU: 12.3%  MEM: 4.2GB  |  Nodes: 7  | [H]elp│
 ├──────────────────────────┬──────────────────────────────────────┤
 │  PROCESS LIST            │  [Info] [Log] [Net] [Env]           │
 │                          │                                      │
@@ -149,6 +149,15 @@ include_ts_node = false
 
 - macOS or Linux
 - Rust 1.70+ (for building from source)
+
+## Testing
+
+```bash
+cargo test
+```
+
+The suite covers framework detection, process tree building, signal
+handling, network address parsing, log streaming, and CLI dispatch.
 
 ## License
 

@@ -6,8 +6,7 @@ fn test_scanner_returns_vec() {
     let config = Config::default();
     let scanner = ProcessScanner::new(&config);
     let processes = scanner.scan();
-    // We can't assert specific processes exist, but the vec should be valid
-    assert!(processes.len() >= 0);
+    // scan() must return without panicking; every returned process must be valid
     for p in &processes {
         assert!(p.pid > 0);
         assert!(!p.name.is_empty());

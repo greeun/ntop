@@ -82,6 +82,108 @@ fn test_process_info_memory_display() {
     assert_eq!(info.memory_display(), "2.0 KB");
 }
 
+// ─── display_name ────────────────────────────────────────────────────
+
+#[test]
+fn test_display_name_empty_command_returns_process_name() {
+    let info = ProcessInfo::new(1, "my-server");
+    assert_eq!(info.display_name(), "my-server");
+}
+
+#[test]
+fn test_display_name_non_node_binary_no_args() {
+    let mut info = ProcessInfo::new(1, "custom-server");
+    info.command = "/usr/local/bin/custom-server".to_string();
+    assert_eq!(info.display_name(), "custom-server");
+}
+
+#[test]
+fn test_display_name_non_node_binary_with_subcommand() {
+    let mut info = ProcessInfo::new(1, "bun");
+    info.command = "bun run dev".to_string();
+    assert_eq!(info.display_name(), "bun run dev");
+}
+
+#[test]
+fn test_display_name_non_node_binary_with_script() {
+    let mut info = ProcessInfo::new(1, "bun");
+    info.command = "bun server.js".to_string();
+    assert_eq!(info.display_name(), "bun server.js");
+}
+
+#[test]
+fn test_display_name_node_with_modules_tool_and_subcommand() {
+    let mut info = ProcessInfo::new(1, "node");
+    info.command = "node node_modules/.bin/next start".to_string();
+    assert_eq!(info.display_name(), "next start");
+}
+
+#[test]
+fn test_display_name_node_with_modules_tool_only() {
+    let mut info = ProcessInfo::new(1, "node");
+    info.command = "node node_modules/.bin/next".to_string();
+    assert_eq!(info.display_name(), "next");
+}
+
+#[test]
+fn test_display_name_node_with_script() {
+    let mut info = ProcessInfo::new(1, "node");
+    info.command = "node server.js".to_string();
+    assert_eq!(info.display_name(), "node server.js");
+}
+
+#[test]
+fn test_display_name_node_stops_at_json_blob() {
+    let mut info = ProcessInfo::new(1, "node");
+    info.command = "node server.js {envdata}".to_string();
+    assert_eq!(info.display_name(), "node server.js");
+}
+
+#[test]
+fn test_display_name_node_no_args_returns_name() {
+    let mut info = ProcessInfo::new(1, "node");
+    info.command = "node".to_string();
+    assert_eq!(info.display_name(), "node");
+}
+
+// ─── health ──────────────────────────────────────────────────────────
+
+#[test]
+fn test_health_zombie_status_overrides_healthy_metrics() {
+    let mut info = ProcessInfo::new(1, "node");
+    info.status = "Zombie".to_string();
+    info.cpu_percent = 0.0;
+    info.memory_rss = 0;
+    assert_eq!(info.health(), HealthStatus::Critical);
+}
+
+#[test]
+fn test_health_running_with_low_resources_is_healthy() {
+    let mut info = ProcessInfo::new(1, "node");
+    info.status = "Running".to_string();
+    info.cpu_percent = 10.0;
+    info.memory_rss = 64 * 1_048_576; // 64 MB
+    assert_eq!(info.health(), HealthStatus::Healthy);
+}
+
+#[test]
+fn test_health_high_cpu_is_warning() {
+    let mut info = ProcessInfo::new(1, "node");
+    info.status = "Running".to_string();
+    info.cpu_percent = 85.0;
+    info.memory_rss = 0;
+    assert_eq!(info.health(), HealthStatus::Warning);
+}
+
+#[test]
+fn test_health_very_high_cpu_is_critical() {
+    let mut info = ProcessInfo::new(1, "node");
+    info.status = "Running".to_string();
+    info.cpu_percent = 95.0;
+    info.memory_rss = 0;
+    assert_eq!(info.health(), HealthStatus::Critical);
+}
+
 #[test]
 fn test_framework_kind_serialization() {
     let original = FrameworkKind::NextJs;
