@@ -147,9 +147,16 @@ pub fn render_process_list(f: &mut Frame, area: Rect, app: &mut App) {
             };
 
             let row_style = if is_selected_row {
+                // Selection bg is DarkGray, so dim fg must bump up to Gray
+                // (ANSI 7) to stay readable while preserving the dim feel.
+                let selected_fg = if proc_info.is_node {
+                    Color::LightCyan
+                } else {
+                    Color::Gray
+                };
                 Style::default()
                     .bg(Color::DarkGray)
-                    .fg(base_fg)
+                    .fg(selected_fg)
                     .add_modifier(Modifier::BOLD)
             } else {
                 Style::default().fg(base_fg)
