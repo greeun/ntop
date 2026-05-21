@@ -203,6 +203,7 @@ fn handle_filter_key(app: &mut App, key: KeyEvent) {
         KeyCode::Esc => {
             app.filter_active = false;
             app.filter_text.clear();
+            app.rebuild_view();
         }
         KeyCode::Enter => {
             app.filter_active = false;
@@ -210,9 +211,11 @@ fn handle_filter_key(app: &mut App, key: KeyEvent) {
         }
         KeyCode::Backspace => {
             app.filter_text.pop();
+            app.rebuild_view();
         }
         KeyCode::Char(c) => {
             app.filter_text.push(c);
+            app.rebuild_view();
         }
         _ => {}
     }
@@ -235,6 +238,7 @@ fn handle_normal_key(app: &mut App, key: KeyEvent) {
         KeyCode::Char('/') => {
             app.filter_active = true;
             app.filter_text.clear();
+            app.rebuild_view();
             return;
         }
         KeyCode::Char('s') => {

@@ -117,7 +117,10 @@ impl SortColumn {
 /// Main application state for the TUI.
 pub struct App {
     pub config: Config,
-    /// The process trees (roots with nested children).
+    /// Last scan result, pre-filter. Used to re-apply the filter
+    /// on every keystroke without waiting for the next scan tick.
+    pub raw_processes: Vec<ProcessInfo>,
+    /// The process trees (roots with nested children), filtered.
     pub process_trees: Vec<ProcessInfo>,
     /// Flattened list of (ProcessInfo, depth) for display.
     pub flat_list: Vec<(ProcessInfo, usize)>,
@@ -186,6 +189,7 @@ impl App {
         let refresh = config.general.refresh_interval;
         Self {
             config,
+            raw_processes: Vec::new(),
             process_trees: Vec::new(),
             flat_list: Vec::new(),
             selected_index: 0,
@@ -220,19 +224,50 @@ impl App {
         }
     }
 
-    /// Replace the process trees and rebuild the flat list.
-    pub fn update_processes(&mut self, mut processes: Vec<ProcessInfo>) {
-        // Apply filter
-        if !self.filter_text.is_empty() {
-            let filter_lower = self.filter_text.to_lowercase();
-            processes.retain(|p| {
-                p.name.to_lowercase().contains(&filter_lower)
-                    || p.command.to_lowercase().contains(&filter_lower)
-                    || p.pid.to_string().contains(&filter_lower)
-                    || p.framework.to_string().to_lowercase().contains(&filter_lower)
-                    || p.ports.iter().any(|port| port.to_string().contains(&filter_lower))
-            });
+    /// True if `p` matches `filter` (case-insensitive substring on
+    /// textual fields; digit substring on pid/ports). Empty filter
+    /// matches everything.
+    pub fn matches_filter(p: &ProcessInfo, filter: &str) -> bool {
+        if filter.is_empty() {
+            return true;
         }
+        let f = filter.to_lowercase();
+        p.name.to_lowercase().contains(&f)
+            || p.command.to_lowercase().contains(&f)
+            || p.pid.to_string().contains(&f)
+            || p.framework.to_string().to_lowercase().contains(&f)
+            || p.ports.iter().any(|port| port.to_string().contains(&f))
+    }
+
+    /// Store a fresh scan result and rebuild the view from it. On the
+    /// very first non-empty scan, all PIDs are added to the expanded
+    /// set so the tree starts fully expanded.
+    pub fn update_processes(&mut self, processes: Vec<ProcessInfo>) {
+        self.raw_processes = processes;
+
+        if self.first_load && !self.raw_processes.is_empty() {
+            self.first_load = false;
+            self.expanded_pids
+                .extend(self.raw_processes.iter().map(|p| p.pid));
+        }
+
+        self.rebuild_view();
+    }
+
+    /// Re-apply the current filter to `raw_processes` and rebuild the
+    /// tree, sort, and flat list. Call this whenever `filter_text`
+    /// changes so results update on every keystroke (instead of waiting
+    /// for the next scan tick).
+    pub fn rebuild_view(&mut self) {
+        let processes: Vec<ProcessInfo> = if self.filter_text.is_empty() {
+            self.raw_processes.clone()
+        } else {
+            self.raw_processes
+                .iter()
+                .filter(|p| Self::matches_filter(p, &self.filter_text))
+                .cloned()
+                .collect()
+        };
 
         // Build trees first, then sort at each level
         self.process_trees = TreeBuilder::build(processes);
@@ -278,12 +313,6 @@ impl App {
                 }),
             };
         TreeBuilder::sort_recursive(&mut self.process_trees, &sort_cmp);
-
-        // First load: expand all by default
-        if self.first_load {
-            self.first_load = false;
-            Self::collect_all_pids(&self.process_trees, &mut self.expanded_pids);
-        }
 
         // Flatten for display, respecting expanded state
         self.flat_list = Self::flatten_with_expand(&self.process_trees, &self.expanded_pids);
