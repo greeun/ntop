@@ -46,7 +46,11 @@ impl<'a> ProcessScanner<'a> {
         info.command = command;
         info.cwd = cwd;
         info.cpu_percent = process.cpu_usage();
-        info.memory_rss = process.memory();
+        // On macOS, prefer phys_footprint (what Activity Monitor shows) over
+        // sysinfo's RSS, which excludes compressed memory and can underreport
+        // by 100×+ for idle Node processes.
+        info.memory_rss = crate::process::platform::phys_footprint(pid)
+            .unwrap_or_else(|| process.memory());
         info.memory_vms = process.virtual_memory();
         info.status = format!("{:?}", process.status());
         info.uptime = Duration::from_secs(process.run_time());

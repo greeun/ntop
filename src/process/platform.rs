@@ -5,6 +5,7 @@ mod macos {
 
     const PROC_PIDTASKINFO: i32 = 4;
     const PROC_PIDLISTFDS: i32 = 1;
+    const RUSAGE_INFO_V2: i32 = 2;
 
     #[repr(C)]
     struct ProcTaskInfo {
@@ -34,6 +35,31 @@ mod macos {
         proc_fdtype: u32,
     }
 
+    // Matches macOS <sys/resource.h> struct rusage_info_v2.
+    // Field order/size must stay aligned with the kernel definition.
+    #[repr(C)]
+    struct RUsageInfoV2 {
+        ri_uuid: [u8; 16],
+        ri_user_time: u64,
+        ri_system_time: u64,
+        ri_pkg_idle_wkups: u64,
+        ri_interrupt_wkups: u64,
+        ri_pageins: u64,
+        ri_wired_size: u64,
+        ri_resident_size: u64,
+        ri_phys_footprint: u64,
+        ri_proc_start_abstime: u64,
+        ri_proc_exit_abstime: u64,
+        ri_child_user_time: u64,
+        ri_child_system_time: u64,
+        ri_child_pkg_idle_wkups: u64,
+        ri_child_interrupt_wkups: u64,
+        ri_child_pageins: u64,
+        ri_child_elapsed_abstime: u64,
+        ri_diskio_bytesread: u64,
+        ri_diskio_byteswritten: u64,
+    }
+
     extern "C" {
         fn proc_pidinfo(
             pid: i32,
@@ -42,6 +68,8 @@ mod macos {
             buffer: *mut c_void,
             buffersize: i32,
         ) -> i32;
+
+        fn proc_pid_rusage(pid: i32, flavor: i32, buffer: *mut c_void) -> i32;
     }
 
     pub fn thread_count(pid: u32) -> u32 {
@@ -59,10 +87,29 @@ mod macos {
             if size > 0 { (size as usize / mem::size_of::<ProcFdInfo>()) as u32 } else { 0 }
         }
     }
+
+    /// Returns the process's `phys_footprint` in bytes — the same value macOS
+    /// Activity Monitor shows in its "Memory" column. Falls back to `None`
+    /// when the call fails (e.g. process has exited or insufficient permissions).
+    pub fn phys_footprint(pid: u32) -> Option<u64> {
+        unsafe {
+            let mut info: RUsageInfoV2 = mem::zeroed();
+            let ret = proc_pid_rusage(
+                pid as i32,
+                RUSAGE_INFO_V2,
+                &mut info as *mut _ as *mut c_void,
+            );
+            if ret == 0 {
+                Some(info.ri_phys_footprint)
+            } else {
+                None
+            }
+        }
+    }
 }
 
 #[cfg(target_os = "macos")]
-pub use macos::{open_fd_count, thread_count};
+pub use macos::{open_fd_count, phys_footprint, thread_count};
 
 #[cfg(windows)]
 mod windows {
@@ -112,3 +159,6 @@ pub fn thread_count(_pid: u32) -> u32 { 0 }
 
 #[cfg(not(any(target_os = "macos", windows)))]
 pub fn open_fd_count(_pid: u32) -> u32 { 0 }
+
+#[cfg(not(target_os = "macos"))]
+pub fn phys_footprint(_pid: u32) -> Option<u64> { None }
