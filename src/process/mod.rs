@@ -1,5 +1,6 @@
 pub mod scanner;
 pub mod framework;
+pub mod framework_rules;
 pub mod tree;
 pub mod killer;
 pub mod network;

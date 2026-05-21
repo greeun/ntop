@@ -1,7 +1,5 @@
 use ntop::process::framework::FrameworkDetector;
 use ntop::process::FrameworkKind;
-use std::fs;
-use tempfile::TempDir;
 
 #[test]
 fn test_detect_nextjs_by_process_name() {
@@ -11,6 +9,10 @@ fn test_detect_nextjs_by_process_name() {
     );
     assert_eq!(
         FrameworkDetector::detect_by_name("next-router-worker"),
+        Some(FrameworkKind::NextJs)
+    );
+    assert_eq!(
+        FrameworkDetector::detect_by_name("next-router-page-worker"),
         Some(FrameworkKind::NextJs)
     );
 }
@@ -38,187 +40,96 @@ fn test_detect_framework_by_command() {
         Some(FrameworkKind::Nuxt)
     );
     assert_eq!(
+        FrameworkDetector::detect_by_command("node node_modules/.bin/nest start"),
+        Some(FrameworkKind::NestJs)
+    );
+    assert_eq!(
         FrameworkDetector::detect_by_command("node server.js"),
         None
     );
 }
 
 #[test]
-fn test_detect_framework_by_package_json() {
-    // Test Next.js detection
-    {
-        let dir = TempDir::new().unwrap();
-        let pkg = serde_json::json!({
-            "name": "my-app",
-            "dependencies": {
-                "next": "14.0.0",
-                "react": "18.0.0"
-            }
-        });
-        fs::write(dir.path().join("package.json"), pkg.to_string()).unwrap();
-        let (kind, version) = FrameworkDetector::detect_by_package_json(dir.path().to_str().unwrap());
-        assert_eq!(kind, Some(FrameworkKind::NextJs));
-        assert_eq!(version, Some("14.0.0".to_string()));
-    }
-
-    // Test Express detection
-    {
-        let dir = TempDir::new().unwrap();
-        let pkg = serde_json::json!({
-            "name": "my-app",
-            "dependencies": {
-                "express": "4.18.0"
-            }
-        });
-        fs::write(dir.path().join("package.json"), pkg.to_string()).unwrap();
-        let (kind, version) = FrameworkDetector::detect_by_package_json(dir.path().to_str().unwrap());
-        assert_eq!(kind, Some(FrameworkKind::Express));
-        assert_eq!(version, Some("4.18.0".to_string()));
-    }
-
-    // Test Fastify detection
-    {
-        let dir = TempDir::new().unwrap();
-        let pkg = serde_json::json!({
-            "name": "my-app",
-            "dependencies": {
-                "fastify": "4.0.0"
-            }
-        });
-        fs::write(dir.path().join("package.json"), pkg.to_string()).unwrap();
-        let (kind, version) = FrameworkDetector::detect_by_package_json(dir.path().to_str().unwrap());
-        assert_eq!(kind, Some(FrameworkKind::Fastify));
-        assert_eq!(version, Some("4.0.0".to_string()));
-    }
-
-    // Test NestJS detection
-    {
-        let dir = TempDir::new().unwrap();
-        let pkg = serde_json::json!({
-            "name": "my-app",
-            "dependencies": {
-                "@nestjs/core": "10.0.0"
-            }
-        });
-        fs::write(dir.path().join("package.json"), pkg.to_string()).unwrap();
-        let (kind, version) = FrameworkDetector::detect_by_package_json(dir.path().to_str().unwrap());
-        assert_eq!(kind, Some(FrameworkKind::NestJs));
-        assert_eq!(version, Some("10.0.0".to_string()));
-    }
-
-    // Test Koa detection
-    {
-        let dir = TempDir::new().unwrap();
-        let pkg = serde_json::json!({
-            "name": "my-app",
-            "dependencies": {
-                "koa": "2.14.0"
-            }
-        });
-        fs::write(dir.path().join("package.json"), pkg.to_string()).unwrap();
-        let (kind, version) = FrameworkDetector::detect_by_package_json(dir.path().to_str().unwrap());
-        assert_eq!(kind, Some(FrameworkKind::Koa));
-        assert_eq!(version, Some("2.14.0".to_string()));
-    }
-
-    // Test Hapi detection
-    {
-        let dir = TempDir::new().unwrap();
-        let pkg = serde_json::json!({
-            "name": "my-app",
-            "dependencies": {
-                "@hapi/hapi": "21.0.0"
-            }
-        });
-        fs::write(dir.path().join("package.json"), pkg.to_string()).unwrap();
-        let (kind, version) = FrameworkDetector::detect_by_package_json(dir.path().to_str().unwrap());
-        assert_eq!(kind, Some(FrameworkKind::Hapi));
-        assert_eq!(version, Some("21.0.0".to_string()));
-    }
-
-    // Test devDependencies detection
-    {
-        let dir = TempDir::new().unwrap();
-        let pkg = serde_json::json!({
-            "name": "my-app",
-            "devDependencies": {
-                "next": "13.0.0"
-            }
-        });
-        fs::write(dir.path().join("package.json"), pkg.to_string()).unwrap();
-        let (kind, version) = FrameworkDetector::detect_by_package_json(dir.path().to_str().unwrap());
-        assert_eq!(kind, Some(FrameworkKind::NextJs));
-        assert_eq!(version, Some("13.0.0".to_string()));
-    }
-
-    // Test Nuxt.js detection
-    {
-        let dir = TempDir::new().unwrap();
-        let pkg = serde_json::json!({
-            "name": "my-app",
-            "dependencies": {
-                "nuxt": "3.0.0"
-            }
-        });
-        fs::write(dir.path().join("package.json"), pkg.to_string()).unwrap();
-        let (kind, version) = FrameworkDetector::detect_by_package_json(dir.path().to_str().unwrap());
-        assert_eq!(kind, Some(FrameworkKind::Nuxt));
-        assert_eq!(version, Some("3.0.0".to_string()));
-    }
-}
-
-#[test]
 fn test_detect_combined_priority() {
-    // Process name should take priority over command
-    let dir = TempDir::new().unwrap();
-    let (kind, _version) = FrameworkDetector::detect(
+    // Process name takes priority over command keywords.
+    let (kind, version) = FrameworkDetector::detect(
         "next-server",
         "node node_modules/.bin/nuxt start",
-        dir.path().to_str().unwrap(),
+        "",
     );
     assert_eq!(kind, FrameworkKind::NextJs);
+    assert_eq!(version, None);
 }
 
 #[test]
 fn test_detect_nuxt_by_process_name_priority() {
-    // nuxt process name takes priority over other command signals
-    let dir = TempDir::new().unwrap();
-    let (kind, _version) = FrameworkDetector::detect(
+    let (kind, _) = FrameworkDetector::detect(
         "nuxt",
         "node node_modules/.bin/next start",
-        dir.path().to_str().unwrap(),
+        "",
     );
     assert_eq!(kind, FrameworkKind::Nuxt);
-}
-
-#[test]
-fn test_detect_nuxt_by_package_json() {
-    // node process with nuxt in package.json triggers package.json scan and returns version
-    let dir = TempDir::new().unwrap();
-    let pkg = serde_json::json!({
-        "name": "my-nuxt-app",
-        "dependencies": {
-            "nuxt": "3.5.0"
-        }
-    });
-    fs::write(dir.path().join("package.json"), pkg.to_string()).unwrap();
-    let (kind, version) = FrameworkDetector::detect(
-        "node",
-        "node .output/server/index.mjs",
-        dir.path().to_str().unwrap(),
-    );
-    assert_eq!(kind, FrameworkKind::Nuxt);
-    assert_eq!(version, Some("3.5.0".to_string()));
 }
 
 #[test]
 fn test_detect_fallback_to_generic() {
-    let dir = TempDir::new().unwrap();
     let (kind, version) = FrameworkDetector::detect(
         "node",
         "node server.js",
-        dir.path().to_str().unwrap(),
+        "",
     );
     assert_eq!(kind, FrameworkKind::Generic);
     assert_eq!(version, None);
+}
+
+/// Regression: an npx-launched MCP server (context7-mcp) inheriting a
+/// Next.js project's cwd must NOT be tagged as Next.js. Detection is
+/// process-local and ignores the cwd.
+#[test]
+fn test_detect_npx_mcp_server_is_generic_even_in_nextjs_cwd() {
+    let (kind, version) = FrameworkDetector::detect(
+        "node",
+        "node /Users/u/.npm/_npx/abc123/node_modules/.bin/context7-mcp",
+        "/Users/u/some-nextjs-project",
+    );
+    assert_eq!(kind, FrameworkKind::Generic);
+    assert_eq!(version, None);
+}
+
+/// Regression: cwd is never consulted, so a node process started inside
+/// a Next.js project running an unrelated script stays Generic.
+#[test]
+fn test_detect_node_in_framework_cwd_is_generic() {
+    let (kind, _) = FrameworkDetector::detect(
+        "node",
+        "node /tmp/scratch.js",
+        "/some/nextjs/project",
+    );
+    assert_eq!(kind, FrameworkKind::Generic);
+}
+
+/// Regression: macOS truncates the `comm` field to 16 chars, so a
+/// next-server worker that calls `process.title = "next-server (v16.2.4)"`
+/// shows up as `name = "next-server (v16"`. Detection must still tag it
+/// as Next.js by normalizing the name.
+#[test]
+fn test_detect_nextjs_from_truncated_macos_comm() {
+    let (kind, _) = FrameworkDetector::detect(
+        "next-server (v16",
+        "next-server (v16.2.4)",
+        "",
+    );
+    assert_eq!(kind, FrameworkKind::NextJs);
+}
+
+/// Regression: if sysinfo name is opaque (e.g. "node") but the command
+/// starts with a known framework binary (process.title style), detect it.
+#[test]
+fn test_detect_nextjs_from_command_binary_when_name_is_node() {
+    let (kind, _) = FrameworkDetector::detect(
+        "node",
+        "next-server (v16.2.4)",
+        "",
+    );
+    assert_eq!(kind, FrameworkKind::NextJs);
 }
