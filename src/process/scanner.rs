@@ -8,6 +8,11 @@ use sysinfo::{ProcessRefreshKind, System, UpdateKind};
 
 pub struct ProcessScanner<'a> {
     config: &'a Config,
+    // sysinfo computes per-process CPU usage as the delta between two
+    // refreshes, so we keep a long-lived System and refresh it in place.
+    // Constructing a fresh System on every scan would make cpu_usage()
+    // permanently 0.0.
+    sys: System,
 }
 
 const NODE_PROCESS_NAMES: &[&str] = &[
@@ -25,7 +30,30 @@ const OPTIONAL_RUNTIMES: &[(&str, fn(&Config) -> bool)] = &[
 
 impl<'a> ProcessScanner<'a> {
     pub fn new(config: &'a Config) -> Self {
-        Self { config }
+        let mut sys = System::new();
+        // sysinfo needs 3+ refreshes (with ≥ MINIMUM_CPU_UPDATE_INTERVAL
+        // between samples) before per-process cpu_usage() returns a real
+        // value. The first two refreshes here prime the sampler so that
+        // the next scan() (after at least one tick interval) already
+        // produces accurate CPU readings.
+        Self::refresh_processes(&mut sys);
+        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+        Self::refresh_processes(&mut sys);
+        Self { config, sys }
+    }
+
+    fn refresh_processes(sys: &mut System) {
+        sys.refresh_processes_specifics(
+            sysinfo::ProcessesToUpdate::All,
+            true,
+            ProcessRefreshKind::nothing()
+                .with_cpu()
+                .with_memory()
+                .with_cmd(UpdateKind::Always)
+                .with_cwd(UpdateKind::Always)
+                .with_environ(UpdateKind::Always)
+                .with_user(UpdateKind::Always),
+        );
     }
 
     fn collect_process_info(process: &sysinfo::Process, pid: u32) -> ProcessInfo {
@@ -79,25 +107,14 @@ impl<'a> ProcessScanner<'a> {
         info
     }
 
-    pub fn scan(&self) -> Vec<ProcessInfo> {
-        let mut sys = System::new();
-        sys.refresh_processes_specifics(
-            sysinfo::ProcessesToUpdate::All,
-            true,
-            ProcessRefreshKind::nothing()
-                .with_cpu()
-                .with_memory()
-                .with_cmd(UpdateKind::Always)
-                .with_cwd(UpdateKind::Always)
-                .with_environ(UpdateKind::Always)
-                .with_user(UpdateKind::Always),
-        );
+    pub fn scan(&mut self) -> Vec<ProcessInfo> {
+        Self::refresh_processes(&mut self.sys);
 
         let mut results = Vec::new();
         let mut node_pids = HashSet::new();
 
         // First pass: collect node processes
-        for (pid, process) in sys.processes() {
+        for (pid, process) in self.sys.processes() {
             let name = process.name().to_string_lossy().to_string();
             let cmd_parts: Vec<String> = process
                 .cmd()
@@ -113,7 +130,8 @@ impl<'a> ProcessScanner<'a> {
                 continue;
             }
 
-            let info = Self::collect_process_info(process, pid.as_u32());
+            let mut info = Self::collect_process_info(process, pid.as_u32());
+            info.is_node = true;
             node_pids.insert(pid.as_u32());
             results.push(info);
         }
@@ -129,13 +147,23 @@ impl<'a> ProcessScanner<'a> {
 
         for ppid in parent_ppids {
             let sysinfo_pid = sysinfo::Pid::from_u32(ppid);
-            if let Some(process) = sys.process(sysinfo_pid) {
+            if let Some(process) = self.sys.process(sysinfo_pid) {
                 let info = Self::collect_process_info(process, ppid);
                 results.push(info);
             }
         }
 
         results
+    }
+
+    /// One-shot scan with built-in CPU warmup for non-loop callers (CLI
+    /// commands). Sleeps `MINIMUM_CPU_UPDATE_INTERVAL` after `new()`'s two
+    /// priming refreshes, then does the third measurement refresh — this
+    /// is the minimum sysinfo requires for `cpu_usage()` to return a real
+    /// value instead of 0.0.
+    pub fn scan_blocking(&mut self) -> Vec<ProcessInfo> {
+        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+        self.scan()
     }
 
     pub fn is_node_process_name(name: &str) -> bool {

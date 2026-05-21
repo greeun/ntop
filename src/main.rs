@@ -62,12 +62,17 @@ async fn run_tui(config: Config) -> anyhow::Result<()> {
     let mut sys = System::new_all();
     sys.refresh_all();
 
+    // Persistent ProcessScanner so per-process CPU deltas accumulate
+    // across ticks. Re-creating it each tick would make every process
+    // report 0.0% CPU forever (sysinfo computes CPU from refresh deltas).
+    let mut scanner = ProcessScanner::new(&config);
+
     // Event handler with tick rate from config
     let tick_rate = config.refresh_duration();
     let mut events = EventHandler::new(tick_rate);
 
     // Initial scan
-    do_scan(&mut app, &mut sys, &config);
+    do_scan(&mut app, &mut scanner, &mut sys);
 
     // Main event loop
     loop {
@@ -82,7 +87,7 @@ async fn run_tui(config: Config) -> anyhow::Result<()> {
                 app.tick_count += 1;
 
                 // Rescan processes
-                do_scan(&mut app, &mut sys, &config);
+                do_scan(&mut app, &mut scanner, &mut sys);
 
                 // Poll logs if Log tab is active
                 if app.active_tab == DetailTab::Log {
@@ -105,7 +110,7 @@ async fn run_tui(config: Config) -> anyhow::Result<()> {
 
                 if app.needs_rescan {
                     app.needs_rescan = false;
-                    do_scan(&mut app, &mut sys, &config);
+                    do_scan(&mut app, &mut scanner, &mut sys);
                 }
 
                 // If the selected process changed and Log tab is active,
@@ -132,7 +137,7 @@ async fn run_tui(config: Config) -> anyhow::Result<()> {
 }
 
 /// Scan processes, detect frameworks, fetch ports, and update app state.
-fn do_scan(app: &mut App, sys: &mut System, config: &Config) {
+fn do_scan(app: &mut App, scanner: &mut ProcessScanner<'_>, sys: &mut System) {
     // Refresh system info for CPU/memory readings
     sys.refresh_cpu_usage();
     sys.refresh_memory();
@@ -141,8 +146,7 @@ fn do_scan(app: &mut App, sys: &mut System, config: &Config) {
     app.system_memory_used = sys.used_memory();
     app.system_memory_total = sys.total_memory();
 
-    // Scan Node.js processes
-    let scanner = ProcessScanner::new(config);
+    // Scan Node.js processes (scanner holds a persistent System for CPU deltas)
     let mut processes = scanner.scan();
 
     // Detect framework and fetch ports for each process
@@ -194,8 +198,8 @@ fn update_log_streamer(app: &mut App) {
 
 /// `ntop list` — scan processes and output in table/json/csv format.
 fn cmd_list(config: &Config, json: bool, format: Option<ListFormat>) -> anyhow::Result<()> {
-    let scanner = ProcessScanner::new(config);
-    let mut processes = scanner.scan();
+    let mut scanner = ProcessScanner::new(config);
+    let mut processes = scanner.scan_blocking();
 
     // Detect frameworks and fetch ports
     let net_map = NetworkInspector::connections_by_pid();
@@ -282,6 +286,7 @@ fn print_json(flat: &[(&ProcessInfo, usize)]) -> anyhow::Result<()> {
                 "pid": proc.pid,
                 "ppid": proc.ppid,
                 "name": proc.name,
+                "is_node": proc.is_node,
                 "framework": proc.framework.to_string(),
                 "framework_version": proc.framework_version,
                 "ports": proc.ports,
@@ -348,7 +353,7 @@ fn cmd_kill(
 
     if all {
         // Kill all Node.js processes
-        let scanner = ProcessScanner::new(config);
+        let mut scanner = ProcessScanner::new(config);
         let processes = scanner.scan();
 
         if processes.is_empty() {
@@ -377,7 +382,7 @@ fn cmd_kill(
     } else if let Some(target_pid) = pid {
         if tree {
             // Kill process tree
-            let scanner = ProcessScanner::new(config);
+            let mut scanner = ProcessScanner::new(config);
             let processes = scanner.scan();
             let trees = TreeBuilder::build(processes);
 
@@ -453,8 +458,8 @@ fn find_in_trees(trees: &[ProcessInfo], pid: u32) -> Option<&ProcessInfo> {
 
 /// `ntop info` — display detailed info about a specific process.
 fn cmd_info(config: &Config, pid: u32) -> anyhow::Result<()> {
-    let scanner = ProcessScanner::new(config);
-    let processes = scanner.scan();
+    let mut scanner = ProcessScanner::new(config);
+    let processes = scanner.scan_blocking();
 
     let proc = processes.iter().find(|p| p.pid == pid);
 
@@ -474,6 +479,7 @@ fn cmd_info(config: &Config, pid: u32) -> anyhow::Result<()> {
             println!("  PID:       {}", process.pid);
             println!("  PPID:      {}", process.ppid);
             println!("  Name:      {}", process.name);
+            println!("  Type:      {}", if process.is_node { "Node" } else { "Tree parent" });
             println!("  Framework: {}", framework);
             println!(
                 "  Version:   {}",
@@ -531,7 +537,7 @@ fn cmd_info(config: &Config, pid: u32) -> anyhow::Result<()> {
 
 /// `ntop log` — stream log output for a process.
 fn cmd_log(config: &Config, pid: u32) -> anyhow::Result<()> {
-    let scanner = ProcessScanner::new(config);
+    let mut scanner = ProcessScanner::new(config);
     let processes = scanner.scan();
 
     let proc = processes.iter().find(|p| p.pid == pid);

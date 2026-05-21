@@ -51,6 +51,7 @@ fn test_process_info_default() {
     assert!(info.children.is_empty());
     assert!(info.env_vars.is_empty());
     assert_eq!(info.status, "Running");
+    assert!(!info.is_node);
 }
 
 #[test]

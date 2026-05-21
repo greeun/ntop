@@ -104,6 +104,10 @@ pub struct ProcessInfo {
     pub open_fds: u32,
     pub children: Vec<ProcessInfo>,
     pub env_vars: Vec<(String, String)>,
+    /// True for processes the scanner classifies as real Node workloads
+    /// (matched by binary name or `node` command). False for tree-context
+    /// parents the second pass backfills (e.g. launchd, claude).
+    pub is_node: bool,
 }
 
 impl ProcessInfo {
@@ -128,6 +132,7 @@ impl ProcessInfo {
             open_fds: 0,
             children: Vec::new(),
             env_vars: Vec::new(),
+            is_node: false,
         }
     }
 

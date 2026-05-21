@@ -137,13 +137,22 @@ pub fn render_process_list(f: &mut Frame, area: Rect, app: &mut App) {
                     .join(",")
             };
 
-            // Row style
+            // Row style: real Node processes get a bright foreground;
+            // tree-context parents (claude, launchd, …) stay dim so the
+            // eye lands on actual workloads first.
+            let base_fg = if proc_info.is_node {
+                Color::LightCyan
+            } else {
+                Color::DarkGray
+            };
+
             let row_style = if is_selected_row {
                 Style::default()
                     .bg(Color::DarkGray)
+                    .fg(base_fg)
                     .add_modifier(Modifier::BOLD)
             } else {
-                Style::default()
+                Style::default().fg(base_fg)
             };
 
             let first_cell = Line::from(vec![checkbox_span, Span::raw(" "), health_dot]);

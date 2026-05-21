@@ -4,12 +4,32 @@ use ntop::process::scanner::ProcessScanner;
 #[test]
 fn test_scanner_returns_vec() {
     let config = Config::default();
-    let scanner = ProcessScanner::new(&config);
+    let mut scanner = ProcessScanner::new(&config);
     let processes = scanner.scan();
     // scan() must return without panicking; every returned process must be valid
     for p in &processes {
         assert!(p.pid > 0);
         assert!(!p.name.is_empty());
+    }
+}
+
+#[test]
+fn test_scanner_marks_node_vs_tree_parent() {
+    let config = Config::default();
+    let mut scanner = ProcessScanner::new(&config);
+    let processes = scanner.scan();
+
+    // If any process at all is returned, the test environment has Node
+    // processes — assert at least one row is flagged is_node = true.
+    // Otherwise, skip the assertion (CI may run on a node-less host).
+    if !processes.is_empty() {
+        let any_node = processes.iter().any(|p| p.is_node);
+        let any_node_named = processes.iter().any(|p| ProcessScanner::is_node_process_name(&p.name));
+        // If there's any process whose name matches a Node binary, at
+        // least one entry should also be flagged is_node.
+        if any_node_named {
+            assert!(any_node, "expected at least one is_node=true row when node processes exist");
+        }
     }
 }
 
