@@ -52,7 +52,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
                 signal_picker::render_signal_picker(f, area, app.signal_picker_index);
             }
             DialogKind::Help => {
-                help_dialog::render_help_dialog(f, area);
+                help_dialog::render_help_dialog(f, area, app);
             }
             _ => {
                 let process = app.selected_process().cloned();
@@ -157,6 +157,25 @@ fn handle_dialog_key(app: &mut App, key: KeyEvent, dialog: &DialogKind) {
         DialogKind::Help => match key.code {
             KeyCode::Esc | KeyCode::Char('H') | KeyCode::Char('q') => {
                 app.dialog = None;
+                app.help_scroll = 0;
+            }
+            KeyCode::Up | KeyCode::Char('k') => {
+                app.help_scroll = app.help_scroll.saturating_sub(1);
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                app.help_scroll = (app.help_scroll + 1).min(app.help_max_scroll);
+            }
+            KeyCode::PageUp => {
+                app.help_scroll = app.help_scroll.saturating_sub(10);
+            }
+            KeyCode::PageDown => {
+                app.help_scroll = (app.help_scroll + 10).min(app.help_max_scroll);
+            }
+            KeyCode::Home => {
+                app.help_scroll = 0;
+            }
+            KeyCode::End => {
+                app.help_scroll = app.help_max_scroll;
             }
             _ => {}
         },

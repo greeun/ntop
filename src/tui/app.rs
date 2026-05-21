@@ -165,6 +165,10 @@ pub struct App {
     pub tick_count: u64,
     /// Whether this is the first process load (for default expand-all).
     pub first_load: bool,
+    /// Scroll offset for the help dialog.
+    pub help_scroll: u16,
+    /// Max scroll offset for the help dialog (computed during render).
+    pub help_max_scroll: u16,
     /// Refresh interval in seconds (adjustable at runtime).
     pub refresh_secs: u64,
     /// Whether refresh interval was changed and event loop needs restart.
@@ -206,6 +210,8 @@ impl App {
             kill_in_progress: None,
             tick_count: 0,
             first_load: true,
+            help_scroll: 0,
+            help_max_scroll: 0,
             refresh_secs: refresh,
             refresh_changed: false,
             needs_rescan: false,
