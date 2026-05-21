@@ -117,7 +117,7 @@ PID      NAME                 FRAMEWORK    PORT       CPU      MEM        UPTIME
 
 ```toml
 [general]
-refresh_interval = 1          # 갱신 주기 (초)
+refresh_interval = 3          # 갱신 주기 (초)
 default_signal = "SIGTERM"    # 기본 시그널
 graceful_timeout = 10         # 그레이스풀 셧다운 타임아웃 (초)
 confirm_before_kill = true    # Kill 전 확인 여부

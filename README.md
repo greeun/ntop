@@ -117,7 +117,7 @@ Config file: `~/.config/ntop/config.toml`
 
 ```toml
 [general]
-refresh_interval = 1          # seconds
+refresh_interval = 3          # seconds
 default_signal = "SIGTERM"
 graceful_timeout = 10         # seconds
 confirm_before_kill = true

@@ -16,7 +16,7 @@ pub struct GeneralConfig {
 impl Default for GeneralConfig {
     fn default() -> Self {
         Self {
-            refresh_interval: 1,
+            refresh_interval: 3,
             default_signal: "SIGTERM".to_string(),
             graceful_timeout: 10,
             confirm_before_kill: true,

@@ -6,7 +6,7 @@ fn test_default_config() {
     let config = Config::default();
 
     // GeneralConfig defaults
-    assert_eq!(config.general.refresh_interval, 1);
+    assert_eq!(config.general.refresh_interval, 3);
     assert_eq!(config.general.default_signal, "SIGTERM");
     assert_eq!(config.general.graceful_timeout, 10);
     assert_eq!(config.general.confirm_before_kill, true);
@@ -89,7 +89,7 @@ refresh_interval = 3
 #[test]
 fn test_config_refresh_duration() {
     let mut config = Config::default();
-    assert_eq!(config.refresh_duration(), Duration::from_secs(1));
+    assert_eq!(config.refresh_duration(), Duration::from_secs(3));
 
     config.general.refresh_interval = 5;
     assert_eq!(config.refresh_duration(), Duration::from_secs(5));
