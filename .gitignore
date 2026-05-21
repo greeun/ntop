@@ -1,1 +1,21 @@
+# Rust
 /target
+**/*.rs.bk
+*.pdb
+
+# Local tooling
+.axt-profile.json
+.claude/
+
+# Work-in-progress artifacts
+docs/linkedin-screenshot.html
+linkedin-post/
+
+# macOS
+.DS_Store
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
