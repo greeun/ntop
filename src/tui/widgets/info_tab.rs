@@ -28,6 +28,8 @@ pub fn render_info_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, scroll:
         .unwrap_or("-");
 
     let fields: Vec<(&str, String)> = vec![
+        ("CWD", process.cwd.clone()),
+        ("Command", process.command.clone()),
         ("PID", process.pid.to_string()),
         ("PPID", process.ppid.to_string()),
         ("Name", process.name.clone()),
@@ -43,8 +45,6 @@ pub fn render_info_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, scroll:
         ("Status", process.status.clone()),
         ("Health", process.health().to_string()),
         ("Open FDs", process.open_fds.to_string()),
-        ("CWD", process.cwd.clone()),
-        ("Command", process.command.clone()),
     ];
 
     let lines: Vec<Line> = fields
@@ -62,7 +62,7 @@ pub fn render_info_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, scroll:
         })
         .collect();
 
-    let line_count = lines.len() as u16;
+    let line_count = crate::tui::widgets::wrapped_line_count(&lines, area.width);
     let paragraph = Paragraph::new(lines)
         .wrap(Wrap { trim: false })
         .scroll((scroll, 0));

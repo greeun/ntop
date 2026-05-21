@@ -64,7 +64,7 @@ pub fn render_env_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, config: 
         })
         .collect();
 
-    let line_count = lines.len() as u16;
+    let line_count = crate::tui::widgets::wrapped_line_count(&lines, area.width);
     let paragraph = Paragraph::new(lines)
         .wrap(Wrap { trim: false })
         .scroll((scroll, 0));
