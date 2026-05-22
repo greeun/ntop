@@ -8,13 +8,16 @@ Built with Rust for instant startup and minimal resource usage.
 
 ## Features
 
-- **Real-time process monitoring** with configurable refresh rate
-- **Framework auto-detection** — Next.js, Nuxt.js, Express, Fastify, NestJS, Koa, Hapi
-- **Process tree view** — parent-child relationships with expand/collapse
+- **Real-time process monitoring** with configurable refresh rate (default 3s)
+- **Rule-based framework detection** — Next.js, Nuxt.js, NestJS (no filesystem reads, so globally-launched MCP servers and CLI tools aren't misclassified)
+- **Process tree view** — parent-child relationships with expand/collapse, with distinct coloring for node leaves vs. tree-parent rows
 - **Split-panel TUI** — process list + tabbed detail panel (Info / Log / Net / Env)
+- **Incremental search** — `/` filter is applied on every keystroke
+- **Scrollable help dialog** — long key reference scrolls within the popup
 - **Log streaming** — real-time tail from detected log files
 - **Network inspection** — listening ports and active TCP connections per process
 - **Environment variables** — with automatic sensitive value masking
+- **Accurate metrics** — real CPU readings and macOS `phys_footprint` memory that matches Activity Monitor
 - **Full kill control** — SIGTERM, SIGKILL, SIGHUP, SIGINT, SIGUSR1, SIGUSR2
 - **Graceful shutdown** — SIGTERM with configurable timeout, optional SIGKILL escalation
 - **Tree kill** — terminate parent + all child processes
@@ -46,7 +49,7 @@ Launches the interactive dashboard:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ ntop v0.1.2  |  CPU: 12.3%  MEM: 4.2GB  |  Nodes: 7  | [H]elp│
+│ ntop v0.1.3  |  CPU: 12.3%  MEM: 4.2GB  |  Nodes: 7  | [H]elp│
 ├──────────────────────────┬──────────────────────────────────────┤
 │  PROCESS LIST            │  [Info] [Log] [Net] [Env]           │
 │                          │                                      │
@@ -135,15 +138,20 @@ include_ts_node = false
 
 ## Supported Frameworks
 
-| Framework | Detection Method |
-|-----------|-----------------|
-| Next.js | `next-server` process name, `next` in command, `next` in package.json |
-| Express | `express` in package.json |
-| Fastify | `fastify` in package.json |
-| NestJS | `@nestjs/core` in package.json |
-| Nuxt.js | `nuxt`, `nuxi` process name, `nuxt` in command, `nuxt` in package.json |
-| Koa | `koa` in package.json |
-| Hapi | `@hapi/hapi` in package.json |
+Detection is **process-local only** — based on the process name and command line.
+ntop deliberately does not read `package.json` so that globally launched
+processes (e.g. `npx`-run MCP servers, CLI tools) are not misclassified by an
+inherited cwd that happens to belong to an unrelated project.
+
+| Framework | Detection signals (any match wins) |
+|-----------|------------------------------------|
+| Next.js | name `next-server`, `next-router-worker`, `next-router-page-worker`; command contains `node_modules/.bin/next` |
+| Nuxt.js | name `nuxt`, `nuxi`; command contains `node_modules/.bin/nuxt` |
+| NestJS  | command contains `node_modules/.bin/nest` |
+
+Add a new framework by appending one entry to `src/process/framework_rules.rs`
+— no other code changes required. Everything else falls through as a
+`Generic` Node.js process.
 
 ## Requirements
 

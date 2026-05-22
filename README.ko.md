@@ -8,13 +8,16 @@ Rust로 개발되어 빠른 실행과 최소한의 리소스 사용을 보장합
 
 ## 주요 기능
 
-- **실시간 프로세스 모니터링** - 설정 가능한 갱신 주기
-- **프레임워크 자동 감지** - Next.js, Nuxt.js, Express, Fastify, NestJS, Koa, Hapi
-- **프로세스 트리 뷰** - 부모-자식 관계를 접기/펼치기로 탐색
+- **실시간 프로세스 모니터링** - 설정 가능한 갱신 주기 (기본 3초)
+- **룰 기반 프레임워크 감지** - Next.js, Nuxt.js, NestJS (파일시스템을 읽지 않으므로, 전역 실행된 MCP 서버나 CLI 툴이 무관한 프로젝트로 잘못 분류되지 않음)
+- **프로세스 트리 뷰** - 부모-자식 관계를 접기/펼치기로 탐색, 노드 리프와 트리 부모 행을 색상으로 구분
 - **분할 패널 TUI** - 프로세스 목록 + 탭형 상세 패널 (Info / Log / Net / Env)
+- **즉시 검색 필터** - `/` 키 입력 후 매 키스트로크마다 필터 적용
+- **스크롤 가능한 도움말 다이얼로그** - 긴 키 레퍼런스를 팝업 내부에서 스크롤
 - **로그 스트리밍** - 감지된 로그 파일의 실시간 tail
 - **네트워크 검사** - 프로세스별 리스닝 포트 및 활성 TCP 연결
 - **환경변수 조회** - 민감 정보(PASSWORD, TOKEN 등) 자동 마스킹
+- **정확한 메트릭** - 실측 CPU 사용률, macOS `phys_footprint` 기반 메모리(Activity Monitor와 일치)
 - **다양한 시그널 지원** - SIGTERM, SIGKILL, SIGHUP, SIGINT, SIGUSR1, SIGUSR2
 - **그레이스풀 셧다운** - SIGTERM 전송 후 타임아웃 시 SIGKILL 에스컬레이션
 - **트리 Kill** - 부모 프로세스 + 모든 자식 프로세스 일괄 종료
@@ -46,7 +49,7 @@ ntop
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ ntop v0.1.2  |  CPU: 12.3%  MEM: 4.2GB  |  Nodes: 7  | [H]elp│
+│ ntop v0.1.3  |  CPU: 12.3%  MEM: 4.2GB  |  Nodes: 7  | [H]elp│
 ├──────────────────────────┬──────────────────────────────────────┤
 │  프로세스 목록            │  [Info] [Log] [Net] [Env]           │
 │                          │                                      │
@@ -135,15 +138,20 @@ include_ts_node = false        # ts-node 런타임 포함
 
 ## 지원 프레임워크
 
-| 프레임워크 | 감지 방법 |
-|------------|-----------|
-| Next.js | `next-server` 프로세스명, 커맨드의 `next`, package.json의 `next` |
-| Express | package.json의 `express` |
-| Fastify | package.json의 `fastify` |
-| NestJS | package.json의 `@nestjs/core` |
-| Nuxt.js | `nuxt`, `nuxi` 프로세스명, 커맨드의 `nuxt`, package.json의 `nuxt` |
-| Koa | package.json의 `koa` |
-| Hapi | package.json의 `@hapi/hapi` |
+감지는 **프로세스 로컬 정보만** 사용합니다 — 프로세스명과 커맨드 라인 기반.
+`package.json`은 의도적으로 읽지 않으므로, 전역 실행된 프로세스(`npx`로 띄운
+MCP 서버, CLI 도구 등)가 무관한 프로젝트의 cwd를 상속받아 잘못 분류되는 일이
+없습니다.
+
+| 프레임워크 | 감지 시그널 (하나라도 매치되면 적용) |
+|------------|---------------------------------------|
+| Next.js | 프로세스명 `next-server`, `next-router-worker`, `next-router-page-worker`; 커맨드에 `node_modules/.bin/next` 포함 |
+| Nuxt.js | 프로세스명 `nuxt`, `nuxi`; 커맨드에 `node_modules/.bin/nuxt` 포함 |
+| NestJS  | 커맨드에 `node_modules/.bin/nest` 포함 |
+
+새 프레임워크는 `src/process/framework_rules.rs`에 한 줄 추가만으로 지원
+가능합니다 — 다른 코드 수정은 불필요. 위에 매치되지 않는 프로세스는 모두
+`Generic` Node.js 프로세스로 표시됩니다.
 
 ## 시스템 요구사항
 
