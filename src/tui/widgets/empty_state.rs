@@ -22,18 +22,18 @@ pub fn render_empty_state(f: &mut Frame, area: Rect, tick_count: u64) {
                 Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
             ),
             Span::styled(
-                " Scanning for Node.js processes...",
+                " Scanning for server processes...",
                 Style::default().fg(Color::Gray),
             ),
         ]),
         Line::from(""),
         Line::from(Span::styled(
-            "No Node.js processes found. Waiting...",
+            "No server processes found. Waiting...",
             Style::default().fg(Color::DarkGray),
         )),
         Line::from(""),
         Line::from(Span::styled(
-            "Start a Node.js server and it will appear here automatically.",
+            "Start a server and it will appear here automatically.",
             Style::default().fg(Color::DarkGray),
         )),
     ];
