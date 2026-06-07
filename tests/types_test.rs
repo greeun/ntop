@@ -1,4 +1,4 @@
-use ntop::process::{FrameworkKind, HealthStatus, ProcessInfo};
+use ntop::process::{FrameworkKind, HealthStatus, ProcessInfo, Runtime};
 use std::time::Duration;
 
 #[test]
@@ -208,4 +208,40 @@ fn test_framework_kind_serialization() {
         let back: FrameworkKind = serde_json::from_str(&json).unwrap();
         assert_eq!(variant, back);
     }
+}
+
+#[test]
+fn test_runtime_display() {
+    assert_eq!(format!("{}", Runtime::Node), "Node");
+    assert_eq!(format!("{}", Runtime::Python), "Python");
+    assert_eq!(format!("{}", Runtime::Java), "Java");
+    assert_eq!(format!("{}", Runtime::Deno), "Deno");
+    assert_eq!(format!("{}", Runtime::Bun), "Bun");
+    assert_eq!(format!("{}", Runtime::Ruby), "Ruby");
+    assert_eq!(format!("{}", Runtime::Php), "PHP");
+    assert_eq!(format!("{}", Runtime::DotNet), ".NET");
+}
+
+#[test]
+fn test_runtime_serialization() {
+    let variants = vec![
+        Runtime::Node, Runtime::Python, Runtime::Java, Runtime::Deno,
+        Runtime::Bun, Runtime::Ruby, Runtime::Php, Runtime::DotNet,
+    ];
+    for v in variants {
+        let json = serde_json::to_string(&v).unwrap();
+        let back: Runtime = serde_json::from_str(&json).unwrap();
+        assert_eq!(v, back);
+    }
+}
+
+#[test]
+fn test_new_framework_kind_display() {
+    assert_eq!(format!("{}", FrameworkKind::FastApi), "FastAPI");
+    assert_eq!(format!("{}", FrameworkKind::Flask), "Flask");
+    assert_eq!(format!("{}", FrameworkKind::Django), "Django");
+    assert_eq!(format!("{}", FrameworkKind::SpringBoot), "Spring Boot");
+    assert_eq!(format!("{}", FrameworkKind::Rails), "Rails");
+    assert_eq!(format!("{}", FrameworkKind::Laravel), "Laravel");
+    assert_eq!(format!("{}", FrameworkKind::AspNet), "ASP.NET");
 }

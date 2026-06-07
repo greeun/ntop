@@ -10,6 +10,34 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::time::Duration;
 
+/// Server runtime / language family a process belongs to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Runtime {
+    Node,
+    Python,
+    Java,
+    Deno,
+    Bun,
+    Ruby,
+    Php,
+    DotNet,
+}
+
+impl fmt::Display for Runtime {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Runtime::Node => write!(f, "Node"),
+            Runtime::Python => write!(f, "Python"),
+            Runtime::Java => write!(f, "Java"),
+            Runtime::Deno => write!(f, "Deno"),
+            Runtime::Bun => write!(f, "Bun"),
+            Runtime::Ruby => write!(f, "Ruby"),
+            Runtime::Php => write!(f, "PHP"),
+            Runtime::DotNet => write!(f, ".NET"),
+        }
+    }
+}
+
 /// Represents the kind of Node.js framework detected for a process.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum FrameworkKind {
@@ -20,6 +48,13 @@ pub enum FrameworkKind {
     Nuxt,
     Koa,
     Hapi,
+    FastApi,
+    Flask,
+    Django,
+    SpringBoot,
+    Rails,
+    Laravel,
+    AspNet,
     Generic,
 }
 
@@ -33,6 +68,13 @@ impl fmt::Display for FrameworkKind {
             FrameworkKind::Nuxt => write!(f, "Nuxt.js"),
             FrameworkKind::Koa => write!(f, "Koa"),
             FrameworkKind::Hapi => write!(f, "Hapi"),
+            FrameworkKind::FastApi => write!(f, "FastAPI"),
+            FrameworkKind::Flask => write!(f, "Flask"),
+            FrameworkKind::Django => write!(f, "Django"),
+            FrameworkKind::SpringBoot => write!(f, "Spring Boot"),
+            FrameworkKind::Rails => write!(f, "Rails"),
+            FrameworkKind::Laravel => write!(f, "Laravel"),
+            FrameworkKind::AspNet => write!(f, "ASP.NET"),
             FrameworkKind::Generic => write!(f, "Generic"),
         }
     }
