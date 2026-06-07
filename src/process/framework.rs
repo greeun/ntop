@@ -56,7 +56,7 @@ impl FrameworkDetector {
         let normalized = normalize_name(name);
         FRAMEWORK_RULES
             .iter()
-            .find(|r| r.name_exact.iter().any(|n| *n == normalized))
+            .find(|r| r.name_exact.contains(&normalized))
             .map(|r| r.framework.clone())
     }
 
@@ -74,26 +74,19 @@ impl FrameworkDetector {
 fn match_tier(rules: &'static [Rule], name: &str, command: &str) -> Option<&'static Rule> {
     let normalized = normalize_name(name);
     // Priority 1: exact name match.
-    for rule in rules {
-        if rule.name_exact.iter().any(|n| *n == normalized) {
-            return Some(rule);
-        }
+    if let Some(rule) = rules.iter().find(|r| r.name_exact.contains(&normalized)) {
+        return Some(rule);
     }
     // Priority 2: command binary exact match.
     if let Some(bin) = command_binary(command) {
-        for rule in rules {
-            if rule.command_binary.iter().any(|n| *n == bin) {
-                return Some(rule);
-            }
-        }
-    }
-    // Priority 3: command substring.
-    for rule in rules {
-        if rule.command_contains.iter().any(|s| command.contains(s)) {
+        if let Some(rule) = rules.iter().find(|r| r.command_binary.contains(&bin)) {
             return Some(rule);
         }
     }
-    None
+    // Priority 3: command substring.
+    rules
+        .iter()
+        .find(|r| r.command_contains.iter().any(|s| command.contains(s)))
 }
 
 /// macOS truncates the `comm` field to 16 chars, so a process that set

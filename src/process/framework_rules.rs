@@ -11,11 +11,11 @@ use super::{FrameworkKind, Runtime};
 /// fire it.
 ///
 /// Three signal types, checked in reliability order within a tier:
-/// 1. `name_exact`      — exact match against the normalized process name.
-/// 2. `command_binary`  — exact match against the basename of the command's
-///                        first whitespace-separated token.
-/// 3. `command_contains`— substring search in the full command line. Use the
-///                        most specific form possible to avoid false positives.
+/// 1. `name_exact` — exact match against the normalized process name.
+/// 2. `command_binary` — exact match against the basename of the command's
+///    first whitespace-separated token.
+/// 3. `command_contains` — substring search in the full command line. Use the
+///    most specific form possible to avoid false positives.
 pub struct Rule {
     pub runtime: Runtime,
     pub framework: FrameworkKind,
