@@ -1,5 +1,6 @@
+use ntop::config::Config;
 use ntop::process::framework::FrameworkDetector;
-use ntop::process::FrameworkKind;
+use ntop::process::{FrameworkKind, Runtime};
 
 #[test]
 fn test_detect_nextjs_by_process_name() {
@@ -132,4 +133,129 @@ fn test_detect_nextjs_from_command_binary_when_name_is_node() {
         "",
     );
     assert_eq!(kind, FrameworkKind::NextJs);
+}
+
+// ─── classify: runtime + framework ───────────────────────────────────
+
+fn cfg() -> Config { Config::default() }
+
+#[test]
+fn test_classify_node_generic() {
+    assert_eq!(
+        FrameworkDetector::classify("node", "node server.js", &cfg()),
+        Some((Runtime::Node, FrameworkKind::Generic))
+    );
+}
+
+#[test]
+fn test_classify_nextjs() {
+    assert_eq!(
+        FrameworkDetector::classify("next-server", "next-server (v16)", &cfg()),
+        Some((Runtime::Node, FrameworkKind::NextJs))
+    );
+}
+
+#[test]
+fn test_classify_python_generic_uvicorn() {
+    assert_eq!(
+        FrameworkDetector::classify("uvicorn", "/usr/bin/python -m uvicorn app:app", &cfg()),
+        Some((Runtime::Python, FrameworkKind::Generic))
+    );
+}
+
+#[test]
+fn test_classify_fastapi_beats_python_name() {
+    assert_eq!(
+        FrameworkDetector::classify("python", "python -m uvicorn main:app --factory fastapi", &cfg()),
+        Some((Runtime::Python, FrameworkKind::FastApi))
+    );
+}
+
+#[test]
+fn test_classify_django() {
+    assert_eq!(
+        FrameworkDetector::classify("python", "python manage.py runserver", &cfg()),
+        Some((Runtime::Python, FrameworkKind::Django))
+    );
+}
+
+#[test]
+fn test_classify_java_generic_and_spring() {
+    assert_eq!(
+        FrameworkDetector::classify("java", "java -jar app.jar", &cfg()),
+        Some((Runtime::Java, FrameworkKind::Generic))
+    );
+    assert_eq!(
+        FrameworkDetector::classify("java", "java org.springframework.boot.loader.JarLauncher", &cfg()),
+        Some((Runtime::Java, FrameworkKind::SpringBoot))
+    );
+}
+
+#[test]
+fn test_classify_ruby_and_rails() {
+    assert_eq!(
+        FrameworkDetector::classify("ruby", "bin/rails server", &cfg()),
+        Some((Runtime::Ruby, FrameworkKind::Rails))
+    );
+    assert_eq!(
+        FrameworkDetector::classify("puma", "puma -C config/puma.rb", &cfg()),
+        Some((Runtime::Ruby, FrameworkKind::Generic))
+    );
+}
+
+#[test]
+fn test_classify_php_and_laravel() {
+    assert_eq!(
+        FrameworkDetector::classify("php", "php artisan serve", &cfg()),
+        Some((Runtime::Php, FrameworkKind::Laravel))
+    );
+    assert_eq!(
+        FrameworkDetector::classify("php-fpm", "php-fpm", &cfg()),
+        Some((Runtime::Php, FrameworkKind::Generic))
+    );
+}
+
+#[test]
+fn test_classify_dotnet_deno_bun() {
+    assert_eq!(
+        FrameworkDetector::classify("dotnet", "dotnet MyApp.dll", &cfg()),
+        Some((Runtime::DotNet, FrameworkKind::Generic))
+    );
+    assert_eq!(
+        FrameworkDetector::classify("deno", "deno run --allow-net server.ts", &cfg()),
+        Some((Runtime::Deno, FrameworkKind::Generic))
+    );
+    assert_eq!(
+        FrameworkDetector::classify("bun", "bun run start", &cfg()),
+        Some((Runtime::Bun, FrameworkKind::Generic))
+    );
+}
+
+#[test]
+fn test_classify_non_server_is_none() {
+    assert_eq!(FrameworkDetector::classify("bash", "bash deploy.sh", &cfg()), None);
+    assert_eq!(FrameworkDetector::classify("ssh", "ssh user@host", &cfg()), None);
+}
+
+#[test]
+fn test_classify_tsx_is_config_gated() {
+    let mut c = Config::default();
+    assert_eq!(FrameworkDetector::classify("tsx", "tsx watch src/index.ts", &c), None);
+    c.filter.include_tsx = true;
+    assert_eq!(
+        FrameworkDetector::classify("tsx", "tsx watch src/index.ts", &c),
+        Some((Runtime::Node, FrameworkKind::Generic))
+    );
+}
+
+#[test]
+fn test_classify_npx_mcp_in_nextjs_cwd_is_node_generic() {
+    assert_eq!(
+        FrameworkDetector::classify(
+            "node",
+            "node /Users/u/.npm/_npx/abc/node_modules/.bin/context7-mcp",
+            &cfg()
+        ),
+        Some((Runtime::Node, FrameworkKind::Generic))
+    );
 }
