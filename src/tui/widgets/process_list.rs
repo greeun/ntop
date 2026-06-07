@@ -118,8 +118,15 @@ pub fn render_process_list(f: &mut Frame, area: Rect, app: &mut App) {
                 }
             };
 
-            let base_name = if proc_info.framework.to_string() != "Generic" {
+            let base_name = if proc_info.framework != crate::process::FrameworkKind::Generic {
                 format!("{} ({})", proc_info.display_name(), proc_info.framework)
+            } else if let Some(rt) = proc_info.runtime {
+                if rt == crate::process::Runtime::Node {
+                    // Node-generic stays clean, matching prior behavior.
+                    proc_info.display_name()
+                } else {
+                    format!("{} [{}]", proc_info.display_name(), rt)
+                }
             } else {
                 proc_info.display_name()
             };

@@ -11,7 +11,8 @@ use crate::tui::app::{App, DialogKind, FocusPanel};
 /// Render the top status bar.
 pub fn render_top_bar(f: &mut Frame, area: Rect, app: &App) {
     let version = env!("CARGO_PKG_VERSION");
-    let node_count = app.flat_list.len();
+    let server_count = app.flat_list.iter().filter(|(p, _)| p.is_server()).count();
+    let count_label = if app.node_only { "Nodes: " } else { "Servers: " };
     let mem_used_mb = app.system_memory_used / (1024 * 1024);
     let mem_total_mb = app.system_memory_total / (1024 * 1024);
 
@@ -38,10 +39,14 @@ pub fn render_top_bar(f: &mut Frame, area: Rect, app: &App) {
             Style::default().fg(Color::White),
         ),
         Span::styled("  |  ", Style::default().fg(Color::DarkGray)),
-        Span::styled("Nodes: ", Style::default().fg(Color::Gray)),
+        Span::styled(count_label, Style::default().fg(Color::Gray)),
         Span::styled(
-            format!("{}", node_count),
+            format!("{}", server_count),
             Style::default().fg(Color::White),
+        ),
+        Span::styled(
+            if app.node_only { " [Node-only]" } else { "" },
+            Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
         ),
         Span::styled("  |  ", Style::default().fg(Color::DarkGray)),
         Span::styled("Refresh: ", Style::default().fg(Color::Gray)),

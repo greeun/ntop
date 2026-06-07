@@ -33,6 +33,10 @@ pub fn render_info_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, scroll:
         ("PID", process.pid.to_string()),
         ("PPID", process.ppid.to_string()),
         ("Name", process.name.clone()),
+        (
+            "Runtime",
+            process.runtime.map(|r| r.to_string()).unwrap_or_else(|| "-".to_string()),
+        ),
         ("Framework", process.framework.to_string()),
         ("Version", version_str.to_string()),
         ("Ports", ports_str),
