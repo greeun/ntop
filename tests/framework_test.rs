@@ -259,3 +259,23 @@ fn test_classify_npx_mcp_in_nextjs_cwd_is_node_generic() {
         Some((Runtime::Node, FrameworkKind::Generic))
     );
 }
+
+#[test]
+fn test_classify_flask_via_module_flag() {
+    // `python -m flask run` is tagged Flask via the tightened `-m flask`
+    // substring (a bare path containing "flask" must not trigger it).
+    assert_eq!(
+        FrameworkDetector::classify("python", "python -m flask run", &cfg()),
+        Some((Runtime::Python, FrameworkKind::Flask))
+    );
+}
+
+#[test]
+fn test_classify_rails_via_command_substring() {
+    // name "ruby" and first-token basename "ruby" (not "rails"), so the
+    // `bin/rails` command substring is what must tag it Rails.
+    assert_eq!(
+        FrameworkDetector::classify("ruby", "ruby /app/bin/rails server", &cfg()),
+        Some((Runtime::Ruby, FrameworkKind::Rails))
+    );
+}
