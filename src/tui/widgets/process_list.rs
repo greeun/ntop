@@ -6,7 +6,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Row, Table};
 use ratatui::Frame;
 
-use crate::process::HealthStatus;
+use crate::process::{FrameworkKind, HealthStatus, Runtime};
 use crate::tui::app::{App, FocusPanel, SortColumn};
 
 /// Render the process list in the left panel.
@@ -118,11 +118,11 @@ pub fn render_process_list(f: &mut Frame, area: Rect, app: &mut App) {
                 }
             };
 
-            let base_name = if proc_info.framework != crate::process::FrameworkKind::Generic {
+            let base_name = if proc_info.framework != FrameworkKind::Generic {
                 format!("{} ({})", proc_info.display_name(), proc_info.framework)
             } else if let Some(rt) = proc_info.runtime {
-                if rt == crate::process::Runtime::Node {
-                    // Node-generic stays clean, matching prior behavior.
+                if rt == Runtime::Node {
+                    // Node-generic: no badge, just the display name.
                     proc_info.display_name()
                 } else {
                     format!("{} [{}]", proc_info.display_name(), rt)
