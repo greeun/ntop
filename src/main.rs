@@ -145,15 +145,13 @@ fn do_scan(app: &mut App, scanner: &mut ProcessScanner<'_>, sys: &mut System) {
     app.system_memory_used = sys.used_memory();
     app.system_memory_total = sys.total_memory();
 
-    // Scan Node.js processes (scanner holds a persistent System for CPU deltas)
+    // Scan server processes (scanner holds a persistent System for CPU deltas)
     let mut processes = scanner.scan();
 
     // Framework/runtime already set by the scanner's classify(); only
     // listening ports remain to be filled in here.
     let net_map = NetworkInspector::connections_by_pid();
     for proc in &mut processes {
-        // Framework/runtime already set by the scanner's classify(); only
-        // listening ports remain to be filled in here.
         if let Some(conns) = net_map.get(&proc.pid) {
             let ports: Vec<u16> = conns
                 .iter()
@@ -235,7 +233,7 @@ fn cmd_list(config: &Config, json: bool, format: Option<ListFormat>) -> anyhow::
 
 fn print_table(flat: &[(&ProcessInfo, usize)]) {
     if flat.is_empty() {
-        println!("No Node.js processes found.");
+        println!("No server processes found.");
         return;
     }
 
@@ -346,17 +344,17 @@ fn cmd_kill(
         .unwrap_or(KillSignal::Term);
 
     if all {
-        // Kill all Node.js processes
+        // Kill all server processes
         let mut scanner = ProcessScanner::new(config);
         let processes = scanner.scan();
 
         if processes.is_empty() {
-            println!("No Node.js processes found.");
+            println!("No server processes found.");
             return Ok(());
         }
 
         if !no_confirm && config.general.confirm_before_kill {
-            println!("About to kill {} Node.js process(es) with {}:", processes.len(), kill_signal.name());
+            println!("About to kill {} server process(es) with {}:", processes.len(), kill_signal.name());
             for p in &processes {
                 println!("  PID {} ({})", p.pid, p.name);
             }
@@ -602,7 +600,7 @@ fn cmd_config() -> anyhow::Result<()> {
     println!("    color_theme:        {}", config.display.color_theme);
     println!("    mask_env_values:    {}", config.display.mask_env_values);
     println!("  [filter]");
-    println!("    include_bun:        {}", config.filter.include_bun);
+    println!("    include_bun (deprecated): {}", config.filter.include_bun);
     println!("    include_tsx:        {}", config.filter.include_tsx);
     println!("    include_ts_node:    {}", config.filter.include_ts_node);
 

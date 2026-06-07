@@ -1,4 +1,4 @@
-// Process scanner - discovers running Node.js processes
+// Process scanner - discovers running server processes across runtimes
 
 use crate::config::Config;
 use crate::process::framework::FrameworkDetector;
@@ -100,7 +100,7 @@ impl<'a> ProcessScanner<'a> {
         Self::refresh_processes(&mut self.sys);
 
         let mut results = Vec::new();
-        let mut node_pids = HashSet::new();
+        let mut server_pids = HashSet::new();
 
         // First pass: collect server processes (classified by the rule table).
         for (pid, process) in self.sys.processes() {
@@ -121,14 +121,14 @@ impl<'a> ProcessScanner<'a> {
             let mut info = Self::collect_process_info(process, pid.as_u32());
             info.runtime = Some(runtime);
             info.framework = framework;
-            node_pids.insert(pid.as_u32());
+            server_pids.insert(pid.as_u32());
             results.push(info);
         }
 
-        // Second pass: collect parent processes that aren't already node processes
+        // Second pass: collect parent processes that aren't already server processes
         let parent_ppids: Vec<u32> = results
             .iter()
-            .filter(|p| p.ppid != 0 && !node_pids.contains(&p.ppid))
+            .filter(|p| p.ppid != 0 && !server_pids.contains(&p.ppid))
             .map(|p| p.ppid)
             .collect::<HashSet<_>>()
             .into_iter()

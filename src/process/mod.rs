@@ -125,7 +125,7 @@ impl fmt::Display for HealthStatus {
     }
 }
 
-/// Information about a running Node.js process.
+/// Information about a running server process.
 #[derive(Debug, Clone)]
 pub struct ProcessInfo {
     pub pid: u32,

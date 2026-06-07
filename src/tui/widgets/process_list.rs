@@ -137,9 +137,9 @@ pub fn render_process_list(f: &mut Frame, area: Rect, app: &mut App) {
                     .join(",")
             };
 
-            // Row style: real Node processes get a bright foreground;
+            // Row style: classified server processes get a bright foreground;
             // tree-context parents (claude, launchd, …) stay dim so the
-            // eye lands on actual workloads first.
+            // eye lands on actual servers first.
             let base_fg = if proc_info.is_server() {
                 Color::LightCyan
             } else {
