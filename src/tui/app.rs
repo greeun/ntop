@@ -182,6 +182,8 @@ pub struct App {
     pub table_state: TableState,
     /// Which panel currently has keyboard focus.
     pub focus: FocusPanel,
+    /// When true, the list shows only Node servers (+ tree-context parents).
+    pub node_only: bool,
 }
 
 impl App {
@@ -221,6 +223,7 @@ impl App {
             needs_rescan: false,
             table_state: TableState::default().with_selected(Some(0)),
             focus: FocusPanel::ProcessList,
+            node_only: false,
         }
     }
 
@@ -236,6 +239,10 @@ impl App {
             || p.command.to_lowercase().contains(&f)
             || p.pid.to_string().contains(&f)
             || p.framework.to_string().to_lowercase().contains(&f)
+            || p
+                .runtime
+                .map(|r| r.to_string().to_lowercase().contains(&f))
+                .unwrap_or(false)
             || p.ports.iter().any(|port| port.to_string().contains(&f))
     }
 
@@ -259,15 +266,16 @@ impl App {
     /// changes so results update on every keystroke (instead of waiting
     /// for the next scan tick).
     pub fn rebuild_view(&mut self) {
-        let processes: Vec<ProcessInfo> = if self.filter_text.is_empty() {
-            self.raw_processes.clone()
-        } else {
-            self.raw_processes
-                .iter()
-                .filter(|p| Self::matches_filter(p, &self.filter_text))
-                .cloned()
-                .collect()
-        };
+        let node_only = self.node_only;
+        let processes: Vec<ProcessInfo> = self
+            .raw_processes
+            .iter()
+            // Node-only keeps Node servers and tree-context parents (None),
+            // hiding only other-runtime servers.
+            .filter(|p| !node_only || p.is_node() || p.runtime.is_none())
+            .filter(|p| Self::matches_filter(p, &self.filter_text))
+            .cloned()
+            .collect();
 
         // Build trees first, then sort at each level
         self.process_trees = TreeBuilder::build(processes);
@@ -521,6 +529,12 @@ impl App {
             self.sort_column = next;
             self.sort_ascending = true;
         }
+    }
+
+    /// Toggle the Node-only view filter and rebuild.
+    pub fn toggle_node_only(&mut self) {
+        self.node_only = !self.node_only;
+        self.rebuild_view();
     }
 
     /// Get the currently selected kill signal in the signal picker.

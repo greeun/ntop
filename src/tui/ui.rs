@@ -286,6 +286,10 @@ fn handle_normal_key(app: &mut App, key: KeyEvent) {
             app.toggle_expand_all();
             return;
         }
+        KeyCode::Char('n') => {
+            app.toggle_node_only();
+            return;
+        }
         _ => {}
     }
 
