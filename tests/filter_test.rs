@@ -87,12 +87,14 @@ fn test_node_only_toggle_hides_other_runtimes() {
         server(2, "uvicorn", Some(Runtime::Python)),
         server(3, "java", Some(Runtime::Java)),
         server(4, "launchd", None), // tree-context parent
+        server(5, "deno", Some(Runtime::Deno)),
     ]);
 
     // Default: all rows visible.
-    assert_eq!(app.flat_list.len(), 4);
+    assert_eq!(app.flat_list.len(), 5);
 
-    // Node-only: Node servers + tree parents remain; Python/Java hidden.
+    // Node-only: strictly Node servers + tree parents remain;
+    // Python/Java/Deno hidden (Deno is a separate runtime).
     app.toggle_node_only();
     assert!(app.node_only);
     let pids: Vec<u32> = app.flat_list.iter().map(|(p, _)| p.pid).collect();
@@ -100,9 +102,10 @@ fn test_node_only_toggle_hides_other_runtimes() {
     assert!(pids.contains(&4)); // tree parent
     assert!(!pids.contains(&2)); // python hidden
     assert!(!pids.contains(&3)); // java hidden
+    assert!(!pids.contains(&5)); // deno hidden (separate runtime)
 
     // Toggling off restores everything.
     app.toggle_node_only();
     assert!(!app.node_only);
-    assert_eq!(app.flat_list.len(), 4);
+    assert_eq!(app.flat_list.len(), 5);
 }

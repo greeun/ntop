@@ -40,6 +40,7 @@ pub fn render_help_dialog(f: &mut Frame, area: Rect, app: &mut App) {
         Line::from(""),
         section_header("Filtering & Sort"),
         key_line("/", "Open filter input"),
+        key_line("n", "Toggle Node-only view"),
         key_line("s", "Cycle sort column"),
         key_line("r", "Reverse sort direction"),
         Line::from(""),

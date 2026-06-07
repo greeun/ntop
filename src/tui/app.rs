@@ -239,10 +239,7 @@ impl App {
             || p.command.to_lowercase().contains(&f)
             || p.pid.to_string().contains(&f)
             || p.framework.to_string().to_lowercase().contains(&f)
-            || p
-                .runtime
-                .map(|r| r.to_string().to_lowercase().contains(&f))
-                .unwrap_or(false)
+            || p.runtime.is_some_and(|r| r.to_string().to_lowercase().contains(&f))
             || p.ports.iter().any(|port| port.to_string().contains(&f))
     }
 
@@ -270,8 +267,8 @@ impl App {
         let processes: Vec<ProcessInfo> = self
             .raw_processes
             .iter()
-            // Node-only keeps Node servers and tree-context parents (None),
-            // hiding only other-runtime servers.
+            // Node-only keeps strictly Node servers (Deno/Bun are separate
+            // runtimes and are hidden) plus tree-context parents (runtime None).
             .filter(|p| !node_only || p.is_node() || p.runtime.is_none())
             .filter(|p| Self::matches_filter(p, &self.filter_text))
             .cloned()
