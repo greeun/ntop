@@ -3,7 +3,7 @@
 // To add a new framework: append a `Rule` to `FRAMEWORK_RULES`.
 // To add a new runtime:   append a `Rule` to `RUNTIME_RULES`.
 // Then add the variant to `FrameworkKind` / `Runtime` in `process/mod.rs`.
-// No other code changes are required; `framework::classify` iterates these.
+// No other code changes are required; `FrameworkDetector::classify` iterates these.
 
 use super::{FrameworkKind, Runtime};
 
@@ -61,8 +61,8 @@ pub const FRAMEWORK_RULES: &[Rule] = &[
         runtime: Runtime::Python,
         framework: FrameworkKind::Flask,
         name_exact: &[],
-        command_binary: &[],
-        command_contains: &["flask"],
+        command_binary: &["flask"],
+        command_contains: &["-m flask"],
     },
     Rule {
         runtime: Runtime::Python,
@@ -83,7 +83,7 @@ pub const FRAMEWORK_RULES: &[Rule] = &[
         framework: FrameworkKind::Rails,
         name_exact: &["rails"],
         command_binary: &["rails"],
-        command_contains: &["rails"],
+        command_contains: &["bin/rails"],
     },
     Rule {
         runtime: Runtime::Php,
