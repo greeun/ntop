@@ -1,6 +1,7 @@
 // Process scanner - discovers running Node.js processes
 
 use crate::config::Config;
+use crate::process::framework::FrameworkDetector;
 use crate::process::ProcessInfo;
 use std::collections::HashSet;
 use std::time::Duration;
@@ -15,18 +16,6 @@ pub struct ProcessScanner<'a> {
     sys: System,
 }
 
-const NODE_PROCESS_NAMES: &[&str] = &[
-    "node",
-    "next-server",
-    "next-router-worker",
-    "next-router-page-worker",
-];
-
-const OPTIONAL_RUNTIMES: &[(&str, fn(&Config) -> bool)] = &[
-    ("bun", |c: &Config| c.filter.include_bun),
-    ("tsx", |c: &Config| c.filter.include_tsx),
-    ("ts-node", |c: &Config| c.filter.include_ts_node),
-];
 
 impl<'a> ProcessScanner<'a> {
     pub fn new(config: &'a Config) -> Self {
@@ -113,7 +102,7 @@ impl<'a> ProcessScanner<'a> {
         let mut results = Vec::new();
         let mut node_pids = HashSet::new();
 
-        // First pass: collect node processes
+        // First pass: collect server processes (classified by the rule table).
         for (pid, process) in self.sys.processes() {
             let name = process.name().to_string_lossy().to_string();
             let cmd_parts: Vec<String> = process
@@ -123,15 +112,15 @@ impl<'a> ProcessScanner<'a> {
                 .collect();
             let command = cmd_parts.join(" ");
 
-            let is_node = Self::is_node_process_name_with_config(&name, self.config)
-                || Self::is_node_command(&command);
-
-            if !is_node {
+            let Some((runtime, framework)) =
+                FrameworkDetector::classify(&name, &command, self.config)
+            else {
                 continue;
-            }
+            };
 
             let mut info = Self::collect_process_info(process, pid.as_u32());
-            info.is_node = true;
+            info.runtime = Some(runtime);
+            info.framework = framework;
             node_pids.insert(pid.as_u32());
             results.push(info);
         }
@@ -166,29 +155,4 @@ impl<'a> ProcessScanner<'a> {
         self.scan()
     }
 
-    pub fn is_node_process_name(name: &str) -> bool {
-        NODE_PROCESS_NAMES.iter().any(|&n| name == n)
-    }
-
-    pub fn is_node_process_name_with_config(name: &str, config: &Config) -> bool {
-        if Self::is_node_process_name(name) {
-            return true;
-        }
-        for &(runtime_name, filter_fn) in OPTIONAL_RUNTIMES {
-            if name == runtime_name && filter_fn(config) {
-                return true;
-            }
-        }
-        false
-    }
-
-    pub fn is_node_command(command: &str) -> bool {
-        let parts: Vec<&str> = command.split_whitespace().collect();
-        if let Some(first) = parts.first() {
-            let binary = first.rsplit('/').next().unwrap_or(first);
-            binary == "node"
-        } else {
-            false
-        }
-    }
 }

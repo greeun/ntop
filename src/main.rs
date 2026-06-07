@@ -13,7 +13,6 @@ use sysinfo::System;
 use ntop::cli::{Cli, Commands, ListFormat};
 use ntop::config::Config;
 use ntop::log::streamer::LogStreamer;
-use ntop::process::framework::FrameworkDetector;
 use ntop::process::killer::{GracefulResult, KillSignal, ProcessKiller};
 use ntop::process::network::NetworkInspector;
 use ntop::process::scanner::ProcessScanner;
@@ -149,14 +148,12 @@ fn do_scan(app: &mut App, scanner: &mut ProcessScanner<'_>, sys: &mut System) {
     // Scan Node.js processes (scanner holds a persistent System for CPU deltas)
     let mut processes = scanner.scan();
 
-    // Detect framework and fetch ports for each process
+    // Framework/runtime already set by the scanner's classify(); only
+    // listening ports remain to be filled in here.
     let net_map = NetworkInspector::connections_by_pid();
     for proc in &mut processes {
-        let (framework, version) = FrameworkDetector::detect(&proc.name, &proc.command, &proc.cwd);
-        proc.framework = framework;
-        proc.framework_version = version;
-
-        // Get listening ports from network data
+        // Framework/runtime already set by the scanner's classify(); only
+        // listening ports remain to be filled in here.
         if let Some(conns) = net_map.get(&proc.pid) {
             let ports: Vec<u16> = conns
                 .iter()
@@ -201,13 +198,10 @@ fn cmd_list(config: &Config, json: bool, format: Option<ListFormat>) -> anyhow::
     let mut scanner = ProcessScanner::new(config);
     let mut processes = scanner.scan_blocking();
 
-    // Detect frameworks and fetch ports
+    // Framework/runtime already set by the scanner's classify(); only
+    // listening ports remain to be filled in here.
     let net_map = NetworkInspector::connections_by_pid();
     for proc in &mut processes {
-        let (framework, version) = FrameworkDetector::detect(&proc.name, &proc.command, &proc.cwd);
-        proc.framework = framework;
-        proc.framework_version = version;
-
         if let Some(conns) = net_map.get(&proc.pid) {
             let ports: Vec<u16> = conns
                 .iter()
@@ -286,7 +280,7 @@ fn print_json(flat: &[(&ProcessInfo, usize)]) -> anyhow::Result<()> {
                 "pid": proc.pid,
                 "ppid": proc.ppid,
                 "name": proc.name,
-                "is_node": proc.is_node,
+                "runtime": proc.runtime.map(|r| r.to_string()),
                 "framework": proc.framework.to_string(),
                 "framework_version": proc.framework_version,
                 "ports": proc.ports,
@@ -465,8 +459,6 @@ fn cmd_info(config: &Config, pid: u32) -> anyhow::Result<()> {
 
     match proc {
         Some(process) => {
-            let (framework, version) =
-                FrameworkDetector::detect(&process.name, &process.command, &process.cwd);
             let connections = NetworkInspector::connections_for_pid(pid);
             let ports: Vec<u16> = connections
                 .iter()
@@ -479,11 +471,14 @@ fn cmd_info(config: &Config, pid: u32) -> anyhow::Result<()> {
             println!("  PID:       {}", process.pid);
             println!("  PPID:      {}", process.ppid);
             println!("  Name:      {}", process.name);
-            println!("  Type:      {}", if process.is_node { "Node" } else { "Tree parent" });
-            println!("  Framework: {}", framework);
+            println!(
+                "  Runtime:   {}",
+                process.runtime.map(|r| r.to_string()).unwrap_or_else(|| "—".to_string())
+            );
+            println!("  Framework: {}", process.framework);
             println!(
                 "  Version:   {}",
-                version.as_deref().unwrap_or("-")
+                process.framework_version.as_deref().unwrap_or("-")
             );
             println!(
                 "  Ports:     {}",

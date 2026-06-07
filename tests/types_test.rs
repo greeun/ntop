@@ -51,7 +51,9 @@ fn test_process_info_default() {
     assert!(info.children.is_empty());
     assert!(info.env_vars.is_empty());
     assert_eq!(info.status, "Running");
-    assert!(!info.is_node);
+    assert!(info.runtime.is_none());
+    assert!(!info.is_node());
+    assert!(!info.is_server());
 }
 
 #[test]
@@ -201,6 +203,13 @@ fn test_framework_kind_serialization() {
         FrameworkKind::Nuxt,
         FrameworkKind::Koa,
         FrameworkKind::Hapi,
+        FrameworkKind::FastApi,
+        FrameworkKind::Flask,
+        FrameworkKind::Django,
+        FrameworkKind::SpringBoot,
+        FrameworkKind::Rails,
+        FrameworkKind::Laravel,
+        FrameworkKind::AspNet,
         FrameworkKind::Generic,
     ];
     for variant in variants {

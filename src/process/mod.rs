@@ -146,10 +146,10 @@ pub struct ProcessInfo {
     pub open_fds: u32,
     pub children: Vec<ProcessInfo>,
     pub env_vars: Vec<(String, String)>,
-    /// True for processes the scanner classifies as real Node workloads
-    /// (matched by binary name or `node` command). False for tree-context
-    /// parents the second pass backfills (e.g. launchd, claude).
-    pub is_node: bool,
+    /// `Some(runtime)` for processes the scanner classifies as servers.
+    /// `None` for tree-context parents the second pass backfills (e.g.
+    /// launchd, claude) so the tree view is rooted.
+    pub runtime: Option<Runtime>,
 }
 
 impl ProcessInfo {
@@ -174,8 +174,18 @@ impl ProcessInfo {
             open_fds: 0,
             children: Vec::new(),
             env_vars: Vec::new(),
-            is_node: false,
+            runtime: None,
         }
+    }
+
+    /// True if this process is a classified server (any runtime).
+    pub fn is_server(&self) -> bool {
+        self.runtime.is_some()
+    }
+
+    /// True if this process is a Node server specifically.
+    pub fn is_node(&self) -> bool {
+        self.runtime == Some(Runtime::Node)
     }
 
     /// Format the uptime duration as a human-readable string.

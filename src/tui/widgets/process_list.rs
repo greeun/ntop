@@ -140,7 +140,7 @@ pub fn render_process_list(f: &mut Frame, area: Rect, app: &mut App) {
             // Row style: real Node processes get a bright foreground;
             // tree-context parents (claude, launchd, …) stay dim so the
             // eye lands on actual workloads first.
-            let base_fg = if proc_info.is_node {
+            let base_fg = if proc_info.is_server() {
                 Color::LightCyan
             } else {
                 Color::DarkGray
@@ -149,7 +149,7 @@ pub fn render_process_list(f: &mut Frame, area: Rect, app: &mut App) {
             let row_style = if is_selected_row {
                 // Selection bg is DarkGray, so dim fg must bump up to Gray
                 // (ANSI 7) to stay readable while preserving the dim feel.
-                let selected_fg = if proc_info.is_node {
+                let selected_fg = if proc_info.is_server() {
                     Color::LightCyan
                 } else {
                     Color::Gray
