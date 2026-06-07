@@ -38,7 +38,7 @@ impl fmt::Display for Runtime {
     }
 }
 
-/// Represents the kind of Node.js framework detected for a process.
+/// Web framework detected for a monitored process, across all runtimes.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum FrameworkKind {
     NextJs,
