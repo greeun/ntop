@@ -1,6 +1,6 @@
 # ntop
 
-A fast, real-time TUI tool for monitoring and managing Node.js / Next.js / Nuxt.js server processes.
+A fast, real-time TUI tool for monitoring and managing server processes across multiple runtimes — Node.js, Python, Java, Deno, Bun, Ruby, PHP, and .NET.
 
 Built with Rust for instant startup and minimal resource usage.
 
@@ -9,7 +9,8 @@ Built with Rust for instant startup and minimal resource usage.
 ## Features
 
 - **Real-time process monitoring** with configurable refresh rate (default 3s)
-- **Rule-based framework detection** — Next.js, Nuxt.js, NestJS (no filesystem reads, so globally-launched MCP servers and CLI tools aren't misclassified)
+- **Rule-based runtime & framework detection** — Node/Next/Nuxt/Nest, Python/FastAPI/Flask/Django, Java/Spring Boot, Ruby/Rails, PHP/Laravel, Deno, Bun, .NET (no filesystem reads, so globally-launched CLIs aren't misclassified)
+- **Node-only toggle** — press `n` to show only Node servers
 - **Process tree view** — parent-child relationships with expand/collapse, with distinct coloring for node leaves vs. tree-parent rows
 - **Split-panel TUI** — process list + tabbed detail panel (Info / Log / Net / Env)
 - **Incremental search** — `/` filter is applied on every keystroke
@@ -73,6 +74,7 @@ Launches the interactive dashboard:
 | `Tab` | Switch detail tab (Info → Log → Net → Env) |
 | `Space` | Toggle multi-select |
 | `/` | Search/filter processes |
+| `n` | Toggle Node-only view |
 | `s` | Cycle sort column |
 | `x` | Kill selected process(es) |
 | `K` | Kill process tree |
@@ -136,22 +138,33 @@ include_tsx = false
 include_ts_node = false
 ```
 
-## Supported Frameworks
+## Supported Runtimes & Frameworks
 
-Detection is **process-local only** — based on the process name and command line.
-ntop deliberately does not read `package.json` so that globally launched
-processes (e.g. `npx`-run MCP servers, CLI tools) are not misclassified by an
-inherited cwd that happens to belong to an unrelated project.
+Detection is **process-local only** — based on the process name and command
+line. ntop deliberately does not read `package.json` so that globally launched
+processes (e.g. `npx`-run MCP servers, CLI tools) are not misclassified.
 
-| Framework | Detection signals (any match wins) |
-|-----------|------------------------------------|
-| Next.js | name `next-server`, `next-router-worker`, `next-router-page-worker`; command contains `node_modules/.bin/next` |
-| Nuxt.js | name `nuxt`, `nuxi`; command contains `node_modules/.bin/nuxt` |
-| NestJS  | command contains `node_modules/.bin/nest` |
+Detection is two-tier: framework-specific rules resolve first, then
+runtime-generic rules. A process matching no rule is not shown.
 
-Add a new framework by appending one entry to `src/process/framework_rules.rs`
-— no other code changes required. Everything else falls through as a
-`Generic` Node.js process.
+| Runtime | Frameworks detected | Generic match (name) |
+|---------|---------------------|----------------------|
+| Node    | Next.js, Nuxt.js, NestJS | `node` |
+| Python  | FastAPI, Flask, Django | `python`, `python3`, `uvicorn`, `gunicorn`, `hypercorn`, `celery` |
+| Java    | Spring Boot | `java` |
+| Ruby    | Rails | `ruby`, `puma`, `unicorn`, `rackup` |
+| PHP     | Laravel | `php`, `php-fpm` |
+| .NET    | ASP.NET | `dotnet` |
+| Deno    | — | `deno` |
+| Bun     | — | `bun` |
+
+Add a runtime or framework by appending one entry to
+`src/process/framework_rules.rs` (`RUNTIME_RULES` or `FRAMEWORK_RULES`) — no
+other code changes required.
+
+> `tsx` / `ts-node` remain opt-in via `[filter]` config (they classify as the
+> Node runtime). The `include_bun` config flag is **deprecated** — Bun is now a
+> first-class runtime, always detected.
 
 ## Requirements
 
