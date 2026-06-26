@@ -5,6 +5,7 @@
 
 # Local tooling
 .axt-profile.json
+*.bak
 .claude/
 
 # Work-in-progress artifacts
@@ -19,3 +20,7 @@ linkedin-post/
 .idea/
 *.swp
 *.swo
+
+# superpowers (auto-installed; do not track)
+.superpowers/
+docs/superpowers/
