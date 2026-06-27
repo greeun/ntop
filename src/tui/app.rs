@@ -166,8 +166,12 @@ pub struct App {
     pub kill_in_progress: Option<(u32, Instant)>,
     /// Tick counter for animations (e.g. spinner).
     pub tick_count: u64,
-    /// Whether this is the first process load (for default expand-all).
-    pub first_load: bool,
+    /// PIDs seen in the previous scan. Used to detect freshly-started
+    /// processes so they can inherit the default expand state.
+    pub known_pids: HashSet<u32>,
+    /// Whether newly-seen parents default to expanded. Starts true (so the
+    /// first scan expands all) and flips with collapse-all/expand-all.
+    pub default_expanded: bool,
     /// Scroll offset for the help dialog.
     pub help_scroll: u16,
     /// Max scroll offset for the help dialog (computed during render).
@@ -215,7 +219,8 @@ impl App {
             system_memory_total: 0,
             kill_in_progress: None,
             tick_count: 0,
-            first_load: true,
+            known_pids: HashSet::new(),
+            default_expanded: true,
             help_scroll: 0,
             help_max_scroll: 0,
             refresh_secs: refresh,
@@ -243,17 +248,22 @@ impl App {
             || p.ports.iter().any(|port| port.to_string().contains(&f))
     }
 
-    /// Store a fresh scan result and rebuild the view from it. On the
-    /// very first non-empty scan, all PIDs are added to the expanded
-    /// set so the tree starts fully expanded.
+    /// Store a fresh scan result and rebuild the view from it. Any PID not
+    /// seen in the previous scan is treated as freshly started: while
+    /// `default_expanded` is set (the first scan and after expand-all), it
+    /// inherits the expanded state so newly-launched servers appear expanded
+    /// rather than collapsed. A prior collapse-all (`default_expanded=false`)
+    /// keeps new processes collapsed.
     pub fn update_processes(&mut self, processes: Vec<ProcessInfo>) {
-        self.raw_processes = processes;
-
-        if self.first_load && !self.raw_processes.is_empty() {
-            self.first_load = false;
-            self.expanded_pids
-                .extend(self.raw_processes.iter().map(|p| p.pid));
+        if self.default_expanded {
+            for p in &processes {
+                if !self.known_pids.contains(&p.pid) {
+                    self.expanded_pids.insert(p.pid);
+                }
+            }
         }
+        self.known_pids = processes.iter().map(|p| p.pid).collect();
+        self.raw_processes = processes;
 
         self.rebuild_view();
     }
@@ -289,7 +299,10 @@ impl App {
                     if asc { cmp } else { cmp.reverse() }
                 }),
                 SortColumn::Port => Box::new(move |a: &ProcessInfo, b: &ProcessInfo| {
-                    let cmp = a.ports.first().copied().unwrap_or(0).cmp(&b.ports.first().copied().unwrap_or(0));
+                    // Ports live on deep leaves (e.g. next-server), not on the
+                    // shell/runner roots, so compare each subtree's lowest port
+                    // — otherwise portless roots all tie and the tree won't sort.
+                    let cmp = Self::subtree_port_key(a).cmp(&Self::subtree_port_key(b));
                     if asc { cmp } else { cmp.reverse() }
                 }),
                 SortColumn::Threads => Box::new(move |a: &ProcessInfo, b: &ProcessInfo| {
@@ -331,6 +344,20 @@ impl App {
             self.selected_index = 0;
         }
         self.sync_table_state();
+    }
+
+    /// Lowest non-zero port found in `p` or any descendant; 0 if none in the
+    /// subtree. Lets port-sort order whole tree branches by the port that
+    /// actually appears in them, rather than the (portless) root's own port.
+    fn subtree_port_key(p: &ProcessInfo) -> u16 {
+        let mut best = p.ports.first().copied().unwrap_or(0);
+        for c in &p.children {
+            let cp = Self::subtree_port_key(c);
+            if cp != 0 && (best == 0 || cp < best) {
+                best = cp;
+            }
+        }
+        best
     }
 
     /// Flatten trees, only expanding children whose parent PID is in expanded_pids.
@@ -483,8 +510,10 @@ impl App {
     pub fn toggle_expand_all(&mut self) {
         if self.expanded_pids.is_empty() {
             Self::collect_all_pids(&self.process_trees, &mut self.expanded_pids);
+            self.default_expanded = true;
         } else {
             self.expanded_pids.clear();
+            self.default_expanded = false;
         }
         self.flat_list = Self::flatten_with_expand(&self.process_trees, &self.expanded_pids);
         if self.selected_index >= self.flat_list.len() && !self.flat_list.is_empty() {
