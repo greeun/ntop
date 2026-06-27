@@ -166,6 +166,12 @@ other code changes required.
 > Node runtime). The `include_bun` config flag is **deprecated** — Bun is now a
 > first-class runtime, always detected.
 
+> **NestJS** is detected both in development (`node_modules/.bin/nest`) and in
+> production (`node dist/main.js`, the NestJS CLI's default compiled
+> entrypoint). Because `dist/main.js` is a convention rather than a
+> NestJS-exclusive path, a non-NestJS Node app that also builds to
+> `dist/main.js` will be tagged NestJS.
+
 ## Requirements
 
 - macOS or Linux
