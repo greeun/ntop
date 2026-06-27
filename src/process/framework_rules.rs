@@ -48,7 +48,12 @@ pub const FRAMEWORK_RULES: &[Rule] = &[
         framework: FrameworkKind::NestJs,
         name_exact: &[],
         command_binary: &[],
-        command_contains: &["node_modules/.bin/nest"],
+        // `node_modules/.bin/nest`: dev runner (`nest start`).
+        // `dist/main.js`: Nest CLI's default compiled entrypoint, so a
+        // production `node dist/main.js` is tagged Nest. This is the Nest
+        // convention, not a Nest-exclusive path — a non-Nest Node app that
+        // also builds to `dist/main.js` would match.
+        command_contains: &["node_modules/.bin/nest", "dist/main.js"],
     },
     Rule {
         runtime: Runtime::Python,

@@ -48,6 +48,11 @@ fn test_detect_framework_by_command() {
         FrameworkDetector::detect_by_command("node server.js"),
         None
     );
+    // Production Nest: compiled entrypoint at the Nest CLI default path.
+    assert_eq!(
+        FrameworkDetector::detect_by_command("node dist/main.js"),
+        Some(FrameworkKind::NestJs)
+    );
 }
 
 #[test]
@@ -152,6 +157,33 @@ fn test_classify_nextjs() {
     assert_eq!(
         FrameworkDetector::classify("next-server", "next-server (v16)", &cfg()),
         Some((Runtime::Node, FrameworkKind::NextJs))
+    );
+}
+
+#[test]
+fn test_classify_nestjs_production() {
+    // `node dist/main.js` — Nest CLI's default compiled entrypoint — is
+    // tagged Nest even though the command line has no `nest` token.
+    assert_eq!(
+        FrameworkDetector::classify("node", "node dist/main.js", &cfg()),
+        Some((Runtime::Node, FrameworkKind::NestJs))
+    );
+    // With JVM-style flags before the path, the substring still matches.
+    assert_eq!(
+        FrameworkDetector::classify(
+            "node",
+            "node --max-old-space-size=2048 dist/main.js",
+            &cfg()
+        ),
+        Some((Runtime::Node, FrameworkKind::NestJs))
+    );
+}
+
+#[test]
+fn test_classify_nestjs_dev() {
+    assert_eq!(
+        FrameworkDetector::classify("node", "node node_modules/.bin/nest start", &cfg()),
+        Some((Runtime::Node, FrameworkKind::NestJs))
     );
 }
 
