@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>31 · ERD / 데이터 모델 — ntop</title>
+<style>
+/* ntop 기획 패키지 — 공통 디자인 시스템 (자체완결: 각 NN-name.html <style>에 인라인 복제) */
+/* 외부 의존 0 — CDN/웹폰트/Mermaid 금지. 시스템 폰트만. */
+:root{
+  --accent:#4f46e5;        /* indigo */
+  --accent2:#0d9488;       /* teal */
+  --accent-soft:#eef2ff;
+  --bg:#ffffff;
+  --fg:#1e293b;
+  --muted:#64748b;
+  --line:#e2e8f0;
+  --code-bg:#f1f5f9;
+  --warn:#d97706; --warn-bg:#fffbeb;
+  --bad:#dc2626;  --bad-bg:#fef2f2;
+  --ok:#059669;   --ok-bg:#ecfdf5;
+  --t1:#dc2626; --t2:#d97706; --t3:#ca8a04;
+  --maxw:860px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;color:var(--fg);background:var(--bg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  line-height:1.7;font-size:16px;
+}
+code,pre,.mono{font-family:"SF Mono",SFMono-Regular,ui-monospace,Menlo,Consolas,"D2Coding",monospace}
+
+/* ── 상단바 ── */
+.topbar{
+  position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  padding:10px 18px;background:#0f172a;color:#f8fafc;font-weight:600;font-size:15px;
+  border-bottom:3px solid var(--accent);
+}
+.topbar .doc-no{color:#a5b4fc;font-variant-numeric:tabular-nums}
+.topbar nav{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.topbar nav a,.topbar nav button{
+  color:#e2e8f0;background:#1e293b;border:1px solid #334155;border-radius:6px;
+  padding:4px 10px;font-size:13px;text-decoration:none;cursor:pointer;font-weight:500;
+}
+.topbar nav a:hover,.topbar nav button:hover{background:var(--accent);border-color:var(--accent)}
+
+/* ── 티어 배지 ── */
+.tier{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:700;color:#fff}
+.tier.t1{background:var(--t1)} .tier.t2{background:var(--t2)} .tier.t3{background:var(--t3)}
+
+/* ── 레이아웃: TOC + 본문 ── */
+.layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:0;max-width:1200px;margin:0 auto}
+.toc{position:sticky;top:58px;align-self:start;height:calc(100vh - 58px);overflow:auto;padding:18px 12px;border-right:1px solid var(--line);font-size:13.5px}
+.toc h4{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.toc a{display:block;padding:3px 8px;color:var(--muted);text-decoration:none;border-radius:5px;border-left:2px solid transparent}
+.toc a:hover{background:var(--accent-soft);color:var(--accent)}
+.toc a.active{color:var(--accent);background:var(--accent-soft);border-left-color:var(--accent);font-weight:600}
+.toc a.lv3{padding-left:18px;font-size:12.5px}
+main{padding:26px 34px;max-width:var(--maxw)}
+main h1{font-size:26px;line-height:1.3;margin:0 0 6px}
+main h2{font-size:21px;margin:34px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--line);scroll-margin-top:64px}
+main h3{font-size:17px;margin:24px 0 10px;color:#0f172a;scroll-margin-top:64px}
+main h4{font-size:15px;margin:18px 0 8px;color:var(--muted)}
+main p{margin:10px 0}
+main a{color:var(--accent)}
+.anchor{margin-left:8px;color:var(--line);text-decoration:none;font-weight:400;font-size:.8em}
+main h2:hover .anchor,main h3:hover .anchor{color:var(--accent)}
+
+/* ── 표 ── */
+.table-wrap{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:7px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{background:#f8fafc;font-weight:700;position:sticky;top:0;border-bottom:2px solid var(--line)}
+tbody tr:nth-child(even){background:#fbfcfe}
+tbody tr:hover{background:var(--accent-soft)}
+
+/* ── 코드·칩 ── */
+:not(pre)>code{background:var(--code-bg);padding:1px 6px;border-radius:5px;font-size:.88em;color:#be185d}
+pre{background:#0f172a;color:#e2e8f0;padding:14px 16px;border-radius:8px;overflow-x:auto;font-size:13px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+.chip{display:inline-block;background:var(--accent-soft);color:var(--accent);border:1px solid #c7d2fe;border-radius:5px;padding:0 6px;font-size:.85em;font-weight:600}
+.chip.p0{background:var(--bad-bg);color:var(--bad);border-color:#fecaca}
+.chip.p1{background:var(--warn-bg);color:var(--warn);border-color:#fde68a}
+.chip.ok{background:var(--ok-bg);color:var(--ok);border-color:#a7f3d0}
+
+/* ── 콜아웃 ── */
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+.callout.warn{border-color:var(--warn);background:var(--warn-bg)}
+.callout.bad{border-color:var(--bad);background:var(--bad-bg)}
+.callout.ok{border-color:var(--ok);background:var(--ok-bg)}
+blockquote{border-left:4px solid var(--line);margin:14px 0;padding:4px 16px;color:var(--muted)}
+
+/* ── 인포그래픽 figure ── */
+figure.viz{margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:10px;background:#fcfdff;text-align:center}
+figure.viz svg{max-width:100%;height:auto;display:block;margin:0 auto}
+figure.viz figcaption{margin-top:10px;font-size:13px;color:var(--muted);text-align:center}
+.viz-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+details.raw{margin-top:8px;font-size:13px}
+details.raw summary{cursor:pointer;color:var(--muted);font-size:12.5px}
+details.raw pre{margin-top:6px}
+
+/* SVG 공통 텍스트 */
+svg text{font-family:-apple-system,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+.svg-node{fill:#fff;stroke:var(--accent);stroke-width:1.5}
+.svg-edge{stroke:var(--muted);stroke-width:1.5;fill:none}
+.svg-label{font-size:12px;fill:var(--fg)}
+.svg-accent{fill:var(--accent)} .svg-accent2{fill:var(--accent2)}
+
+/* 화면 mockup 프레임(20/21용) */
+.screen{border:2px solid #334155;border-radius:8px;background:#0f172a;color:#cbd5e1;font-family:"SF Mono",ui-monospace,monospace;font-size:12px;padding:0;overflow:hidden;text-align:left;margin:0 auto;max-width:560px}
+.screen .bar{background:#1e293b;color:#a5b4fc;padding:4px 8px;font-size:11px;border-bottom:1px solid #334155}
+.screen .body{padding:8px 10px;white-space:pre;overflow-x:auto;line-height:1.4}
+
+/* ── print ── */
+@media print{
+  .topbar,.toc,.anchor,details.raw summary{display:none!important}
+  .layout{grid-template-columns:1fr;max-width:none}
+  main{max-width:none;padding:0}
+  details.raw{display:none}
+  *{break-inside:avoid}
+  figure.viz{border:1px solid #ccc}
+}
+/* ── 반응형 ── */
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}
+  main{padding:18px}
+}
+
+/* ── 페이지 전용 ── */
+dl.terms{margin:8px 0 0;display:grid;grid-template-columns:max-content 1fr;gap:5px 14px;font-size:14px}
+dl.terms dt{font-weight:700;color:var(--accent);white-space:nowrap}
+dl.terms dd{margin:0}
+ul.spec{margin:8px 0;padding-left:20px}
+ul.spec>li{margin:6px 0}
+.svg-title{font-size:13px;font-weight:700;fill:var(--accent)}
+.svg-title2{font-size:13px;font-weight:700;fill:var(--accent2)}
+.svg-sm{font-size:11px;fill:var(--muted)}
+.svg-ent{fill:#fff;stroke:var(--accent);stroke-width:1.5}
+.svg-enthd{fill:var(--accent);font-weight:700}
+.svg-bad{fill:var(--bad)} .svg-ok{fill:var(--ok)} .svg-warn{fill:var(--warn)}
+.ent-name{font-size:12.5px;font-weight:700;fill:#fff}
+@media(max-width:600px){dl.terms{grid-template-columns:1fr;gap:2px 0}dl.terms dt{margin-top:6px}}
+</style>
+</head>
+<body>
+
+<header class="topbar"><span class="doc-no">31</span> <span class="tier t1">T1</span> · ERD / 데이터 모델
+  <nav><a href="index.html">← 목록</a> <a href="30-functional-spec.html">← 이전</a> <a href="32-api-spec.html">다음 →</a>
+  <button onclick="window.print()">🖨 인쇄</button></nav>
+</header>
+
+<div class="layout">
+<nav class="toc">
+  <h4>목차</h4>
+  <a href="#sprint-contract">Sprint Contract</a>
+  <a href="#s0">0. DB 없음 — 인메모리 모델</a>
+  <a href="#s1">1. ERD 다이어그램 (G-g)</a>
+  <a href="#s2">2. 엔티티 명세 (구조체)</a>
+  <a href="#s2-1" class="lv3">2-1. ProcessInfo</a>
+  <a href="#s2-2" class="lv3">2-2. Config + 3섹션</a>
+  <a href="#s2-3" class="lv3">2-3. NetworkConnection</a>
+  <a href="#s2-4" class="lv3">2-4. LogStreamer</a>
+  <a href="#s2-5" class="lv3">2-5. App (애그리거트 루트)</a>
+  <a href="#s2-6" class="lv3">2-6. Rule</a>
+  <a href="#s3">3. enum 값 테이블 (G-g)</a>
+  <a href="#s3-1" class="lv3">3-1. Runtime (8)</a>
+  <a href="#s3-2" class="lv3">3-2. FrameworkKind (15)</a>
+  <a href="#s3-3" class="lv3">3-3. HealthStatus (3)</a>
+  <a href="#s3-4" class="lv3">3-4. KillSignal + 결과</a>
+  <a href="#s3-5" class="lv3">3-5. TUI enum</a>
+  <a href="#s4">4. Config 기본값 정규표</a>
+  <a href="#s5">5. 관계 명세</a>
+  <a href="#verify">자체 검증</a>
+</nav>
+
+<main>
+<h1>31 · ERD / 데이터 모델 — 인메모리 도메인 모델 + Config 기본값 (ntop)</h1>
+
+<div class="callout">
+  <p><strong>이 문서는 단일 출처(single source)다.</strong> ntop의 <strong>구조체·열거형(enum) 정의</strong>와 <strong>Config 기본값</strong>(<code>refresh_interval</code>·<code>graceful_timeout</code>·<code>MAX_BUFFER_LINES</code> 등)은 <strong>여기서만 값으로 확정</strong>한다. 동작·알고리즘을 다루는 <span class="chip">30-functional-spec</span>, 외부 계약을 다루는 <span class="chip">32-api-spec</span>, 안전·프라이버시 정책을 다루는 <span class="chip">33-policy</span>, 화면/키를 다루는 <span class="chip">21-screen-spec</span>은 이 문서의 타입·값을 <strong>참조</strong>할 뿐 재정의하지 않는다(spec §4-3).</p>
+  <p><strong>전제:</strong> ntop은 <strong>이미 v0.2.0까지 구현된 MIT 오픈소스 도구</strong>다(codebase-facts §0). 따라서 이 ERD는 "앞으로 설계할 데이터베이스"가 아니라 <strong>이미 구현된 소스코드의 인메모리 타입을 역설계해 그린 그림</strong>이다. 모든 필드명·타입·기본값은 실제 코드(<code>src/process/mod.rs</code>·<code>src/config.rs</code>·<code>src/process/network.rs</code>·<code>src/log/streamer.rs</code>·<code>src/tui/app.rs</code>·<code>src/process/killer.rs</code>)에서 그대로 추출했다(창작 0).</p>
+</div>
+
+<div class="callout">
+  <p><strong>용어 풀이(첫 등장)</strong></p>
+  <dl class="terms">
+    <dt>ERD</dt><dd>(Entity-Relationship Diagram) 데이터가 어떤 덩어리(엔티티)로 나뉘고 서로 어떻게 연결되는지 그린 그림</dd>
+    <dt>인메모리(in-memory)</dt><dd>디스크/DB에 저장하지 않고 프로그램이 도는 동안 메모리에만 들고 있다가 종료하면 사라지는</dd>
+    <dt>구조체(struct)</dt><dd>여러 필드를 한 덩어리로 묶은 데이터 타입</dd>
+    <dt>열거형(enum)</dt><dd>정해진 몇 가지 값 중 하나만 갖는 타입(예: 신호등 = 빨강·노랑·초록)</dd>
+    <dt>1:N 관계</dt><dd>하나가 여러 개를 거느리는 관계(부모 1 ↔ 자식 여러)</dd>
+    <dt>자기참조(self-reference)</dt><dd>같은 타입을 자기 안에 다시 품는 것(프로세스가 자식 프로세스를 품음)</dd>
+    <dt>Option&lt;T&gt;</dt><dd>값이 있을 수도(<code>Some</code>) 없을 수도(<code>None</code>) 있음을 타입으로 표현</dd>
+    <dt>PID</dt><dd>프로세스 고유 번호</dd>
+  </dl>
+</div>
+
+<h2 id="sprint-contract">Sprint Contract (self-proposed checks)<a class="anchor" href="#sprint-contract">#</a></h2>
+<p>이 문서(g4의 <code>31-erd</code>)가 만족시킬 <strong>관찰 가능한 체크</strong>(playbook §S4-g4 관찰 바 + spec §5(31행)·§8에서 도출).</p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>#</th><th>체크</th><th>어떻게 충족하나</th><th>본문 위치</th></tr></thead>
+<tbody>
+<tr><td><strong>E-1</strong></td><td><strong>DB 없음 명시</strong> — 데이터베이스가 아니라 인메모리 도메인 모델임을 분명히</td><td>§0 "DB 없음" 콜아웃 + 전체 프레이밍</td><td><a href="#s0">§0</a></td></tr>
+<tr><td><strong>E-2</strong></td><td><strong>핵심 구조체 전 필드(타입 포함)</strong> — <code>ProcessInfo</code>·<code>Config</code>(+3 하위)·<code>NetworkConnection</code>·<code>LogStreamer</code>·<code>App</code>·<code>Rule</code></td><td>§2 엔티티 명세(필드명·타입·코드 근거)</td><td><a href="#s2">§2</a></td></tr>
+<tr><td><strong>E-3</strong></td><td><strong>enum 값 전부</strong> — <code>Runtime</code>(8)·<code>FrameworkKind</code>(15)·<code>HealthStatus</code>(3)·<code>KillSignal</code>·<code>KillResult</code>(4)·<code>GracefulResult</code>(5)·<code>DetailTab</code>(4)·<code>DialogKind</code>(5)·<code>FocusPanel</code>(2)·<code>SortColumn</code>(9)</td><td>§3 enum 값 테이블(+Display/라벨)</td><td><a href="#s3">§3</a></td></tr>
+<tr><td><strong>E-4</strong></td><td><strong>Config 기본값 단일 출처</strong> — refresh=3·signal=SIGTERM·graceful=10·confirm=true·show_tree=true·theme=auto·mask=true·include_*=false + MAX_BUFFER_LINES=1000</td><td>§4 Config 기본값 정규표</td><td><a href="#s4">§4</a></td></tr>
+<tr><td><strong>E-5</strong></td><td><strong>관계 명세</strong> — App↔ProcessInfo(1:N flat+tree)·children 자기참조 1:N·ProcessInfo↔Runtime/FrameworkKind·App↔Config·NetworkConnection↔pid·App↔LogStreamer</td><td>§5 관계 표 + §1 ERD 다이어그램</td><td><a href="#s1">§1</a>, <a href="#s5">§5</a></td></tr>
+<tr><td><strong>E-6</strong></td><td><strong>시각화(G-g)</strong> — ERD 다이어그램(엔티티 박스 + 1:N 관계선, crow's-foot ASCII) + enum 값 테이블</td><td>§1 ERD + §3 표(외부 렌더러 0)</td><td><a href="#s1">§1</a>, <a href="#s3">§3</a></td></tr>
+<tr><td><strong>E-7</strong></td><td><strong>단일 출처 준수</strong> — 동작/알고리즘 임계값은 30, 정책 규칙은 33, 키 바인딩은 21로 회부(값만 여기서 정의)</td><td>본문 곳곳 "→ 30/33/21" 참조</td><td>전체</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="s0">0. ★ 데이터베이스 없음 — 인메모리 도메인 모델<a class="anchor" href="#s0">#</a></h2>
+
+<div class="callout bad">
+  <p><strong>ntop에는 데이터베이스가 없다.</strong> 회원 테이블도, SQL도, ORM도, 영속 저장소도 없다(codebase-facts §0-1). ntop은 <strong>로컬 개발자 도구(CLI/TUI)</strong>로, 매 스캔 tick마다 OS에서 프로세스 상태를 읽어 <strong>메모리 위 구조체</strong>로 들고 있다가 종료하면 전부 사라진다. <strong>유일하게 디스크에 남는 것은 사용자 설정 파일 1개</strong>(<code>~/.config/ntop/config.toml</code>)뿐이며, 이것도 "데이터"가 아니라 "설정"이다.</p>
+</div>
+
+<figure class="viz">
+<svg viewBox="0 0 720 220" role="img" aria-label="ntop 데이터 생애: OS 커널 → 메모리 구조체 → 종료 시 소멸, 디스크엔 config.toml 만">
+  <defs><marker id="ahd" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#64748b"/></marker></defs>
+  <text x="360" y="22" text-anchor="middle" class="svg-title">ntop 데이터의 생애 (DB 아님)</text>
+  <!-- OS kernel -->
+  <rect x="30" y="48" width="170" height="64" rx="10" fill="#f1f5f9" stroke="var(--line)"/>
+  <text x="115" y="74" text-anchor="middle" class="svg-label" font-weight="700">OS 커널</text>
+  <text x="115" y="94" text-anchor="middle" class="svg-sm">sysinfo · lsof · FFI</text>
+  <line x1="200" y1="80" x2="252" y2="80" class="svg-edge" marker-end="url(#ahd)"/>
+  <text x="226" y="70" text-anchor="middle" class="svg-sm">refresh()</text>
+  <!-- memory structs -->
+  <rect x="254" y="48" width="200" height="64" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+  <text x="354" y="74" text-anchor="middle" class="svg-label" font-weight="700">메모리 위 구조체</text>
+  <text x="354" y="94" text-anchor="middle" class="svg-sm">ProcessInfo · App …</text>
+  <line x1="454" y1="80" x2="506" y2="80" class="svg-edge" marker-end="url(#ahd)"/>
+  <text x="480" y="70" text-anchor="middle" class="svg-sm">종료 시</text>
+  <!-- gone -->
+  <rect x="508" y="48" width="180" height="64" rx="10" fill="var(--bad-bg)" stroke="var(--bad)" stroke-width="1.5"/>
+  <text x="598" y="74" text-anchor="middle" class="svg-bad" font-weight="700">소멸 (없음)</text>
+  <text x="598" y="94" text-anchor="middle" class="svg-sm">영속 저장 0</text>
+  <!-- disk file -->
+  <rect x="180" y="140" width="360" height="56" rx="10" fill="#fff" stroke="var(--accent2)" stroke-width="1.5" stroke-dasharray="5 3"/>
+  <text x="360" y="163" text-anchor="middle" class="svg-title2">디스크에 남는 유일한 파일</text>
+  <text x="360" y="184" text-anchor="middle" class="svg-sm">~/.config/ntop/config.toml — 설정만(선택적), 없거나 깨져도 기본값(serde default) → §4</text>
+</svg>
+<figcaption>데이터 생애 — OS에서 읽어 메모리 구조체로 들고 있다가 종료 시 소멸, 디스크엔 설정 파일 1개뿐(<a href="#s0">§0</a>)</figcaption>
+</figure>
+
+<details class="raw"><summary>원본 ASCII 보기</summary>
+<pre> ┌──────────────────────────────────────────────────────────────────────────┐
+ │  ntop 데이터의 생애 (DB 아님)                                              │
+ │                                                                            │
+ │   OS 커널 ──refresh()──▶  [메모리 위 구조체]  ──종료 시 소멸──▶ (없음)     │
+ │  (sysinfo,lsof…)          ProcessInfo, App…                                │
+ │                                                                            │
+ │   디스크에 남는 유일한 파일:  ~/.config/ntop/config.toml  (설정만, 선택적) │
+ │      └ 없거나 깨져도 기본값으로 동작(serde default) → §4                    │
+ └──────────────────────────────────────────────────────────────────────────┘</pre>
+</details>
+
+<p>따라서 본 ERD는 "테이블·컬럼·인덱스·외래키"가 아니라 <strong>Rust 구조체·열거형과 그들 사이의 소유/참조 관계</strong>를 ERD 문법(엔티티 박스 + 1:N 관계선)으로 옮겨 그린 것이다. "관계"는 DB의 외래키가 아니라 <strong>코드상의 소유(struct가 다른 struct를 필드로 가짐)·자기참조·논리적 조인(같은 <code>pid</code>로 연결)</strong>을 뜻한다.</p>
+
+<h2 id="s1">1. ERD 다이어그램 (G-g) — 엔티티 박스 + 1:N 관계선<a class="anchor" href="#s1">#</a></h2>
+
+<blockquote>crow's-foot(까마귀발) 표기를 ASCII로 옮겼다. <strong><code>||</code> = "정확히 1"</strong>, <strong><code>o&lt;</code> / <code>}&lt;</code> = "여러(N), 0개 이상"</strong>, <strong><code>──</code> = 소유(struct가 필드로 가짐)</strong>, <strong><code>- - -</code> = 논리적 조인(같은 pid로 연결, 소유 아님)</strong>, <strong><code>▷</code> = enum 값을 가리킴(참조)</strong>. 화살표 방향은 "1 → N".</blockquote>
+
+<figure class="viz">
+<svg viewBox="0 0 800 560" role="img" aria-label="ntop ERD: App 애그리거트 루트가 Config·ProcessInfo·LogStreamer 소유, ProcessInfo children 자기참조, Runtime/FrameworkKind 참조, NetworkConnection pid 논리조인">
+  <defs>
+    <marker id="erd-arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#4f46e5"/></marker>
+    <!-- crow's foot (many) -->
+    <marker id="crow" markerWidth="16" markerHeight="16" refX="2" refY="8" orient="auto">
+      <path d="M14,2 L2,8 M14,8 L2,8 M14,14 L2,8" stroke="#4f46e5" stroke-width="1.4" fill="none"/></marker>
+    <!-- one bar -->
+    <marker id="one" markerWidth="10" markerHeight="16" refX="6" refY="8" orient="auto">
+      <path d="M6,2 L6,14" stroke="#4f46e5" stroke-width="1.6"/></marker>
+  </defs>
+
+  <!-- App (aggregate root) -->
+  <rect x="250" y="14" width="300" height="86" rx="10" class="svg-ent"/>
+  <rect x="250" y="14" width="300" height="24" rx="10" fill="var(--accent)"/>
+  <rect x="250" y="26" width="300" height="12" fill="var(--accent)"/>
+  <text x="400" y="31" text-anchor="middle" class="ent-name">App — TUI 단일 상태 (애그리거트 루트)</text>
+  <text x="262" y="56" class="svg-sm">config · raw_processes · process_trees · flat_list</text>
+  <text x="262" y="74" class="svg-sm">selected/expanded_pids · active_tab · dialog</text>
+  <text x="262" y="92" class="svg-sm">filter_* · sort_* · node_only · log_streamer …</text>
+
+  <!-- edges from App -->
+  <!-- to Config -->
+  <path d="M300,100 L150,140" stroke="#4f46e5" stroke-width="1.5" fill="none" marker-start="url(#one)" marker-end="url(#one)"/>
+  <text x="190" y="124" class="svg-sm">1:1 소유</text>
+  <!-- to ProcessInfo -->
+  <path d="M400,100 L400,150" stroke="#4f46e5" stroke-width="1.5" fill="none" marker-start="url(#one)" marker-end="url(#crow)"/>
+  <text x="410" y="128" class="svg-sm">1:N 소유 (flat+tree)</text>
+  <!-- to LogStreamer -->
+  <path d="M500,100 L650,150" stroke="#4f46e5" stroke-width="1.5" fill="none" marker-start="url(#one)" marker-end="url(#crow)"/>
+  <text x="560" y="124" class="svg-sm">0..1 소유(Option)</text>
+
+  <!-- Config -->
+  <rect x="40" y="150" width="190" height="60" rx="10" class="svg-ent"/>
+  <rect x="40" y="150" width="190" height="22" rx="10" fill="var(--accent)"/>
+  <rect x="40" y="161" width="190" height="11" fill="var(--accent)"/>
+  <text x="135" y="166" text-anchor="middle" class="ent-name">Config · src/config.rs</text>
+  <text x="135" y="190" text-anchor="middle" class="svg-sm">general · display · filter</text>
+  <text x="135" y="205" text-anchor="middle" class="svg-sm">(serde default)</text>
+
+  <!-- Config sub 3 -->
+  <path d="M135,210 L135,238" stroke="#4f46e5" stroke-width="1.5" fill="none" marker-start="url(#one)" marker-end="url(#crow)"/>
+  <text x="142" y="228" class="svg-sm">1:3 소유</text>
+  <rect x="20" y="240" width="120" height="64" rx="8" class="svg-node"/>
+  <text x="80" y="258" text-anchor="middle" class="svg-sm" font-weight="700">GeneralConfig</text>
+  <text x="80" y="274" text-anchor="middle" class="svg-sm">refresh=3 · TERM</text>
+  <text x="80" y="290" text-anchor="middle" class="svg-sm">graceful=10 · confirm</text>
+  <rect x="148" y="240" width="96" height="64" rx="8" class="svg-node"/>
+  <text x="196" y="258" text-anchor="middle" class="svg-sm" font-weight="700">DisplayConfig</text>
+  <text x="196" y="274" text-anchor="middle" class="svg-sm">tree=true</text>
+  <text x="196" y="290" text-anchor="middle" class="svg-sm">theme · mask=true</text>
+  <rect x="252" y="240" width="92" height="64" rx="8" class="svg-node"/>
+  <text x="298" y="258" text-anchor="middle" class="svg-sm" font-weight="700">FilterConfig</text>
+  <text x="298" y="274" text-anchor="middle" class="svg-sm">bun=F · tsx=F</text>
+  <text x="298" y="290" text-anchor="middle" class="svg-sm">ts_node=F</text>
+
+  <!-- ProcessInfo -->
+  <rect x="320" y="150" width="200" height="150" rx="10" class="svg-ent"/>
+  <rect x="320" y="150" width="200" height="22" rx="10" fill="var(--accent)"/>
+  <rect x="320" y="161" width="200" height="11" fill="var(--accent)"/>
+  <text x="420" y="166" text-anchor="middle" class="ent-name">ProcessInfo · mod.rs</text>
+  <text x="332" y="188" class="svg-sm">pid · ppid · name · command</text>
+  <text x="332" y="204" class="svg-sm">cwd · framework · ports</text>
+  <text x="332" y="220" class="svg-sm">cpu_percent · memory_* · threads</text>
+  <text x="332" y="236" class="svg-sm">uptime · user · status · open_fds</text>
+  <text x="332" y="252" class="svg-sm">env_vars · runtime: Option</text>
+  <text x="332" y="270" class="svg-sm svg-accent" font-weight="700">children: Vec&lt;ProcessInfo&gt;</text>
+  <text x="332" y="286" class="svg-sm">↳ 자기참조 1:N (자식도 ProcessInfo)</text>
+  <!-- self-loop children -->
+  <path d="M520,200 C575,195 575,255 522,258" stroke="#4f46e5" stroke-width="1.5" fill="none" marker-end="url(#crow)"/>
+  <text x="556" y="232" text-anchor="middle" class="svg-sm svg-accent">children</text>
+  <text x="556" y="246" text-anchor="middle" class="svg-sm svg-accent">1:N self</text>
+
+  <!-- LogStreamer -->
+  <rect x="600" y="150" width="180" height="80" rx="10" class="svg-ent"/>
+  <rect x="600" y="150" width="180" height="22" rx="10" fill="var(--accent)"/>
+  <rect x="600" y="161" width="180" height="11" fill="var(--accent)"/>
+  <text x="690" y="166" text-anchor="middle" class="ent-name">LogStreamer · streamer.rs</text>
+  <text x="612" y="190" class="svg-sm">file · path · buffer</text>
+  <text x="612" y="208" class="svg-sm svg-warn">buffer 상한:</text>
+  <text x="612" y="224" class="svg-sm svg-warn">MAX_BUFFER_LINES = 1000 (§4)</text>
+
+  <!-- ProcessInfo → Runtime / FrameworkKind -->
+  <path d="M370,300 L320,340" stroke="#4f46e5" stroke-width="1.4" fill="none" stroke-dasharray="2 2" marker-end="url(#erd-arr)"/>
+  <text x="300" y="324" class="svg-sm">▷ N:1</text>
+  <path d="M450,300 L500,340" stroke="#4f46e5" stroke-width="1.4" fill="none" stroke-dasharray="2 2" marker-end="url(#erd-arr)"/>
+  <text x="495" y="324" class="svg-sm">▷ N:1</text>
+  <rect x="250" y="342" width="120" height="56" rx="8" fill="#f8fafc" stroke="var(--accent)"/>
+  <text x="310" y="364" text-anchor="middle" class="svg-sm" font-weight="700">Runtime (enum 8)</text>
+  <text x="310" y="382" text-anchor="middle" class="svg-sm">Option&lt;Runtime&gt;</text>
+  <rect x="450" y="342" width="140" height="56" rx="8" fill="#f8fafc" stroke="var(--accent)"/>
+  <text x="520" y="364" text-anchor="middle" class="svg-sm" font-weight="700">FrameworkKind</text>
+  <text x="520" y="382" text-anchor="middle" class="svg-sm">(enum 15)</text>
+
+  <!-- NetworkConnection logical join -->
+  <rect x="600" y="342" width="180" height="74" rx="10" class="svg-ent"/>
+  <rect x="600" y="342" width="180" height="22" rx="10" fill="var(--accent2)"/>
+  <rect x="600" y="353" width="180" height="11" fill="var(--accent2)"/>
+  <text x="690" y="358" text-anchor="middle" class="ent-name">NetworkConnection · network.rs</text>
+  <text x="612" y="380" class="svg-sm">local_addr · remote_addr</text>
+  <text x="612" y="398" class="svg-sm">state · pid (u32)</text>
+  <!-- logical join dotted -->
+  <path d="M600,408 C480,430 420,400 420,302" stroke="#0d9488" stroke-width="1.5" fill="none" stroke-dasharray="3 3"/>
+  <text x="470" y="450" text-anchor="middle" class="svg-sm svg-ok">┊ 논리적 조인 — 같은 pid 로 연결 (do_scan 이 LISTEN 포트만 채움 → 30)</text>
+  <circle cx="420" cy="302" r="3" fill="#0d9488"/>
+  <text x="320" y="430" class="svg-sm svg-ok">ProcessInfo.pid</text>
+
+  <!-- legend -->
+  <rect x="30" y="478" width="740" height="64" rx="8" fill="#fcfdff" stroke="var(--line)"/>
+  <text x="44" y="498" class="svg-sm" font-weight="700">읽는 법</text>
+  <text x="44" y="516" class="svg-sm">App = 애그리거트 루트(전체 상태 꼭대기). ProcessInfo 를 평탄(raw/flat_list)·트리(process_trees) 두 형태로 소유.</text>
+  <text x="44" y="533" class="svg-sm">|→ = "정확히 1"  ·  ⤙(까마귀발) = "여러(N)"  ·  실선 = 소유  ·  ▷점선 = enum 참조  ·  ┊초록 = 같은 pid 논리조인(소유 아님)</text>
+</svg>
+<figcaption>ERD — App(애그리거트 루트) 1:N ProcessInfo, children 자기참조 1:N, Runtime/FrameworkKind 참조, NetworkConnection은 pid 논리 조인(<a href="#s5">§5</a>)</figcaption>
+</figure>
+
+<details class="raw"><summary>원본 ASCII ERD 보기</summary>
+<pre>                       ┌────────────────────────────────────────────────┐
+                       │                     App                         │   src/tui/app.rs
+                       │  TUI 단일 상태 구조체 (프로그램당 1개, 인메모리) │   (= 애그리거트 루트)
+                       │  config · raw_processes · process_trees ·        │
+                       │  flat_list · selected_index · selected_pids ·    │
+                       │  expanded_pids · active_tab · dialog · filter_* · │
+                       │  sort_* · node_only · log_streamer · system_* …  │
+                       └──┬──────────────┬───────────────┬───────────┬────┘
+                  1 ||    │          1 ||│          1 ||  │       1 ||│ 0..1
+                          │ 소유          │ 소유 1:N        │ 소유       │ 소유(Option)
+                          ▼              ▼ }<              ▼ }<         ▼ o<
+                   ┌────────────┐  ┌───────────────────────────┐  ┌──────────────┐
+                   │   Config   │  │        ProcessInfo        │  │  LogStreamer │  src/log/
+                   │ src/config │  │     src/process/mod.rs    │  │  streamer.rs │
+                   └─────┬──────┘  │  pid·ppid·name·command·   │  │ file·path·   │
+            1 || 소유 1:3│         │  cwd·framework·ports·     │  │ buffer       │
+        ┌────────┬───────┴───┐     │  cpu_percent·memory_*·    │  └──────────────┘
+        ▼ ||     ▼ ||        ▼ ||  │  threads·uptime·user·     │   buffer 상한:
+ ┌────────────┐┌──────────┐┌──────┐│  status·open_fds·         │   MAX_BUFFER_LINES
+ │GeneralConfig││Display   ││Filter││  env_vars·runtime·        │   = 1000 (§4)
+ │ refresh=3   ││Config    ││Config││  children ◄──┐            │
+ │ signal=TERM ││tree=true ││bun=F ││  ────────────┘ 자기참조   │
+ │ graceful=10 ││theme=auto││tsx=F ││  1:N (자식도 ProcessInfo) │
+ │ confirm=true││mask=true ││tsn=F ││  }< self                  │
+ └────────────┘└──────────┘└──────┘└───┬───────────┬───────────┘
+                                        │ ▷ 참조     │ ▷ 참조      ┌───────────────────┐
+                                        ▼ N:1        ▼ N:1         │ NetworkConnection │ network.rs
+                                  ┌──────────┐  ┌──────────────┐   │ local_addr·       │
+                                  │ Runtime  │  │ FrameworkKind│   │ remote_addr·      │
+                                  │ (enum 8) │  │  (enum 15)   │   │ state·pid         │
+                                  │ Option<> │  └──────────────┘   └─────────┬─────────┘
+                                  └──────────┘                               │ pid (u32)
+                                                                             ┊ 논리적 조인
+                          ProcessInfo.pid  - - - - - - - - - - - - - - - - - ┘ (do_scan이
+                                                                 같은 pid로 ports 채움 → 30)</pre>
+</details>
+
+<div class="callout">
+<p><strong>읽는 법:</strong> <code>App</code>이 모든 것을 소유하는 <strong>애그리거트 루트</strong>(전체 상태의 꼭대기)다. <code>App</code> 1개가 <code>ProcessInfo</code> 여러 개를 두 형태로 들고 있다 — 평탄 목록(<code>raw_processes</code>/<code>flat_list</code>)과 트리(<code>process_trees</code>). <code>ProcessInfo</code>는 <code>children</code> 필드로 <strong>자기 자신을 다시 품어</strong>(자기참조 1:N) 부모-자식 트리를 만든다. <code>ProcessInfo</code>는 <code>Runtime</code>·<code>FrameworkKind</code> enum을 가리킨다(<code>runtime</code>은 <code>Option</code> — 서버면 <code>Some</code>, 트리 부모면 <code>None</code>). <code>NetworkConnection</code>은 <code>ProcessInfo</code>의 필드가 아니라 <strong>같은 <code>pid</code>로 논리적 연결</strong>되며, 스캔 후 <code>do_scan</code>이 LISTEN 포트만 골라 <code>ProcessInfo.ports</code>에 채운다(처리 절차는 30 소유).</p>
+</div>
+
+<h2 id="s2">2. 엔티티 명세 (구조체)<a class="anchor" href="#s2">#</a></h2>
+<blockquote>각 표는 <strong>필드명 · 타입 · 의미 · 코드 근거</strong>. 타입은 Rust 원본 그대로다. 메서드는 "동작"이므로 상세는 <code>30-functional-spec</code>이 소유하고, 여기서는 존재만 나열한다.</blockquote>
+
+<h3 id="s2-1">2-1. <code>ProcessInfo</code> — 모니터링 대상 프로세스 (핵심 엔티티) · src/process/mod.rs<a class="anchor" href="#s2-1">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>필드</th><th>타입</th><th>의미</th></tr></thead>
+<tbody>
+<tr><td><code>pid</code></td><td><code>u32</code></td><td>프로세스 고유 번호</td></tr>
+<tr><td><code>ppid</code></td><td><code>u32</code></td><td>부모 프로세스 번호(트리 구성 키). 0 = 부모 없음/루트</td></tr>
+<tr><td><code>name</code></td><td><code>String</code></td><td>OS가 보고한 프로세스 이름(macOS는 <code>comm</code> 16자 절단 가능 → 30 <code>normalize_name</code>)</td></tr>
+<tr><td><code>command</code></td><td><code>String</code></td><td>전체 커맨드라인(공백 join). 분류·<code>display_name</code>의 입력</td></tr>
+<tr><td><code>cwd</code></td><td><code>String</code></td><td>작업 디렉터리. 로그 감지(<code>LogStreamer</code>)에만 사용, <strong>분류엔 쓰지 않음</strong>(30·33)</td></tr>
+<tr><td><code>framework</code></td><td><code>FrameworkKind</code></td><td>탐지된 프레임워크(미탐지=<code>Generic</code>) → §3</td></tr>
+<tr><td><code>framework_version</code></td><td><code>Option&lt;String&gt;</code></td><td>프레임워크 버전(현재 항상 <code>None</code> — detect가 버전 미추출)</td></tr>
+<tr><td><code>ports</code></td><td><code>Vec&lt;u16&gt;</code></td><td>LISTEN 포트 목록. 스캔 후 <code>NetworkInspector</code>가 별도로 채움(30)</td></tr>
+<tr><td><code>cpu_percent</code></td><td><code>f32</code></td><td>CPU 사용률(%). persistent <code>System</code>의 2-refresh delta(30)</td></tr>
+<tr><td><code>memory_rss</code></td><td><code>u64</code></td><td>실제 사용 메모리(byte). macOS는 <code>phys_footprint</code> 우선(30)</td></tr>
+<tr><td><code>memory_vms</code></td><td><code>u64</code></td><td>가상 메모리(byte)</td></tr>
+<tr><td><code>threads</code></td><td><code>u32</code></td><td>스레드 수(platform FFI)</td></tr>
+<tr><td><code>uptime</code></td><td><code>Duration</code></td><td>구동 시간</td></tr>
+<tr><td><code>user</code></td><td><code>String</code></td><td>소유 사용자(user id 문자열, 실패 시 <code>"unknown"</code>)</td></tr>
+<tr><td><code>status</code></td><td><code>String</code></td><td>프로세스 상태 문자열(예: <code>"Running"</code>,<code>"Sleeping"</code>,<code>"Zombie"</code>) → health 판정 입력(30)</td></tr>
+<tr><td><code>open_fds</code></td><td><code>u32</code></td><td>열린 파일 디스크립터 수(macOS/Linux, Windows=0)</td></tr>
+<tr><td><code>children</code></td><td><code>Vec&lt;ProcessInfo&gt;</code></td><td><strong>자식 프로세스들 — 자기참조 1:N(트리)</strong></td></tr>
+<tr><td><code>env_vars</code></td><td><code>Vec&lt;(String, String)&gt;</code></td><td>환경변수 (키,값) 쌍. Env 탭에서 민감값 마스킹(33)</td></tr>
+<tr><td><code>runtime</code></td><td><code>Option&lt;Runtime&gt;</code></td><td><strong><code>Some</code>=분류된 서버 / <code>None</code>=트리 컨텍스트 부모</strong>(launchd·claude·shell). <code>is_server()</code>/<code>is_node()</code>/Node-only 필터의 키</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>메서드(동작은 30 소유):</strong> <code>new(pid,name)</code> · <code>is_server()</code>(=<code>runtime.is_some()</code>) · <code>is_node()</code>(=<code>runtime==Some(Node)</code>) · <code>uptime_display()</code>("1h 2m 5s") · <code>memory_display()</code>("128.0 MB"/"1.5 GB") · <code>display_name()</code>(커맨드에서 사람이 읽을 이름 추출 → 30-2) · <code>health()</code>(→ 30-12).</p>
+<div class="callout warn"><p><strong>주의(코드-진실):</strong> <code>framework_version</code>은 구조체에 존재하나 현재 탐지기가 채우지 않아 항상 <code>None</code>이다(40-backlog 로드맵 후보). 창작이 아니라 실제 코드 상태다.</p></div>
+
+<h3 id="s2-2">2-2. <code>Config</code> 및 하위 3섹션 — 사용자 설정 · src/config.rs<a class="anchor" href="#s2-2">#</a></h3>
+<p><code>Config</code>는 3개 하위 구조체를 1:1로 소유한다. <strong>모든 섹션·필드에 <code>#[serde(default)]</code></strong> 가 붙어, 설정 파일이 없거나 일부만 있거나 파싱 실패해도 <strong>각 필드가 기본값으로 채워진다</strong>(<code>load()</code>는 실패 시 <code>Config::default()</code>).</p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>구조체</th><th>필드</th><th>타입</th><th>기본값(§4 정규)</th></tr></thead>
+<tbody>
+<tr><td><strong><code>Config</code></strong></td><td><code>general</code> / <code>display</code> / <code>filter</code></td><td>각 하위 구조체</td><td>각 <code>default()</code></td></tr>
+<tr><td><strong><code>GeneralConfig</code></strong></td><td><code>refresh_interval</code></td><td><code>u64</code></td><td><code>3</code> (초)</td></tr>
+<tr><td></td><td><code>default_signal</code></td><td><code>String</code></td><td><code>"SIGTERM"</code></td></tr>
+<tr><td></td><td><code>graceful_timeout</code></td><td><code>u64</code></td><td><code>10</code> (초)</td></tr>
+<tr><td></td><td><code>confirm_before_kill</code></td><td><code>bool</code></td><td><code>true</code></td></tr>
+<tr><td><strong><code>DisplayConfig</code></strong></td><td><code>show_tree</code></td><td><code>bool</code></td><td><code>true</code></td></tr>
+<tr><td></td><td><code>color_theme</code></td><td><code>String</code></td><td><code>"auto"</code> (auto·dark·light)</td></tr>
+<tr><td></td><td><code>mask_env_values</code></td><td><code>bool</code></td><td><code>true</code></td></tr>
+<tr><td><strong><code>FilterConfig</code></strong></td><td><code>include_bun</code></td><td><code>bool</code></td><td><code>false</code> (<strong>DEPRECATED</strong> — Bun은 1급 런타임, 항상 탐지)</td></tr>
+<tr><td></td><td><code>include_tsx</code></td><td><code>bool</code></td><td><code>false</code> (tsx dev runner 포함 토글)</td></tr>
+<tr><td></td><td><code>include_ts_node</code></td><td><code>bool</code></td><td><code>false</code> (ts-node dev runner 포함 토글)</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>경로/메서드:</strong> <code>config_path()</code> → <code>dirs::config_dir()/ntop/config.toml</code>(= <code>~/.config/ntop/config.toml</code>) · <code>load()</code> · <code>refresh_duration()</code>(=<code>refresh_interval</code>초 → <code>Duration</code>) · <code>graceful_duration()</code>(=<code>graceful_timeout</code>초 → <code>Duration</code>).</p>
+
+<h3 id="s2-3">2-3. <code>NetworkConnection</code> — TCP 연결 1건 · src/process/network.rs<a class="anchor" href="#s2-3">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>필드</th><th>타입</th><th>의미</th></tr></thead>
+<tbody>
+<tr><td><code>local_addr</code></td><td><code>SocketAddr</code></td><td>로컬 주소+포트(예: <code>0.0.0.0:3000</code>)</td></tr>
+<tr><td><code>remote_addr</code></td><td><code>Option&lt;SocketAddr&gt;</code></td><td>원격 주소(LISTEN은 보통 <code>None</code>, ESTABLISHED는 <code>Some</code>)</td></tr>
+<tr><td><code>state</code></td><td><code>String</code></td><td><code>"LISTEN"</code>·<code>"ESTABLISHED"</code> 등(Windows <code>"LISTENING"</code>→<code>"LISTEN"</code> 정규화는 30)</td></tr>
+<tr><td><code>pid</code></td><td><code>u32</code></td><td>이 연결을 소유한 프로세스 — <code>ProcessInfo.pid</code>와 <strong>논리적 조인 키</strong></td></tr>
+</tbody>
+</table>
+</div>
+<p><code>NetworkInspector</code>(구조체, 상태 없음)가 시스템 명령(lsof/netstat) 출력을 파싱해 <code>HashMap&lt;u32, Vec&lt;NetworkConnection&gt;&gt;</code>(PID→연결들)을 만든다. 파싱 알고리즘은 30, 외부 명령 계약은 32 소유.</p>
+
+<h3 id="s2-4">2-4. <code>LogStreamer</code> — 로그 tail 상태 · src/log/streamer.rs<a class="anchor" href="#s2-4">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>필드</th><th>타입</th><th>의미</th></tr></thead>
+<tbody>
+<tr><td><code>file</code></td><td><code>Option&lt;BufReader&lt;File&gt;&gt;</code></td><td>열린 로그 파일 리더(없으면 <code>None</code>)</td></tr>
+<tr><td><code>path</code></td><td><code>Option&lt;PathBuf&gt;</code></td><td>열린 로그 파일 경로</td></tr>
+<tr><td><code>buffer</code></td><td><code>VecDeque&lt;String&gt;</code></td><td>최근 줄 버퍼(앞에서 폐기, 뒤에 추가)</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>상수(이 엔티티의 정규값):</strong> <code>MAX_BUFFER_LINES = 1000</code> — 버퍼가 1000줄을 넘으면 가장 오래된 줄부터 폐기(메모리 상한). 글로벌 글롭 패턴 목록 <code>LOG_PATTERNS</code>와 tail 알고리즘은 30 소유.</p>
+
+<h3 id="s2-5">2-5. <code>App</code> — TUI 단일 상태(애그리거트 루트) · src/tui/app.rs<a class="anchor" href="#s2-5">#</a></h3>
+<blockquote>모든 UI/런타임 상태를 담는 <strong>단 하나의 구조체</strong>(프로그램당 1개). 필드를 성격별로 묶었다.</blockquote>
+<div class="table-wrap">
+<table>
+<thead><tr><th>분류</th><th>필드(타입)</th><th>의미</th></tr></thead>
+<tbody>
+<tr><td>설정</td><td><code>config: Config</code></td><td>로드된 설정(소유, 1:1)</td></tr>
+<tr><td>데이터(원본)</td><td><code>raw_processes: Vec&lt;ProcessInfo&gt;</code></td><td>마지막 스캔 결과(필터 전)</td></tr>
+<tr><td>데이터(표시)</td><td><code>process_trees: Vec&lt;ProcessInfo&gt;</code> · <code>flat_list: Vec&lt;(ProcessInfo, usize)&gt;</code></td><td>필터·정렬·평탄화된 트리/목록(<code>usize</code>=깊이)</td></tr>
+<tr><td>선택</td><td><code>selected_index: usize</code> · <code>selected_pids: HashSet&lt;u32&gt;</code> · <code>expanded_pids: HashSet&lt;u32&gt;</code></td><td>커서 행 · 다중선택(Space) · 확장된 노드</td></tr>
+<tr><td>상세 탭</td><td><code>active_tab: DetailTab</code></td><td>현재 상세 탭 → §3</td></tr>
+<tr><td>다이얼로그</td><td><code>dialog: Option&lt;DialogKind&gt;</code> · <code>signal_picker_index: usize</code></td><td>열린 모달 · 시그널 선택 인덱스 → §3</td></tr>
+<tr><td>필터</td><td><code>filter_text: String</code> · <code>filter_active: bool</code></td><td>필터 문자열 · 입력 모드 여부</td></tr>
+<tr><td>정렬</td><td><code>sort_column: SortColumn</code> · <code>sort_ascending: bool</code></td><td>정렬 컬럼 · 방향 → §3</td></tr>
+<tr><td>로그</td><td><code>log_streamer: Option&lt;LogStreamer&gt;</code> · <code>log_scroll: u16</code></td><td>로그 스트리머(소유 0..1) · 스크롤</td></tr>
+<tr><td>상세 스크롤</td><td><code>detail_scroll</code>/<code>detail_content_lines</code>/<code>detail_view_height: u16</code></td><td>렌더 중 계산되는 스크롤 경계</td></tr>
+<tr><td>시스템</td><td><code>system_cpu: f32</code> · <code>system_memory_used/total: u64</code></td><td>전체 시스템 지표(상단바)</td></tr>
+<tr><td>kill 진행</td><td><code>kill_in_progress: Option&lt;(u32, Instant)&gt;</code></td><td>진행 중 kill(대상 pid, 시작 시각)</td></tr>
+<tr><td>포커스/뷰</td><td><code>focus: FocusPanel</code> · <code>node_only: bool</code></td><td>포커스 패널 · Node-only 토글 → §3</td></tr>
+<tr><td>루프 제어</td><td><code>should_quit</code>·<code>needs_rescan</code>·<code>refresh_changed: bool</code> · <code>refresh_secs: u64</code> · <code>tick_count: u64</code> · <code>first_load: bool</code></td><td>종료/재스캔/주기변경 플래그 · 현재 주기 · 틱(스피너) · 첫 로드</td></tr>
+<tr><td>도움말</td><td><code>help_scroll</code>/<code>help_max_scroll: u16</code></td><td>도움말 스크롤</td></tr>
+<tr><td>테이블</td><td><code>table_state: TableState</code></td><td>ratatui 테이블 스크롤 상태</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>대표 메서드(동작은 30):</strong> <code>matches_filter()</code>(30-13) · <code>update_processes()</code>/<code>rebuild_view()</code>(30-3·30-15) · <code>toggle_expand</code>/<code>expand_selected</code>/<code>collapse_selected</code>/<code>toggle_expand_all</code>(30-4) · <code>toggle_select</code> · <code>next_tab</code>/<code>prev_tab</code> · <code>toggle_sort</code>(30-14) · <code>toggle_node_only</code>(30-15) · <code>selected_kill_signal</code>.</p>
+
+<h3 id="s2-6">2-6. <code>Rule</code> — 탐지 규칙 1건 (확장 포인트) · src/process/framework_rules.rs<a class="anchor" href="#s2-6">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>필드</th><th>타입</th><th>의미</th></tr></thead>
+<tbody>
+<tr><td><code>runtime</code></td><td><code>Runtime</code></td><td>이 규칙이 부여할 런타임</td></tr>
+<tr><td><code>framework</code></td><td><code>FrameworkKind</code></td><td>이 규칙이 부여할 프레임워크</td></tr>
+<tr><td><code>name_exact</code></td><td><code>&amp;'static [&amp;'static str]</code></td><td>정규화 이름 정확 일치 후보(매처 1순위)</td></tr>
+<tr><td><code>command_binary</code></td><td><code>&amp;'static [&amp;'static str]</code></td><td>커맨드 첫 토큰의 basename 정확 일치(매처 2순위)</td></tr>
+<tr><td><code>command_contains</code></td><td><code>&amp;'static [&amp;'static str]</code></td><td>전체 커맨드라인 부분 문자열(매처 3순위)</td></tr>
+</tbody>
+</table>
+</div>
+<p>규칙 테이블 2개(<code>FRAMEWORK_RULES</code>·<code>RUNTIME_RULES</code>)와 매칭 순서는 30-1이 소유(값 표 포함). 새 런타임/FW 추가 = <code>Rule</code> 1개 + enum variant 1개(그 외 코드 변경 0).</p>
+
+<h2 id="s3">3. enum 값 테이블 (G-g)<a class="anchor" href="#s3">#</a></h2>
+<blockquote>각 enum의 <strong>variant 전체 + Display/라벨/설명</strong>. 가용성 매트릭스(OS별 시그널)·임계값(health)·키 매핑 등 "규칙/동작"은 33(정책)·30(알고리즘)·21(키)이 소유하고, 여기서는 <strong>값만</strong> 확정한다.</blockquote>
+
+<figure class="viz">
+<svg viewBox="0 0 780 250" role="img" aria-label="enum 카탈로그: Runtime 8, FrameworkKind 15(등록/enum만), HealthStatus 3 severity">
+  <text x="390" y="20" text-anchor="middle" class="svg-title">enum 카탈로그 — 값만(규칙/동작은 30/33/21)</text>
+  <!-- Runtime -->
+  <text x="24" y="46" class="svg-sm" font-weight="700">Runtime (8)</text>
+  <g font-size="11" fill="#fff">
+    <rect x="24" y="54" width="58" height="24" rx="5" fill="var(--accent)"/><text x="53" y="70" text-anchor="middle">Node</text>
+    <rect x="88" y="54" width="58" height="24" rx="5" fill="var(--accent)"/><text x="117" y="70" text-anchor="middle">Python</text>
+    <rect x="152" y="54" width="50" height="24" rx="5" fill="var(--accent)"/><text x="177" y="70" text-anchor="middle">Java</text>
+    <rect x="208" y="54" width="50" height="24" rx="5" fill="var(--accent)"/><text x="233" y="70" text-anchor="middle">Deno</text>
+    <rect x="264" y="54" width="46" height="24" rx="5" fill="var(--accent)"/><text x="287" y="70" text-anchor="middle">Bun</text>
+    <rect x="316" y="54" width="52" height="24" rx="5" fill="var(--accent)"/><text x="342" y="70" text-anchor="middle">Ruby</text>
+    <rect x="374" y="54" width="46" height="24" rx="5" fill="var(--accent)"/><text x="397" y="70" text-anchor="middle">PHP</text>
+    <rect x="426" y="54" width="52" height="24" rx="5" fill="var(--accent)"/><text x="452" y="70" text-anchor="middle">.NET</text>
+  </g>
+  <text x="496" y="70" class="svg-sm">runtime = Option&lt;Runtime&gt; · None = 트리 부모(서버 아님)</text>
+  <!-- FrameworkKind -->
+  <text x="24" y="104" class="svg-sm" font-weight="700">FrameworkKind (15) — ✅ 규칙 등록 / ❌ enum 만</text>
+  <g font-size="10.5">
+    <rect x="24" y="112" width="62" height="22" rx="5" fill="var(--ok-bg)" stroke="var(--ok)"/><text x="55" y="127" text-anchor="middle" class="svg-ok">Next.js✅</text>
+    <rect x="92" y="112" width="50" height="22" rx="5" fill="var(--ok-bg)" stroke="var(--ok)"/><text x="117" y="127" text-anchor="middle" class="svg-ok">Nuxt✅</text>
+    <rect x="148" y="112" width="56" height="22" rx="5" fill="var(--ok-bg)" stroke="var(--ok)"/><text x="176" y="127" text-anchor="middle" class="svg-ok">NestJs✅</text>
+    <rect x="210" y="112" width="62" height="22" rx="5" fill="var(--ok-bg)" stroke="var(--ok)"/><text x="241" y="127" text-anchor="middle" class="svg-ok">FastAPI✅</text>
+    <rect x="278" y="112" width="50" height="22" rx="5" fill="var(--ok-bg)" stroke="var(--ok)"/><text x="303" y="127" text-anchor="middle" class="svg-ok">Flask✅</text>
+    <rect x="334" y="112" width="56" height="22" rx="5" fill="var(--ok-bg)" stroke="var(--ok)"/><text x="362" y="127" text-anchor="middle" class="svg-ok">Django✅</text>
+    <rect x="396" y="112" width="80" height="22" rx="5" fill="var(--ok-bg)" stroke="var(--ok)"/><text x="436" y="127" text-anchor="middle" class="svg-ok">SpringBoot✅</text>
+    <rect x="482" y="112" width="50" height="22" rx="5" fill="var(--ok-bg)" stroke="var(--ok)"/><text x="507" y="127" text-anchor="middle" class="svg-ok">Rails✅</text>
+    <rect x="538" y="112" width="62" height="22" rx="5" fill="var(--ok-bg)" stroke="var(--ok)"/><text x="569" y="127" text-anchor="middle" class="svg-ok">Laravel✅</text>
+    <rect x="606" y="112" width="62" height="22" rx="5" fill="var(--ok-bg)" stroke="var(--ok)"/><text x="637" y="127" text-anchor="middle" class="svg-ok">ASP.NET✅</text>
+    <rect x="674" y="112" width="62" height="22" rx="5" fill="#f8fafc" stroke="var(--muted)"/><text x="705" y="127" text-anchor="middle" class="svg-sm">Generic</text>
+    <rect x="24" y="138" width="64" height="22" rx="5" fill="var(--bad-bg)" stroke="var(--bad)"/><text x="56" y="153" text-anchor="middle" class="svg-bad">Express❌</text>
+    <rect x="94" y="138" width="60" height="22" rx="5" fill="var(--bad-bg)" stroke="var(--bad)"/><text x="124" y="153" text-anchor="middle" class="svg-bad">Fastify❌</text>
+    <rect x="160" y="138" width="46" height="22" rx="5" fill="var(--bad-bg)" stroke="var(--bad)"/><text x="183" y="153" text-anchor="middle" class="svg-bad">Koa❌</text>
+    <rect x="212" y="138" width="50" height="22" rx="5" fill="var(--bad-bg)" stroke="var(--bad)"/><text x="237" y="153" text-anchor="middle" class="svg-bad">Hapi❌</text>
+    <text x="280" y="153" class="svg-sm svg-bad">❌ = enum 만, FRAMEWORK_RULES 미등록 → 현재 탐지 불가 (40-backlog)</text>
+  </g>
+  <!-- HealthStatus -->
+  <text x="24" y="190" class="svg-sm" font-weight="700">HealthStatus (3)</text>
+  <rect x="24" y="198" width="120" height="32" rx="6" fill="var(--ok-bg)" stroke="var(--ok)"/><text x="84" y="218" text-anchor="middle" class="svg-ok" font-weight="700">Healthy</text>
+  <rect x="152" y="198" width="120" height="32" rx="6" fill="var(--warn-bg)" stroke="var(--warn)"/><text x="212" y="218" text-anchor="middle" class="svg-warn" font-weight="700">Warning</text>
+  <rect x="280" y="198" width="120" height="32" rx="6" fill="var(--bad-bg)" stroke="var(--bad)"/><text x="340" y="218" text-anchor="middle" class="svg-bad" font-weight="700">Critical</text>
+  <text x="412" y="218" class="svg-sm">판정 임계(90/80·Zombie/Dead)는 30-12 소유</text>
+</svg>
+<figcaption>enum 카탈로그 — Runtime 8 · FrameworkKind 15(등록 ✅ / enum만 ❌) · HealthStatus 3 severity(<a href="#s3-1">§3-1~3-3</a>)</figcaption>
+</figure>
+
+<figure class="viz">
+<svg viewBox="0 0 780 270" role="img" aria-label="KillSignal OS 분리(전체3+Unix3), SortColumn 9 순환 링">
+  <text x="200" y="20" text-anchor="middle" class="svg-title">KillSignal — 크로스플랫폼 3 + Unix 전용 3</text>
+  <!-- cross platform -->
+  <rect x="20" y="34" width="360" height="90" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+  <text x="32" y="52" class="svg-sm" font-weight="700">전체 OS (Windows 포함)</text>
+  <rect x="32" y="60" width="108" height="52" rx="6" fill="#fff" stroke="var(--accent)"/><text x="86" y="82" text-anchor="middle" class="svg-sm" font-weight="700">Term</text><text x="86" y="100" text-anchor="middle" class="svg-sm">SIGTERM</text>
+  <rect x="146" y="60" width="108" height="52" rx="6" fill="#fff" stroke="var(--accent)"/><text x="200" y="82" text-anchor="middle" class="svg-sm" font-weight="700">Kill</text><text x="200" y="100" text-anchor="middle" class="svg-sm">SIGKILL</text>
+  <rect x="260" y="60" width="108" height="52" rx="6" fill="#fff" stroke="var(--accent)"/><text x="314" y="82" text-anchor="middle" class="svg-sm" font-weight="700">Int</text><text x="314" y="100" text-anchor="middle" class="svg-sm">SIGINT</text>
+  <!-- unix only -->
+  <rect x="20" y="134" width="360" height="90" rx="10" fill="#fff" stroke="var(--accent2)" stroke-width="1.5" stroke-dasharray="5 3"/>
+  <text x="32" y="152" class="svg-sm svg-accent2" font-weight="700">Unix 전용</text>
+  <rect x="32" y="160" width="108" height="52" rx="6" fill="#fff" stroke="var(--accent2)"/><text x="86" y="182" text-anchor="middle" class="svg-sm" font-weight="700">Hup</text><text x="86" y="200" text-anchor="middle" class="svg-sm">SIGHUP</text>
+  <rect x="146" y="160" width="108" height="52" rx="6" fill="#fff" stroke="var(--accent2)"/><text x="200" y="182" text-anchor="middle" class="svg-sm" font-weight="700">Usr1</text><text x="200" y="200" text-anchor="middle" class="svg-sm">SIGUSR1</text>
+  <rect x="260" y="160" width="108" height="52" rx="6" fill="#fff" stroke="var(--accent2)"/><text x="314" y="182" text-anchor="middle" class="svg-sm" font-weight="700">Usr2</text><text x="314" y="200" text-anchor="middle" class="svg-sm">SIGUSR2</text>
+  <text x="200" y="244" text-anchor="middle" class="svg-sm">all() = Unix 6종 / Windows 3종 · 가용성·권한 매트릭스 → 33</text>
+
+  <!-- SortColumn cycle ring -->
+  <text x="600" y="20" text-anchor="middle" class="svg-title">SortColumn (9) — next() 순환</text>
+  <g font-size="10.5" fill="var(--accent)" text-anchor="middle">
+    <circle cx="600" cy="135" r="92" fill="none" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="4 4"/>
+    <g>
+      <rect x="570" y="48" width="60" height="22" rx="11" fill="var(--accent)"/><text x="600" y="63" fill="#fff">PID</text>
+      <rect x="648" y="60" width="60" height="22" rx="11" fill="#fff" stroke="var(--accent)"/><text x="678" y="75">NAME</text>
+      <rect x="688" y="105" width="60" height="22" rx="11" fill="#fff" stroke="var(--accent)"/><text x="718" y="120">PORT</text>
+      <rect x="678" y="152" width="56" height="22" rx="11" fill="#fff" stroke="var(--accent)"/><text x="706" y="167">THR</text>
+      <rect x="638" y="192" width="58" height="22" rx="11" fill="#fff" stroke="var(--accent)"/><text x="667" y="207">CPU</text>
+      <rect x="572" y="206" width="60" height="22" rx="11" fill="#fff" stroke="var(--accent)"/><text x="602" y="221">MEM</text>
+      <rect x="504" y="192" width="60" height="22" rx="11" fill="#fff" stroke="var(--accent)"/><text x="534" y="207">USER</text>
+      <rect x="466" y="152" width="68" height="22" rx="11" fill="#fff" stroke="var(--accent)"/><text x="500" y="167">STATUS</text>
+      <rect x="492" y="105" width="64" height="22" rx="11" fill="#fff" stroke="var(--accent)"/><text x="524" y="120">UPTIME</text>
+    </g>
+  </g>
+</svg>
+<figcaption>KillSignal(전체 3 + Unix 3, all()=Unix 6/Win 3) · SortColumn 9컬럼 next() 순환(<a href="#s3-4">§3-4</a>·<a href="#s3-5">§3-5</a>)</figcaption>
+</figure>
+
+<h3 id="s3-1">3-1. <code>Runtime</code> (8종) · src/process/mod.rs<a class="anchor" href="#s3-1">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>variant</th><th>Display</th><th>variant</th><th>Display</th></tr></thead>
+<tbody>
+<tr><td><code>Node</code></td><td><code>Node</code></td><td><code>Bun</code></td><td><code>Bun</code></td></tr>
+<tr><td><code>Python</code></td><td><code>Python</code></td><td><code>Ruby</code></td><td><code>Ruby</code></td></tr>
+<tr><td><code>Java</code></td><td><code>Java</code></td><td><code>Php</code></td><td><code>PHP</code></td></tr>
+<tr><td><code>Deno</code></td><td><code>Deno</code></td><td><code>DotNet</code></td><td><code>.NET</code></td></tr>
+</tbody>
+</table>
+</div>
+<blockquote><code>ProcessInfo.runtime</code>은 <code>Option&lt;Runtime&gt;</code> — <code>None</code>이면 "분류 안 된 트리 부모"(서버 아님). 등록 규칙은 30-1.</blockquote>
+
+<h3 id="s3-2">3-2. <code>FrameworkKind</code> (15종) · src/process/mod.rs<a class="anchor" href="#s3-2">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>variant</th><th>Display</th><th>규칙 등록?</th><th>variant</th><th>Display</th><th>규칙 등록?</th></tr></thead>
+<tbody>
+<tr><td><code>NextJs</code></td><td><code>Next.js</code></td><td>✅</td><td><code>FastApi</code></td><td><code>FastAPI</code></td><td>✅</td></tr>
+<tr><td><code>Express</code></td><td><code>Express</code></td><td>❌ enum만</td><td><code>Flask</code></td><td><code>Flask</code></td><td>✅</td></tr>
+<tr><td><code>Fastify</code></td><td><code>Fastify</code></td><td>❌ enum만</td><td><code>Django</code></td><td><code>Django</code></td><td>✅</td></tr>
+<tr><td><code>NestJs</code></td><td><code>NestJs</code></td><td>✅</td><td><code>SpringBoot</code></td><td><code>Spring Boot</code></td><td>✅</td></tr>
+<tr><td><code>Nuxt</code></td><td><code>Nuxt.js</code></td><td>✅</td><td><code>Rails</code></td><td><code>Rails</code></td><td>✅</td></tr>
+<tr><td><code>Koa</code></td><td><code>Koa</code></td><td>❌ enum만</td><td><code>Laravel</code></td><td><code>Laravel</code></td><td>✅</td></tr>
+<tr><td><code>Hapi</code></td><td><code>Hapi</code></td><td>❌ enum만</td><td><code>AspNet</code></td><td><code>ASP.NET</code></td><td>✅</td></tr>
+<tr><td></td><td></td><td></td><td><code>Generic</code></td><td><code>Generic</code></td><td>(런타임 규칙 기본값)</td></tr>
+</tbody>
+</table>
+</div>
+<div class="callout warn"><p><strong>코드-진실:</strong> <code>Express</code>·<code>Fastify</code>·<code>Koa</code>·<code>Hapi</code>는 enum variant만 있고 <code>FRAMEWORK_RULES</code>에 탐지 규칙이 <strong>미등록</strong>이다 → 현재 탐지 불가, 향후 규칙 추가 여지(40-backlog 로드맵, codebase-facts §12). <code>Generic</code>은 런타임 규칙이 부여하는 기본 프레임워크 값이다.</p></div>
+
+<h3 id="s3-3">3-3. <code>HealthStatus</code> (3종) · src/process/mod.rs<a class="anchor" href="#s3-3">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>variant</th><th>Display</th><th>의미</th></tr></thead>
+<tbody>
+<tr><td><code>Healthy</code></td><td><code>Healthy</code></td><td>정상</td></tr>
+<tr><td><code>Warning</code></td><td><code>Warning</code></td><td>주의</td></tr>
+<tr><td><code>Critical</code></td><td><code>Critical</code></td><td>위험</td></tr>
+</tbody>
+</table>
+</div>
+<blockquote>판정 임계값(CPU/MEM ≥90→Critical, ≥80→Warning / Zombie·Dead→Critical)과 <code>from_cpu_mem</code>·<code>from_process_status</code>·<code>health()</code> 알고리즘은 <strong>30-12</strong>가 소유.</blockquote>
+
+<h3 id="s3-4">3-4. <code>KillSignal</code> + 결과 enum · src/process/killer.rs<a class="anchor" href="#s3-4">#</a></h3>
+<p><strong><code>KillSignal</code></strong> — 보낼 수 있는 시그널. <strong>크로스플랫폼 3종 + Unix 전용 3종</strong>:</p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>variant</th><th>name()</th><th>description()</th><th>가용 OS</th></tr></thead>
+<tbody>
+<tr><td><code>Term</code></td><td><code>SIGTERM</code></td><td>Graceful termination request</td><td>전체</td></tr>
+<tr><td><code>Kill</code></td><td><code>SIGKILL</code></td><td>Force kill (cannot be caught)</td><td>전체</td></tr>
+<tr><td><code>Int</code></td><td><code>SIGINT</code></td><td>Interrupt (like Ctrl+C)</td><td>전체</td></tr>
+<tr><td><code>Hup</code></td><td><code>SIGHUP</code></td><td>Hangup / reload configuration</td><td>Unix만</td></tr>
+<tr><td><code>Usr1</code></td><td><code>SIGUSR1</code></td><td>User-defined (Node.js: activate debugger)</td><td>Unix만</td></tr>
+<tr><td><code>Usr2</code></td><td><code>SIGUSR2</code></td><td>User-defined signal</td><td>Unix만</td></tr>
+</tbody>
+</table>
+</div>
+<p><code>all()</code> 반환 개수·순서: <strong>Unix = 6종</strong>[Term,Kill,Hup,Int,Usr1,Usr2] / <strong>Windows = 3종</strong>[Term,Kill,Int]. <code>from_str</code>은 <code>"SIGTERM"</code>·<code>"TERM"</code> 둘 다 허용(대소문자·<code>SIG</code> 접두 무시). <strong>OS×시그널 가용성 매트릭스와 권한(EPERM) 정책은 33-policy 소유.</strong></p>
+<p><strong><code>KillResult</code></strong> (단건 시그널 결과): <code>Success</code> · <code>AlreadyDead</code> · <code>PermissionDenied</code> · <code>Error(String)</code>.</p>
+<p><strong><code>GracefulResult</code></strong> (graceful_kill 결과): <code>Terminated</code> · <code>TimedOut</code> · <code>AlreadyDead</code> · <code>PermissionDenied</code> · <code>Error(String)</code>. 분기 처리 알고리즘은 <strong>30-6</strong>.</p>
+
+<h3 id="s3-5">3-5. TUI enum · src/tui/app.rs<a class="anchor" href="#s3-5">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>enum</th><th>variant</th><th>비고</th></tr></thead>
+<tbody>
+<tr><td><strong><code>DetailTab</code></strong> (4)</td><td><code>Info</code> · <code>Log</code> · <code>Net</code> · <code>Env</code></td><td>라벨 동일. <code>next()</code>/<code>prev()</code> 순환</td></tr>
+<tr><td><strong><code>DialogKind</code></strong> (5)</td><td><code>KillConfirm</code> · <code>KillTreeConfirm</code> · <code>SignalPicker</code> · <code>ForceKillPrompt</code> · <code>Help</code></td><td>열린 모달 종류</td></tr>
+<tr><td><strong><code>FocusPanel</code></strong> (2)</td><td><code>ProcessList</code> · <code>DetailPanel</code></td><td>키보드 포커스 위치</td></tr>
+<tr><td><strong><code>SortColumn</code></strong> (9)</td><td><code>Pid</code> · <code>Name</code> · <code>Port</code> · <code>Threads</code> · <code>Cpu</code> · <code>Memory</code> · <code>User</code> · <code>Status</code> · <code>Uptime</code></td><td><code>next()</code> 순환</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong><code>SortColumn</code> 라벨</strong>(목록 헤더): <code>PID</code> · <code>NAME</code> · <code>PORT</code> · <code>THR</code> · <code>CPU</code> · <code>MEM</code> · <code>USER</code> · <code>STATUS</code> · <code>UPTIME</code>. (목록 화면에서 Status 컬럼은 <code>STS</code>로 약칭되나 <code>SortColumn::Status.label()</code>은 <code>"STATUS"</code> — 21 참조.) 탭 전환/정렬 순환 동작은 30-14, 키 매핑은 21 소유.</p>
+
+<h2 id="s4">4. ★ Config 기본값 — 단일 출처 정규표<a class="anchor" href="#s4">#</a></h2>
+<div class="callout ok"><p><strong>이 표가 ntop의 모든 기본값·임계 상수의 정규 출처다.</strong> <code>10-prd</code>(NFR)·<code>30</code>(알고리즘 임계)·<code>33</code>(정책)·<code>21</code>(화면)은 같은 수치를 <strong>이 표에서 인용만</strong> 하고 재정의하지 않는다. 출처 코드는 <code>GeneralConfig/DisplayConfig/FilterConfig::default()</code>(<code>src/config.rs</code>)와 <code>LogStreamer</code>(<code>src/log/streamer.rs</code>).</p></div>
+
+<figure class="viz">
+<svg viewBox="0 0 780 250" role="img" aria-label="Config 기본값 정규표 카드: General/Display/Filter/상수">
+  <text x="390" y="20" text-anchor="middle" class="svg-title">Config 기본값 — 단일 출처 (이 값들의 정규 출처)</text>
+  <!-- General -->
+  <rect x="14" y="34" width="190" height="170" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+  <text x="109" y="54" text-anchor="middle" class="svg-title">[general]</text>
+  <g font-size="11.5" fill="var(--fg)">
+    <text x="28" y="80">refresh_interval = <tspan font-weight="700" fill="#4f46e5">3</tspan> 초</text>
+    <text x="28" y="106">default_signal = <tspan font-weight="700" fill="#4f46e5">SIGTERM</tspan></text>
+    <text x="28" y="132">graceful_timeout = <tspan font-weight="700" fill="#4f46e5">10</tspan> 초</text>
+    <text x="28" y="158">confirm_before_kill</text>
+    <text x="28" y="176">= <tspan font-weight="700" fill="#4f46e5">true</tspan></text>
+  </g>
+  <!-- Display -->
+  <rect x="214" y="34" width="190" height="170" rx="10" fill="#f0fdfa" stroke="var(--accent2)" stroke-width="1.5"/>
+  <text x="309" y="54" text-anchor="middle" class="svg-title2">[display]</text>
+  <g font-size="11.5" fill="var(--fg)">
+    <text x="228" y="84">show_tree = <tspan font-weight="700" fill="#0d9488">true</tspan></text>
+    <text x="228" y="116">color_theme = <tspan font-weight="700" fill="#0d9488">auto</tspan></text>
+    <text x="228" y="132" font-size="10" fill="#64748b">(auto·dark·light)</text>
+    <text x="228" y="164">mask_env_values</text>
+    <text x="228" y="182">= <tspan font-weight="700" fill="#0d9488">true</tspan></text>
+  </g>
+  <!-- Filter -->
+  <rect x="414" y="34" width="180" height="170" rx="10" fill="#f8fafc" stroke="var(--muted)" stroke-width="1.5"/>
+  <text x="504" y="54" text-anchor="middle" class="svg-sm" font-weight="700" font-size="13">[filter]</text>
+  <g font-size="11.5" fill="var(--fg)">
+    <text x="428" y="84">include_bun = <tspan font-weight="700" fill="#dc2626">false</tspan></text>
+    <text x="428" y="100" font-size="9.5" fill="#dc2626">DEPRECATED (항상 탐지)</text>
+    <text x="428" y="128">include_tsx = <tspan font-weight="700">false</tspan></text>
+    <text x="428" y="160">include_ts_node</text>
+    <text x="428" y="178">= <tspan font-weight="700">false</tspan></text>
+  </g>
+  <!-- const -->
+  <rect x="604" y="34" width="162" height="170" rx="10" fill="var(--warn-bg)" stroke="var(--warn)" stroke-width="1.5"/>
+  <text x="685" y="54" text-anchor="middle" class="svg-warn" font-weight="700" font-size="12">상수 (Config 아님)</text>
+  <g font-size="11.5" fill="var(--fg)">
+    <text x="618" y="86">LogStreamer::</text>
+    <text x="618" y="102">MAX_BUFFER_LINES</text>
+    <text x="618" y="124">= <tspan font-weight="700" fill="#d97706">1000</tspan> 줄</text>
+    <text x="618" y="158" font-size="10" fill="#64748b">알고리즘 상수(→30):</text>
+    <text x="618" y="174" font-size="10" fill="#64748b">200ms 폴링 ·</text>
+    <text x="618" y="188" font-size="10" fill="#64748b">MIN_CPU_UPDATE</text>
+  </g>
+</svg>
+<figcaption>Config 기본값 단일 출처 — refresh=3 · SIGTERM · graceful=10 · confirm/tree/mask=true · include_*=false · MAX_BUFFER_LINES=1000(<a href="#s4">§4</a>)</figcaption>
+</figure>
+
+<blockquote>이 표가 ntop의 모든 기본값·임계 상수의 정규 출처다. <code>10-prd</code>(NFR)·<code>30</code>(알고리즘 임계)·<code>33</code>(정책)·<code>21</code>(화면)은 같은 수치를 이 표에서 인용만 하고 재정의하지 않는다.</blockquote>
+<div class="table-wrap">
+<table>
+<thead><tr><th>키</th><th>정규 기본값</th><th>의미</th><th>주 참조</th></tr></thead>
+<tbody>
+<tr><td><code>general.refresh_interval</code></td><td><strong><code>3</code></strong> 초</td><td>스캔 tick 주기(런타임 <code>+</code>/<code>-</code>로 1~60s 조정 가능)</td><td>30-3, 10-prd NFR(성능)</td></tr>
+<tr><td><code>general.default_signal</code></td><td><strong><code>"SIGTERM"</code></strong></td><td>기본 종료 시그널</td><td>30-6, 33</td></tr>
+<tr><td><code>general.graceful_timeout</code></td><td><strong><code>10</code></strong> 초</td><td>graceful 종료 대기 한계(초과 시 force)</td><td>30-6, 33</td></tr>
+<tr><td><code>general.confirm_before_kill</code></td><td><strong><code>true</code></strong></td><td>파괴적 동작 전 확인 게이트</td><td>33, 10-prd NFR(안전)</td></tr>
+<tr><td><code>display.show_tree</code></td><td><strong><code>true</code></strong></td><td>트리 뷰 표시</td><td>21</td></tr>
+<tr><td><code>display.color_theme</code></td><td><strong><code>"auto"</code></strong></td><td>테마(auto·dark·light)</td><td>21</td></tr>
+<tr><td><code>display.mask_env_values</code></td><td><strong><code>true</code></strong></td><td>환경변수 민감값 마스킹</td><td>33, 30-11</td></tr>
+<tr><td><code>filter.include_bun</code></td><td><strong><code>false</code></strong></td><td><strong>DEPRECATED</strong>(Bun 항상 탐지)</td><td>30-1</td></tr>
+<tr><td><code>filter.include_tsx</code></td><td><strong><code>false</code></strong></td><td>tsx dev runner 포함 토글</td><td>30-1</td></tr>
+<tr><td><code>filter.include_ts_node</code></td><td><strong><code>false</code></strong></td><td>ts-node dev runner 포함 토글</td><td>30-1</td></tr>
+<tr><td><code>LogStreamer::MAX_BUFFER_LINES</code></td><td><strong><code>1000</code></strong> 줄</td><td>로그 버퍼 상한(상수, Config 아님)</td><td>30-9, 10-prd NFR(성능)</td></tr>
+</tbody>
+</table>
+</div>
+<div class="callout"><p><strong>알고리즘 전용 상수(Config 아님, 참고):</strong> graceful 폴링 간격 <code>200ms</code>, sysinfo <code>MINIMUM_CPU_UPDATE_INTERVAL</code>(prime sleep)은 <strong>동작 파라미터</strong>이므로 값·의미를 <strong>30</strong>이 소유한다(여기서는 위치만 안내).</p></div>
+
+<h2 id="s5">5. 관계 명세 (Relationships)<a class="anchor" href="#s5">#</a></h2>
+<blockquote>DB의 외래키가 아니라 <strong>코드상의 소유/자기참조/논리적 조인</strong>이다. 카디널리티는 crow's-foot 표기.</blockquote>
+<div class="table-wrap">
+<table>
+<thead><tr><th>#</th><th>관계</th><th>카디널리티</th><th>종류</th><th>코드 근거</th></tr></thead>
+<tbody>
+<tr><td>R1</td><td><code>App</code> → <code>ProcessInfo</code> (평탄)</td><td>1 → N</td><td>소유 (<code>raw_processes</code>/<code>flat_list</code>)</td><td><code>App.raw_processes: Vec&lt;ProcessInfo&gt;</code></td></tr>
+<tr><td>R2</td><td><code>App</code> → <code>ProcessInfo</code> (트리)</td><td>1 → N</td><td>소유 (<code>process_trees</code> 루트들)</td><td><code>App.process_trees: Vec&lt;ProcessInfo&gt;</code></td></tr>
+<tr><td>R3</td><td><code>ProcessInfo</code> → <code>ProcessInfo</code></td><td>1 → N</td><td><strong>자기참조</strong>(부모→자식)</td><td><code>ProcessInfo.children: Vec&lt;ProcessInfo&gt;</code></td></tr>
+<tr><td>R4</td><td><code>ProcessInfo</code> → <code>Runtime</code></td><td>N → 1 (0..1)</td><td>참조(<code>Option</code>)</td><td><code>ProcessInfo.runtime: Option&lt;Runtime&gt;</code></td></tr>
+<tr><td>R5</td><td><code>ProcessInfo</code> → <code>FrameworkKind</code></td><td>N → 1</td><td>참조</td><td><code>ProcessInfo.framework: FrameworkKind</code></td></tr>
+<tr><td>R6</td><td><code>App</code> → <code>Config</code></td><td>1 → 1</td><td>소유</td><td><code>App.config: Config</code></td></tr>
+<tr><td>R7</td><td><code>Config</code> → <code>General/Display/FilterConfig</code></td><td>1 → 1 (각)</td><td>소유(3 섹션)</td><td><code>Config.{general,display,filter}</code></td></tr>
+<tr><td>R8</td><td><code>App</code> → <code>LogStreamer</code></td><td>1 → 0..1</td><td>소유(<code>Option</code>)</td><td><code>App.log_streamer: Option&lt;LogStreamer&gt;</code></td></tr>
+<tr><td>R9</td><td><code>NetworkConnection</code> ↔ <code>ProcessInfo</code></td><td>N ↔ 1</td><td><strong>논리적 조인</strong>(같은 <code>pid</code>)</td><td><code>NetworkConnection.pid</code> = <code>ProcessInfo.pid</code> (do_scan, 30)</td></tr>
+<tr><td>R10</td><td><code>Rule</code> → <code>Runtime</code>/<code>FrameworkKind</code></td><td>N → 1 (각)</td><td>참조</td><td><code>Rule.{runtime,framework}</code></td></tr>
+<tr><td>R11</td><td><code>App</code> → <code>DialogKind</code>/<code>DetailTab</code>/<code>SortColumn</code>/<code>FocusPanel</code></td><td>1 → 1 (각, Dialog는 0..1)</td><td>참조(상태값)</td><td><code>App.{dialog,active_tab,sort_column,focus}</code></td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>핵심 관계 3가지 요약:</strong></p>
+<ul class="spec">
+<li><strong>R3 자기참조 트리</strong>가 ntop 도메인의 중심 — 한 프로세스가 자식을 품어 부모-자식 트리를 이룬다(다중선택·트리 종료·확장/축소가 모두 이 관계에 기댐).</li>
+<li><strong>R4 <code>Option&lt;Runtime&gt;</code></strong> 가 "서버냐 트리 부모냐"를 가른다(<code>is_server()</code>/<code>is_node()</code>/Node-only 필터).</li>
+<li><strong>R9 논리적 조인</strong>으로 네트워크 포트가 프로세스에 결합된다(소유 아님 — 별도 스캔 후 <code>pid</code>로 매칭).</li>
+</ul>
+
+<h2 id="verify">자체 검증 (Self-verification)<a class="anchor" href="#verify">#</a></h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>#</th><th>체크</th><th>결과</th><th>어디서 충족</th></tr></thead>
+<tbody>
+<tr><td><strong>E-1</strong></td><td>DB 없음 명시</td><td><span class="chip ok">PASS</span> — §0 콜아웃 + 생애 도식("종료 시 소멸, 설정 파일만 디스크")</td><td>§0</td></tr>
+<tr><td><strong>E-2</strong></td><td>핵심 구조체 전 필드(타입)</td><td><span class="chip ok">PASS</span> — <code>ProcessInfo</code>(18필드)·<code>Config</code>+3하위·<code>NetworkConnection</code>·<code>LogStreamer</code>·<code>App</code>·<code>Rule</code> 모두 필드·타입·코드 근거</td><td>§2</td></tr>
+<tr><td><strong>E-3</strong></td><td>enum 값 전부</td><td><span class="chip ok">PASS</span> — Runtime8·FrameworkKind15·HealthStatus3·KillSignal(3+3)·KillResult4·GracefulResult5·DetailTab4·DialogKind5·FocusPanel2·SortColumn9</td><td>§3</td></tr>
+<tr><td><strong>E-4</strong></td><td>Config 기본값 단일 출처</td><td><span class="chip ok">PASS</span> — §4 정규표(refresh=3·SIGTERM·graceful=10·confirm=true·tree=true·auto·mask=true·include_*=false·MAX_BUFFER_LINES=1000)</td><td>§4</td></tr>
+<tr><td><strong>E-5</strong></td><td>관계 명세</td><td><span class="chip ok">PASS</span> — §5 R1~R11 표(카디널리티·종류·코드 근거) + §1 ERD</td><td>§1, §5</td></tr>
+<tr><td><strong>E-6</strong></td><td>시각화(ERD + enum 표, 외부 렌더러 0)</td><td><span class="chip ok">PASS</span> — §1 crow's-foot ASCII ERD, §3 순수 표</td><td>§1, §3</td></tr>
+<tr><td><strong>E-7</strong></td><td>단일 출처 준수(동작=30·정책=33·키=21)</td><td><span class="chip ok">PASS</span> — health 임계·분류 규칙·파싱·시그널 가용성·키 매핑을 30/33/21로 회부, 값만 정의</td><td>전체</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>추가 원칙 점검</h4>
+<ul class="spec">
+<li><strong>창작 금지(spec §7):</strong> DB 테이블·SQL·REST·결제·회원 0. 모든 필드·타입·기본값은 실제 소스(<code>mod.rs</code>·<code>config.rs</code>·<code>network.rs</code>·<code>streamer.rs</code>·<code>app.rs</code>·<code>killer.rs</code>·<code>framework_rules.rs</code>)에서 추출.</li>
+<li><strong>코드-진실 정직 표기:</strong> <code>framework_version</code>은 항상 <code>None</code>(미채움), <code>Express</code>/<code>Fastify</code>/<code>Koa</code>/<code>Hapi</code>는 enum만 있고 규칙 미등록 — 둘 다 실제 코드 상태로 명시(40-backlog 로드맵 연결).</li>
+<li><strong>중복정의 0:</strong> 같은 수치를 두 곳에 값으로 적지 않음 — Config/상수 값은 §4에만, 알고리즘 임계(200ms·health 90/80)는 30, 시그널 가용성/마스킹 규칙은 33으로 회부.</li>
+<li><strong>쉬운 설명:</strong> ERD·인메모리·구조체·enum·1:N·자기참조·Option·PID 첫 등장 풀이.</li>
+</ul>
+
+<h4>알려진 한계(후속 보완)</h4>
+<ul class="spec">
+<li>enum 값/Config 기본값이 코드에서 바뀌면 본 문서가 따라가야 한다(정규 출처이므로 코드 변경 시 1순위 갱신 대상). 동작/임계값은 본 문서가 아니라 30/33을 봐야 한다.</li>
+</ul>
+
+</main>
+</div>
+
+<script>
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  var map = {};
+  links.forEach(function(a){ var id=a.getAttribute('href').slice(1); if(id) map[id]=a; });
+  var targets = Object.keys(map).map(function(id){return document.getElementById(id);}).filter(Boolean);
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(a){a.classList.remove('active');});
+        var a = map[e.target.id];
+        if(a) a.classList.add('active');
+      }
+    });
+  }, {rootMargin:'-64px 0px -70% 0px', threshold:0});
+  targets.forEach(function(t){ obs.observe(t); });
+})();
+</script>
+</body>
+</html>

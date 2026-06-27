@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>00 · 비즈니스 모델 — OSS 채택·지속가능성 · ntop</title>
+<style>
+/* ntop 기획 패키지 — 공통 디자인 시스템 (자체완결: 각 NN-name.html <style>에 인라인 복제) */
+/* 외부 의존 0 — CDN/웹폰트/Mermaid 금지. 시스템 폰트만. */
+:root{
+  --accent:#4f46e5;        /* indigo */
+  --accent2:#0d9488;       /* teal */
+  --accent-soft:#eef2ff;
+  --bg:#ffffff;
+  --fg:#1e293b;
+  --muted:#64748b;
+  --line:#e2e8f0;
+  --code-bg:#f1f5f9;
+  --warn:#d97706; --warn-bg:#fffbeb;
+  --bad:#dc2626;  --bad-bg:#fef2f2;
+  --ok:#059669;   --ok-bg:#ecfdf5;
+  --t1:#dc2626; --t2:#d97706; --t3:#ca8a04;
+  --maxw:860px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;color:var(--fg);background:var(--bg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  line-height:1.7;font-size:16px;
+}
+code,pre,.mono{font-family:"SF Mono",SFMono-Regular,ui-monospace,Menlo,Consolas,"D2Coding",monospace}
+
+/* ── 상단바 ── */
+.topbar{
+  position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  padding:10px 18px;background:#0f172a;color:#f8fafc;font-weight:600;font-size:15px;
+  border-bottom:3px solid var(--accent);
+}
+.topbar .doc-no{color:#a5b4fc;font-variant-numeric:tabular-nums}
+.topbar nav{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.topbar nav a,.topbar nav button{
+  color:#e2e8f0;background:#1e293b;border:1px solid #334155;border-radius:6px;
+  padding:4px 10px;font-size:13px;text-decoration:none;cursor:pointer;font-weight:500;
+}
+.topbar nav a:hover,.topbar nav button:hover{background:var(--accent);border-color:var(--accent)}
+
+/* ── 티어 배지 ── */
+.tier{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:700;color:#fff}
+.tier.t1{background:var(--t1)} .tier.t2{background:var(--t2)} .tier.t3{background:var(--t3)}
+
+/* ── 레이아웃: TOC + 본문 ── */
+.layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:0;max-width:1200px;margin:0 auto}
+.toc{position:sticky;top:58px;align-self:start;height:calc(100vh - 58px);overflow:auto;padding:18px 12px;border-right:1px solid var(--line);font-size:13.5px}
+.toc h4{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.toc a{display:block;padding:3px 8px;color:var(--muted);text-decoration:none;border-radius:5px;border-left:2px solid transparent}
+.toc a:hover{background:var(--accent-soft);color:var(--accent)}
+.toc a.active{color:var(--accent);background:var(--accent-soft);border-left-color:var(--accent);font-weight:600}
+.toc a.lv3{padding-left:18px;font-size:12.5px}
+main{padding:26px 34px;max-width:var(--maxw)}
+main h1{font-size:26px;line-height:1.3;margin:0 0 6px}
+main h2{font-size:21px;margin:34px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--line);scroll-margin-top:64px}
+main h3{font-size:17px;margin:24px 0 10px;color:#0f172a;scroll-margin-top:64px}
+main h4{font-size:15px;margin:18px 0 8px;color:var(--muted)}
+main p{margin:10px 0}
+main a{color:var(--accent)}
+.anchor{margin-left:8px;color:var(--line);text-decoration:none;font-weight:400;font-size:.8em}
+main h2:hover .anchor,main h3:hover .anchor{color:var(--accent)}
+
+/* ── 표 ── */
+.table-wrap{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:7px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{background:#f8fafc;font-weight:700;position:sticky;top:0;border-bottom:2px solid var(--line)}
+tbody tr:nth-child(even){background:#fbfcfe}
+tbody tr:hover{background:var(--accent-soft)}
+
+/* ── 코드·칩 ── */
+:not(pre)>code{background:var(--code-bg);padding:1px 6px;border-radius:5px;font-size:.88em;color:#be185d}
+pre{background:#0f172a;color:#e2e8f0;padding:14px 16px;border-radius:8px;overflow-x:auto;font-size:13px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+.chip{display:inline-block;background:var(--accent-soft);color:var(--accent);border:1px solid #c7d2fe;border-radius:5px;padding:0 6px;font-size:.85em;font-weight:600}
+.chip.p0{background:var(--bad-bg);color:var(--bad);border-color:#fecaca}
+.chip.p1{background:var(--warn-bg);color:var(--warn);border-color:#fde68a}
+.chip.ok{background:var(--ok-bg);color:var(--ok);border-color:#a7f3d0}
+
+/* ── 콜아웃 ── */
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+.callout.warn{border-color:var(--warn);background:var(--warn-bg)}
+.callout.bad{border-color:var(--bad);background:var(--bad-bg)}
+.callout.ok{border-color:var(--ok);background:var(--ok-bg)}
+blockquote{border-left:4px solid var(--line);margin:14px 0;padding:4px 16px;color:var(--muted)}
+
+/* ── 인포그래픽 figure ── */
+figure.viz{margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:10px;background:#fcfdff;text-align:center}
+figure.viz svg{max-width:100%;height:auto;display:block;margin:0 auto}
+figure.viz figcaption{margin-top:10px;font-size:13px;color:var(--muted);text-align:center}
+.viz-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+details.raw{margin-top:8px;font-size:13px}
+details.raw summary{cursor:pointer;color:var(--muted);font-size:12.5px}
+details.raw pre{margin-top:6px}
+
+/* SVG 공통 텍스트 */
+svg text{font-family:-apple-system,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+.svg-node{fill:#fff;stroke:var(--accent);stroke-width:1.5}
+.svg-edge{stroke:var(--muted);stroke-width:1.5;fill:none}
+.svg-label{font-size:12px;fill:var(--fg)}
+.svg-accent{fill:var(--accent)} .svg-accent2{fill:var(--accent2)}
+
+/* 화면 mockup 프레임(20/21용) */
+.screen{border:2px solid #334155;border-radius:8px;background:#0f172a;color:#cbd5e1;font-family:"SF Mono",ui-monospace,monospace;font-size:12px;padding:0;overflow:hidden;text-align:left;margin:0 auto;max-width:560px}
+.screen .bar{background:#1e293b;color:#a5b4fc;padding:4px 8px;font-size:11px;border-bottom:1px solid #334155}
+.screen .body{padding:8px 10px;white-space:pre;overflow-x:auto;line-height:1.4}
+
+/* ── print ── */
+@media print{
+  .topbar,.toc,.anchor,details.raw summary{display:none!important}
+  .layout{grid-template-columns:1fr;max-width:none}
+  main{max-width:none;padding:0}
+  details.raw{display:none}
+  *{break-inside:avoid}
+  figure.viz{border:1px solid #ccc}
+}
+/* ── 반응형 ── */
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}
+  main{padding:18px}
+}
+
+/* ── 페이지 전용 보조 ── */
+.sv-title{font-size:13px;font-weight:700;fill:#0f172a}
+.sv-sub{font-size:11px;fill:#64748b}
+.glossary{list-style:none;margin:6px 0 0;padding:0}
+.glossary li{margin:5px 0;font-size:13.5px}
+.lead-bold{font-weight:700;color:#0f172a}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <span class="doc-no">00</span>
+  <span class="tier t2">T2</span> · 비즈니스 모델 — OSS 채택·지속가능성
+  <nav>
+    <a href="index.html">← 목록</a>
+    <a href="index.html">← 이전</a>
+    <a href="01-service-plan.html">다음 →</a>
+    <button onclick="window.print()">🖨 인쇄</button>
+  </nav>
+</header>
+
+<div class="layout">
+<nav class="toc">
+  <h4>목차</h4>
+  <a href="#sprint-contract">Sprint Contract</a>
+  <a href="#s1">1. 한눈에 보는 결론</a>
+  <a href="#s2">2. 비용 구조</a>
+  <a href="#s3">3. 배포 채널 비교</a>
+  <a href="#s4">4. 채택 퍼널</a>
+  <a href="#s5">5. 수익화 옵션</a>
+  <a href="#s6">6. 지속가능성 구조</a>
+  <a href="#s7">7. 기여·후원 가치 흐름도</a>
+  <a href="#verify">자체 검증</a>
+</nav>
+
+<main>
+<h1>00 · 비즈니스 모델 — OSS 채택·지속가능성 (ntop)</h1>
+
+<blockquote>
+<strong>이 문서는 단일 출처(single source)다.</strong> OSS 지속가능성/수익화/비용 구조/배포 채널/채택 퍼널은
+<strong>여기서만 정의</strong>하고, 다른 문서(<code>01-service-plan</code> 가치/MVP/지표, <code>40-backlog</code> 로드맵)는 이 문서를
+<strong>참조</strong>한다. 경쟁/생태계의 전체 그림은 <code>02-market-competition</code>(생태계 맵·경쟁 매트릭스)가 단일
+출처이므로, 여기서는 지속가능성에 직접 닿는 흐름만 다룬다.
+</blockquote>
+
+<div class="callout warn">
+<strong>필수 면책(disclaimer): 정산/take-rate/결제 없음 — 후원·배포 흐름으로 해석.</strong> ntop은 <strong>MIT
+라이선스 오픈소스(OSS)</strong> 도구이며 <strong>정산(settlement)·take-rate(수수료 비율)·결제(payment)가 전혀
+없다.</strong> 따라서 표준 비즈니스 모델 문서의 "돈의 흐름(money-flow)"은 이 문서에서 <strong>"기여·후원의 가치
+흐름"으로 치환</strong>해 해석한다. 결제 시퀀스·정산 트리거는 존재하지 않으며, 이를 지어내지 않는다.
+</div>
+
+<div class="callout">
+<strong>용어 풀이(첫 등장)</strong>
+<ul class="glossary">
+<li><strong>OSS</strong>(Open Source Software) = 소스코드가 공개돼 누구나 쓰고 고칠 수 있는 소프트웨어</li>
+<li><strong>MIT 라이선스</strong> = 가장 자유로운 OSS 약관 중 하나(상업적 사용·수정·포크 허용)</li>
+<li><strong>채택 퍼널(adoption funnel)</strong> = "알게 됨 → 설치 → 매일 씀 → 기여/후원"으로 사용자가 좁아지며 흘러가는 깔때기</li>
+<li><strong>이탈(drop-off)</strong> = 다음 단계로 못 넘어가고 떨어져 나가는 것</li>
+<li><strong>전환 레버(conversion lever)</strong> = 이탈을 줄여 다음 단계로 넘기는 장치</li>
+<li><strong>메인테이너(maintainer)</strong> = 프로젝트를 유지·관리하는 사람</li>
+<li><strong>기여자(contributor)</strong> = 코드·문서·버그 리포트를 보태는 사람</li>
+<li><strong>bus-factor</strong> = "핵심 인원 몇 명이 빠지면 프로젝트가 멈추는가"를 나타내는 위험 지표(1이면 1명에게 전부 의존)</li>
+<li><strong>상류(upstream)</strong> = ntop이 의존하는 외부 라이브러리(크레이트)의 원작자/저장소</li>
+<li><strong>크레이트(crate)</strong> = Rust의 패키지(라이브러리) 단위</li>
+</ul>
+</div>
+
+<h2 id="sprint-contract">Sprint Contract (self-proposed checks) <a class="anchor" href="#sprint-contract">#</a></h2>
+<p>이 문서(g1a의 <code>00</code>)가 만족시킬 <strong>관찰 가능한 체크</strong>(playbook §S4-g1 관찰 바 + spec §5(00행)·§8에서 도출).
+Evaluator는 승인 또는 보강 후 이 기준으로 평가한다.</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>#</th><th>체크</th><th>어떻게 충족하나</th><th>본문 위치</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">B-1</span></td><td><strong>배포 채널 ≥3 비교</strong> — 설치난이도/업데이트/대상사용자/선결조건 매트릭스</td><td>cargo <code>--git</code> · crates.io · Homebrew · GitHub Releases 4행 매트릭스(확정/가설 상태 표기)</td><td>§3</td></tr>
+<tr><td><span class="chip">B-2</span></td><td><strong>채택 퍼널</strong> — 인지→설치→상시사용→기여/후원, 단계별 이탈 지점 + 전환 레버</td><td>4단계 퍼널 다이어그램 + 단계별 이탈/레버 표</td><td>§4</td></tr>
+<tr><td><span class="chip">B-3</span></td><td><strong>수익화 옵션 = 전부 "가설" 명시</strong> — GitHub Sponsors·기업 후원·향후 Pro/Team</td><td>§5 수익화 표 전 행 "가설" 라벨, Pro/Team은 "미구현" 명기</td><td>§5</td></tr>
+<tr><td><span class="chip">B-4</span></td><td><strong>비용 구조</strong> — 메인테이너 시간·CI·인프라 0(로컬 바이너리)</td><td>§2 비용 표 + 구조도</td><td>§2</td></tr>
+<tr><td><span class="chip">B-5</span></td><td><strong>지속가능성 구조</strong> — 기여 장벽 낮음(Rule 1개+enum)·bus-factor·상류 리스크</td><td>§6 표 + 논거(research-s1 §9 인용)</td><td>§6</td></tr>
+<tr><td><span class="chip">B-6</span></td><td><strong>시각화(G-g)</strong> — 채택 퍼널 / 배포 채널 매트릭스 / 기여·후원 가치 흐름도(정산 시퀀스 금지)</td><td>§2~§6 ASCII 다이어그램(외부 렌더러 0)</td><td>§2~§6</td></tr>
+<tr><td><span class="chip">B-7</span></td><td><strong>정산/take-rate/결제 0</strong> — 가치는 "코드·후원·피드백" 흐름으로만</td><td>면책 + §7 흐름도(결제 화살표 없음)</td><td>서두, §7</td></tr>
+<tr><td><span class="chip">B-8</span></td><td><strong>단일 출처 준수</strong> — 가치/MVP/지표는 01, 생태계/경쟁은 02 참조(중복정의 0)</td><td>본문 곳곳 "01 참조"/"02 참조" 표기</td><td>전체</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="s1">1. 한눈에 보는 결론 (Executive snapshot) <a class="anchor" href="#s1">#</a></h2>
+<p>ntop의 "비즈니스 모델"은 매출이 아니라 <strong>채택(adoption)과 지속가능성(sustainability)</strong> 이다. 돈을
+받지 않으므로 성공은 "얼마를 버나"가 아니라 <strong>"얼마나 많은 개발자가 매일 쓰고, 얼마나 쉽게 기여가
+들어오며, 메인테이너가 지치지 않고 계속 만들 수 있나"</strong> 로 측정된다.</p>
+
+<ul>
+<li><span class="lead-bold">비용은 거의 0에 수렴한다.</span> ntop은 사용자의 로컬에서 도는 단일 실행파일이라 <strong>서버·DB·결제·데이터 저장 인프라가 없다</strong>(codebase-facts §0-1). 실질 비용은 <strong>메인테이너의 시간</strong>과 OSS 무료 한도 안의 <strong>CI(자동 빌드·테스트)</strong> 뿐이다(§2).</li>
+<li><span class="lead-bold">배포는 여러 경로로 갈라진다.</span> 손쉬운 순서로 GitHub Releases 바이너리(무빌드) → Homebrew → <code>cargo install</code>(소스 빌드)이며, 채널마다 대상 사용자와 마찰이 다르다(§3).</li>
+<li><span class="lead-bold">수익화는 전부 "가설"이다.</span> GitHub Sponsors·기업 후원·향후 유료 기능은 <strong>현재 코드에 없고 매출도 0</strong>이며, 모두 "만약 채택이 쌓인다면" 수준의 가정이다(§5). 숫자 목표는 사실이 아니라 가설로만 다룬다(정량 채택 지표·목표는 <strong>01-service-plan §6</strong> 단일 출처).</li>
+<li><span class="lead-bold">해자는 곧 지속가능성 엔진이다.</span> 새 런타임/프레임워크를 <code>Rule</code> 1개 + enum 값 1개로 추가하는 <strong>낮은 기여 장벽</strong>(research-s1 §9-③)이 기여를 끌어들이고, 그 기여가 "식별 사전"을 복리로 키운다 — 지속가능성과 차별화가 같은 메커니즘이다(§6).</li>
+</ul>
+
+<h2 id="s2">2. 비용 구조 (<span class="chip">B-4</span>) — 로컬 단일 바이너리 = 인프라 비용 0 <a class="anchor" href="#s2">#</a></h2>
+<p>ntop은 <strong>백엔드 서버·DB·HTTP API·회원 계정이 없는 로컬 도구</strong>다(codebase-facts §0-1). 따라서 SaaS의
+"서버·트래픽·스토리지 비용"이 <strong>존재하지 않는다.</strong> 비용은 사실상 두 가지 — 사람의 시간과 무료 CI다.</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>비용 항목</th><th>부담 주체</th><th>크기 / 성격</th><th>근거</th></tr></thead>
+<tbody>
+<tr><td>메인테이너 시간</td><td>greeun(공급측)</td><td>★가장 큰 실질 비용</td><td>코드·리뷰·이슈 트리아지·릴리스</td></tr>
+<tr><td>CI (GitHub Actions)</td><td>GitHub(무료 한도)</td><td>OSS 무료 범위 내</td><td>build·test(10모듈)·릴리스 자동화</td></tr>
+<tr><td>패키지 배포</td><td>crates.io/HB/GH</td><td>0 (무료 레지스트리)</td><td>호스팅·다운로드 무료</td></tr>
+<tr><td>런타임 인프라</td><td>없음</td><td>0</td><td>사용자 로컬 실행(서버 없음)</td></tr>
+<tr><td>데이터 / 저장</td><td>없음</td><td>0</td><td>인메모리, 영속 저장 없음(§ERD 31)</td></tr>
+<tr><td>결제 / 정산</td><td>없음</td><td>0</td><td>★결제·정산 자체가 없음</td></tr>
+</tbody>
+</table>
+</div>
+
+<figure class="viz">
+<svg viewBox="0 0 700 234" role="img" aria-label="비용 구조 막대 그래프 — 비용 대부분이 메인테이너 시간">
+  <text x="350" y="18" text-anchor="middle" class="sv-sub">막대 길이 = 실질 비용 크기 (서버·결제 인프라는 0)</text>
+  <text x="158" y="51" text-anchor="end" class="svg-label">메인테이너 시간</text>
+  <rect x="168" y="36" width="460" height="22" rx="4" fill="#4f46e5"/>
+  <text x="636" y="51" class="sv-sub">실질 비용의 대부분</text>
+  <text x="158" y="89" text-anchor="end" class="svg-label">CI / Actions</text>
+  <rect x="168" y="74" width="70" height="22" rx="4" fill="#0d9488"/>
+  <text x="246" y="89" class="sv-sub">OSS 무료 한도 내</text>
+  <text x="158" y="127" text-anchor="end" class="svg-label">배포 레지스트리</text>
+  <rect x="168" y="112" width="12" height="22" rx="4" fill="#94a3b8"/>
+  <text x="188" y="127" class="sv-sub">≈0 (무료)</text>
+  <text x="158" y="165" text-anchor="end" class="svg-label">서버 / DB / 인프라</text>
+  <rect x="168" y="150" width="5" height="22" rx="2" fill="#cbd5e1"/>
+  <text x="181" y="165" class="sv-sub">0 (로컬 바이너리)</text>
+  <text x="158" y="203" text-anchor="end" class="svg-label">결제 / 정산</text>
+  <rect x="168" y="188" width="5" height="22" rx="2" fill="#cbd5e1"/>
+  <text x="181" y="203" class="sv-sub">0 (존재하지 않음)</text>
+  <text x="350" y="228" text-anchor="middle" class="sv-sub" fill="#dc2626">⇒ 병목은 '돈'이 아니라 '메인테이너의 시간·동기' (§6)</text>
+</svg>
+<figcaption>비용 구조 한눈에 — 비용의 거의 전부가 '사람의 시간'. 서버·DB·결제·정산 인프라 비용은 0.</figcaption>
+<details class="raw"><summary>원본(텍스트)</summary><pre>비용 항목            │ 부담 주체        │ 크기 / 성격           │ 근거
+─────────────────────┼──────────────────┼───────────────────────┼──────────────────────────────
+메인테이너 시간       │ greeun(공급측)   │ ★가장 큰 실질 비용     │ 코드·리뷰·이슈 트리아지·릴리스
+CI (GitHub Actions)  │ GitHub(무료 한도) │ OSS 무료 범위 내       │ build·test(10모듈)·릴리스 자동화
+패키지 배포           │ crates.io/HB/GH  │ 0 (무료 레지스트리)    │ 호스팅·다운로드 무료
+런타임 인프라         │ 없음             │ 0                     │ 사용자 로컬 실행(서버 없음)
+데이터 / 저장         │ 없음             │ 0                     │ 인메모리, 영속 저장 없음(§ERD 31)
+결제 / 정산           │ 없음             │ 0                     │ ★결제·정산 자체가 없음
+
+비용 구조 한눈에 — "비용의 거의 전부가 사람의 시간"
+
+   [메인테이너 시간] ███████████████████████████  (실질 비용의 대부분)
+   [CI/Actions]      ██                            (OSS 무료 한도 내)
+   [배포 레지스트리]  ·                             (≈0, 무료)
+   [서버/DB/인프라]   ·                             (0, 로컬 바이너리)
+   [결제/정산]        ·                             (0, 존재하지 않음)
+   ──────────────────────────────────────────────
+   ⇒ 지속가능성의 병목은 "돈"이 아니라 "메인테이너의 시간·동기"다 → §6</pre></details>
+</figure>
+
+<div class="callout">
+<strong>함의:</strong> 비용이 거의 0이므로 ntop은 "수익을 내야 살아남는" 구조가 아니다. 위험은 <strong>재무</strong>가 아니라
+<strong>메인테이너 번아웃·bus-factor</strong>(§6)에 있다. 따라서 수익화(§5)는 "생존 조건"이 아니라 "메인테이너
+시간을 보전하는 선택적 보강"으로 위치한다.
+</div>
+
+<h2 id="s3">3. 배포 채널 비교 (<span class="chip">B-1</span>) — ≥3 채널 매트릭스 <a class="anchor" href="#s3">#</a></h2>
+<p>ntop은 <strong>Rust 단일 바이너리</strong>라 설치 경로가 여러 갈래다. 아래 4개 채널을 <strong>설치 난이도 / 업데이트 방식 /
+대상 사용자 / 선결 조건</strong>으로 비교한다. (codebase-facts §11은 <code>cargo install --git</code>와 릴리스 바이너리를
+<strong>확정 경로</strong>로 명시; crates.io 게시·Homebrew 포뮬러는 Cargo 메타데이터(name/license/keywords/categories)
+와 research-s1 §6-3 생태계 채널에 근거한 <strong>가설/예정</strong> 경로로, 사실과 가설을 구분해 표기한다.)</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>채널</th><th>설치 난이도</th><th>업데이트 방식</th><th>대상 사용자</th><th>선결 조건</th><th>상태</th></tr></thead>
+<tbody>
+<tr><td><code>cargo install --git</code></td><td>중 (소스 빌드)</td><td>명령 재실행(수동)</td><td>Rust 보유 개발자</td><td>Rust 1.70+ 툴체인</td><td><span class="chip ok">확정</span></td></tr>
+<tr><td>crates.io (cargo install)</td><td>중 (소스 빌드)</td><td>cargo install 재실행</td><td>Rust 생태계 사용자</td><td>Rust 툴체인</td><td><span class="chip p1">가설/예정</span></td></tr>
+<tr><td>Homebrew (brew install)</td><td>낮음 (무빌드)</td><td>brew upgrade</td><td>macOS/Linux 일반</td><td>Homebrew 설치</td><td><span class="chip p1">가설/예정</span></td></tr>
+<tr><td>GitHub Releases 바이너리</td><td>매우 낮음 (다운로드)</td><td>새 바이너리로 교체</td><td>비-Rust 사용자 포함</td><td>없음(실행파일만)</td><td><span class="chip ok">확정</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<figure class="viz">
+<svg viewBox="0 0 700 168" role="img" aria-label="배포 채널 설치 마찰 스펙트럼">
+  <defs><marker id="sp-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#64748b"/></marker></defs>
+  <text x="90" y="28" text-anchor="middle" class="svg-label" fill="#dc2626">마찰 높음 (빌드 필요)</text>
+  <text x="610" y="28" text-anchor="middle" class="svg-label" fill="#059669">마찰 낮음 (즉시 실행)</text>
+  <line x1="60" y1="48" x2="648" y2="48" stroke="#cbd5e1" stroke-width="7" stroke-linecap="round"/>
+  <line x1="60" y1="48" x2="646" y2="48" stroke="#64748b" stroke-width="1.5" marker-end="url(#sp-arrow)"/>
+  <circle cx="120" cy="48" r="9" fill="#4f46e5"/>
+  <circle cx="360" cy="48" r="9" fill="#6366f1"/>
+  <circle cx="600" cy="48" r="9" fill="#0d9488"/>
+  <text x="120" y="82" text-anchor="middle" class="svg-label">cargo --git / crates.io</text>
+  <text x="120" y="100" text-anchor="middle" class="sv-sub">최신 소스·자유도↑, Rust 툴체인 필요</text>
+  <text x="360" y="82" text-anchor="middle" class="svg-label">Homebrew</text>
+  <text x="360" y="100" text-anchor="middle" class="sv-sub">무빌드·자동 업데이트 경로, mac/Linux</text>
+  <text x="600" y="82" text-anchor="middle" class="svg-label">GitHub Releases 바이너리</text>
+  <text x="600" y="100" text-anchor="middle" class="sv-sub">무빌드·무툴체인, 모든 사용자</text>
+  <text x="350" y="146" text-anchor="middle" class="sv-sub">신규 채택(퍼널 ②, §4)의 핵심 레버 = Releases·Homebrew (저마찰 채널)</text>
+</svg>
+<figcaption>채널별 "설치 마찰 ↓ vs 통제력 ↑" 스펙트럼. 같은 단일 바이너리라 채널이 늘어도 추가 인프라 비용은 0.</figcaption>
+<details class="raw"><summary>원본(텍스트)</summary><pre>배포 채널 비교 매트릭스
+ 채널                       │ 설치 난이도        │ 업데이트 방식         │ 대상 사용자           │ 선결 조건            │ 상태
+ ───────────────────────────┼────────────────────┼───────────────────────┼───────────────────────┼──────────────────────┼────────
+ cargo install --git        │ 중 (소스 빌드)     │ 명령 재실행(수동)      │ Rust 보유 개발자       │ Rust 1.70+ 툴체인     │ 확정
+ crates.io (cargo install)  │ 중 (소스 빌드)     │ cargo install 재실행   │ Rust 생태계 사용자     │ Rust 툴체인           │ 가설/예정
+ Homebrew (brew install)    │ 낮음 (무빌드)      │ brew upgrade           │ macOS/Linux 일반       │ Homebrew 설치         │ 가설/예정
+ GitHub Releases 바이너리    │ 매우 낮음 (다운로드)│ 새 바이너리로 교체     │ 비-Rust 사용자 포함     │ 없음(실행파일만)      │ 확정
+
+채널별 "설치 마찰 ↓ vs 통제력 ↑" 스펙트럼
+  마찰 높음(빌드 필요)                                          마찰 낮음(즉시 실행)
+  ◀──────────────────────────────────────────────────────────────────────────▶
+  cargo --git / crates.io        Homebrew              GitHub Releases 바이너리
+  (최신 소스·자유도 ↑,           (무빌드, 자동 업데이트  (무빌드·무툴체인,
+   Rust 툴체인 필요)              경로, mac/Linux)        모든 사용자, 수동 교체)</pre></details>
+</figure>
+
+<p><strong>채널 전략 요지:</strong></p>
+<ul>
+<li><strong>신규 채택(퍼널 ②, §4)의 핵심 레버는 GitHub Releases 바이너리와 Homebrew</strong>다 — Rust 툴체인이 없는 사용자(운영자·비-Rust 개발자, research-s1 페르소나 P2)까지 마찰 없이 끌어들인다.</li>
+<li><strong>기여자·얼리어답터는 <code>cargo install --git</code></strong>로 최신 <code>develop</code>/소스를 직접 빌드한다(research-s1 §6-1).</li>
+<li>같은 단일 바이너리이므로 <strong>채널이 늘어도 추가 인프라 비용은 0</strong>(§2)이며, 채널 다양화는 곧 퍼널 ②의 이탈을 줄이는 일이다.</li>
+</ul>
+
+<h2 id="s4">4. 채택 퍼널 (<span class="chip">B-2</span>) — 인지 → 설치 → 상시 사용 → 기여/후원 <a class="anchor" href="#s4">#</a></h2>
+<p>매출 퍼널이 없으므로 ntop의 퍼널은 <strong>"사용자가 얼마나 깊이 들어오나"</strong> 의 깔때기다. 각 단계마다 <strong>이탈
+지점</strong>(여기서 떨어진다)과 <strong>전환 레버</strong>(이탈을 줄이는 장치)를 함께 둔다.</p>
+
+<figure class="viz">
+<svg viewBox="0 0 760 326" role="img" aria-label="채택 퍼널 4단계 — 인지·설치·상시사용·기여/후원">
+  <defs><marker id="f4-arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M1,1 L9,5 L1,9 Z" fill="#64748b"/></marker></defs>
+  <polygon points="70,24 450,24 330,284 190,284" fill="#eef2ff"/>
+  <rect x="70" y="24" width="380" height="50" rx="6" fill="#c7d2fe"/>
+  <text x="260" y="54" text-anchor="middle" class="sv-title">① 인지 (Awareness) — 넓음</text>
+  <text x="478" y="44" class="svg-label">접점: GitHub 검색·Stars,</text>
+  <text x="478" y="61" class="svg-label">crates.io · 입소문 · README/데모</text>
+  <line x1="260" y1="76" x2="260" y2="90" stroke="#64748b" stroke-width="1.4" marker-end="url(#f4-arrow)"/>
+  <rect x="115" y="92" width="290" height="50" rx="6" fill="#a5b4fc"/>
+  <text x="260" y="122" text-anchor="middle" class="sv-title">② 설치 (Install)</text>
+  <text x="478" y="112" class="svg-label">채널: §3 — Releases ·</text>
+  <text x="478" y="129" class="svg-label">Homebrew · cargo</text>
+  <line x1="260" y1="144" x2="260" y2="158" stroke="#64748b" stroke-width="1.4" marker-end="url(#f4-arrow)"/>
+  <rect x="155" y="160" width="210" height="50" rx="6" fill="#818cf8"/>
+  <text x="260" y="190" text-anchor="middle" class="sv-title" fill="#ffffff">③ 상시 사용 (Daily use)</text>
+  <text x="478" y="180" class="svg-label">가치: 식별 → 점검 →</text>
+  <text x="478" y="197" class="svg-label">안전 종료 (가치 루프=01 §4)</text>
+  <line x1="260" y1="212" x2="260" y2="226" stroke="#64748b" stroke-width="1.4" marker-end="url(#f4-arrow)"/>
+  <rect x="195" y="228" width="130" height="50" rx="6" fill="#4f46e5"/>
+  <text x="260" y="252" text-anchor="middle" class="sv-title" fill="#ffffff">④ 기여 / 후원</text>
+  <text x="260" y="269" text-anchor="middle" class="sv-sub" fill="#e0e7ff">좁음</text>
+  <text x="478" y="248" class="svg-label">PR(새 Rule)·이슈 ·</text>
+  <text x="478" y="265" class="svg-label">GitHub Sponsors (결제 아님)</text>
+  <text x="380" y="310" text-anchor="middle" class="sv-sub">단계별 이탈 지점·전환 레버는 아래 표 참조 (정량 지표는 가설, 01 §6)</text>
+</svg>
+<figcaption>채택 퍼널 — 위로 갈수록 넓고(인지), 아래로 갈수록 좁다(기여). 단계마다 이탈을 줄이는 전환 레버가 붙는다.</figcaption>
+<details class="raw"><summary>원본(텍스트)</summary><pre>채택 퍼널 (Adoption Funnel)                          이탈 지점 →  이를 줄이는 전환 레버
+══════════════════════════════════════════════════════════════════════════════════════════
+ ┌──────────────────────────────────────────────┐
+ │ ① 인지 (Awareness)  "이런 도구가 있네"         │   접점: GitHub 검색·Stars,
+ │     넓음 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓        │   crates.io, 입소문, README/데모
+ └───────────────────────┬──────────────────────┘
+   이탈: README가 "의미 인지"라는 핵심 가치를 한눈에 못 보여줌(그냥 또 다른 htop으로 오인)
+   레버: 한 줄 정의 + "node 더미 → Next.js@:3000" 데모 GIF + keywords(node/process/tui/monitor/nuxt)
+                         ▼
+ ┌──────────────────────────────────────────────┐
+ │ ② 설치 (Install)  "한 번 깔아보자"             │   채널: §3 (Releases/Homebrew/cargo)
+ │     ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓                       │
+ └───────────────────────┬──────────────────────┘
+   이탈: Rust 툴체인·소스 빌드 시간 마찰(cargo 경로), "설치가 번거롭다"
+   레버: 사전 빌드 바이너리(무툴체인)·Homebrew(무빌드 자동 경로) → §3 매트릭스의 낮은-마찰 채널
+                         ▼
+ ┌──────────────────────────────────────────────┐
+ │ ③ 상시 사용 (Daily use)  "매일 켠다"            │   가치: 식별→점검→안전 종료
+ │     ▓▓▓▓▓▓▓▓▓▓▓▓                               │   (가치 루프는 01-service-plan §4)
+ └───────────────────────┬──────────────────────┘
+   이탈: 첫 실행에서 가치 체감 실패(범용 모니터와 차이를 못 느낌)
+   레버: 첫 화면에서 즉시 의미 식별(익명 node → 프레임워크·포트로 보임) + 안전 종료의 "안심" 경험
+         (해소하는 문제 = PRB-1·3·5, 출처 research-s2 / 01-service-plan §1)
+                         ▼
+ ┌──────────────────────────────────────────────┐
+ │ ④ 기여 / 후원 (Contribute / Sponsor)            │   접점: PR(새 Rule)·이슈·
+ │     좁음 ▓▓▓▓                                   │   GitHub Sponsors(후원, 결제 아님)
+ └──────────────────────────────────────────────┘
+   이탈: 기여 방법 불명확·진입 장벽이 높다고 느낌
+   레버: 새 런타임/프레임워크 = Rule 1개 + enum 값 1개로 끝(낮은 기여 장벽, research-s1 §9-③) →
+         "내가 쓰는 프레임워크를 직접 추가" 동기 → §6 지속가능성 엔진으로 환류</pre></details>
+</figure>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>단계</th><th>핵심 전환 질문</th><th>주 이탈 원인</th><th>레버(이탈↓)</th><th>측정(가설 지표는 01 §6)</th></tr></thead>
+<tbody>
+<tr><td>① 인지</td><td>"이게 htop과 뭐가 다른가?"</td><td>가치 차별점 불명확</td><td>한 줄 정의·데모·키워드</td><td>GitHub Stars·트래픽(가설, 01 §6)</td></tr>
+<tr><td>② 설치</td><td>"깔기 쉬운가?"</td><td>툴체인/빌드 마찰</td><td>무빌드 바이너리·Homebrew</td><td>다운로드 수(가설, 01 §6)</td></tr>
+<tr><td>③ 상시 사용</td><td>"매일 켤 만큼 가치 있나?"</td><td>첫 인상 실패</td><td>즉시 의미 식별·안전 종료</td><td>리텐션은 OSS 특성상 추정만(가설)</td></tr>
+<tr><td>④ 기여/후원</td><td>"보탤 만큼 쉽고 의미 있나?"</td><td>기여 장벽</td><td>Rule+enum 저장벽</td><td>기여자·외부 PR·Sponsors(가설, 01 §6)</td></tr>
+</tbody>
+</table>
+</div>
+
+<blockquote>
+<strong>정량 채택 지표와 목표치는 모두 "가설"이며 <code>01-service-plan §6</code>(성공지표)이 단일 출처다.</strong> 여기
+00은 퍼널의 <strong>구조와 레버</strong>만 정의하고 숫자를 사실로 제시하지 않는다(중복정의 금지).
+</blockquote>
+
+<h2 id="s5">5. 수익화 옵션 (<span class="chip">B-3</span>) — 전부 "가설(hypothesis)", 현재 매출 0 <a class="anchor" href="#s5">#</a></h2>
+<p><strong>중요:</strong> 아래 옵션은 <strong>하나도 코드/계약/매출로 존재하지 않는다.</strong> 모두 "만약 채택이 충분히 쌓인다면"
+이라는 전제의 <strong>가설</strong>이며, ntop의 생존 조건이 아니라 §2에서 본 "메인테이너 시간"을 보전하는 <strong>선택적
+보강</strong>일 뿐이다. <strong>정산·take-rate·결제는 어떤 옵션에도 없다.</strong></p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>옵션</th><th>성격</th><th>전제</th><th>리스크 / 주의</th><th>상태</th></tr></thead>
+<tbody>
+<tr><td>GitHub Sponsors</td><td>개인 후원</td><td>채택·평판 축적</td><td>후원 동기 약하면 사실상 0</td><td><span class="chip p1">가설</span></td></tr>
+<tr><td>기업 후원</td><td>조직 후원</td><td>팀 단위 채택</td><td>B2B 영업·홍보 부재</td><td><span class="chip p1">가설</span></td></tr>
+<tr><td>향후 Pro/Team 기능</td><td>유료 확장(가정)</td><td>코어 가치 입증 후</td><td>★미구현·OSS 신뢰 훼손 위험</td><td><span class="chip p0">가설(미구현)</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<ul>
+<li><strong>GitHub Sponsors</strong> — 개인 후원 버튼. "후원 흐름"이지 <strong>결제·정산이 아니다</strong>(§7). 가장 OSS-친화적이고 도입 비용이 낮은 가설.</li>
+<li><strong>기업 후원</strong> — ntop을 팀 표준 도구로 쓰는 조직의 후원. 검증된 안전성·크로스플랫폼이 전제(research-s1 §6-2 "팀 리드/도입 검토자"). B2B 영업 인력이 없다는 점이 리스크.</li>
+<li><strong>향후 Pro/Team 기능(가설·미구현)</strong> — 예: 팀 공유 대시보드·원격 모니터링 등 <strong>현재 코드에 전혀 없는</strong> 가정적 확장. 코어(식별·안전 종료)는 영원히 무료 MIT로 유지한다는 전제가 깨지면 OSS 신뢰를 훼손할 수 있어 <strong>신중히 다룬다.</strong> 본 문서는 이를 <strong>방향 가설로만</strong> 적고, 기능을 설계·약속하지 않는다(spec §7 비목표: 근거 없는 기능 창작 금지).</li>
+</ul>
+
+<blockquote>
+<strong>단일 출처 메모:</strong> 어떤 수익화 옵션도 <code>33-policy</code>의 결제/환불 규칙으로 이어지지 않는다 — ntop의
+정책 문서(<code>33</code>)는 <strong>안전·프라이버시 정책</strong>이지 결제 정책이 아니다(codebase-facts §0-1).
+</blockquote>
+
+<h2 id="s6">6. 지속가능성 구조 (<span class="chip">B-5</span>) — 진짜 병목은 시간·bus-factor <a class="anchor" href="#s6">#</a></h2>
+<p>비용이 0에 가깝다는 것은(§2) ntop의 생존을 위협하는 것이 <strong>돈이 아니라 사람</strong>이라는 뜻이다.
+지속가능성은 세 축 — <strong>기여 유입 / bus-factor / 상류 의존 리스크</strong> — 으로 본다.</p>
+
+<figure class="viz">
+<svg viewBox="0 0 720 350" role="img" aria-label="지속가능성 3축 구조 — 기여 유입·bus-factor·상류 의존">
+  <defs><marker id="s6-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#64748b"/></marker>
+  <marker id="s6-arrow2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#0d9488"/></marker></defs>
+  <rect x="60" y="22" width="500" height="80" rx="8" class="svg-node" stroke="#4f46e5"/>
+  <text x="78" y="48" class="sv-title">① 기여 유입 (낮은 장벽)</text>
+  <text x="78" y="70" class="svg-label">새 런타임/프레임워크 = Rule 1개 + enum 값 1개 추가</text>
+  <text x="78" y="90" class="sv-sub">→ 기여가 쌓일수록 식별 사전이 복리로 커짐 (research-s1 §9-③)</text>
+  <path d="M560,42 C648,30 656,86 580,76" fill="none" stroke="#0d9488" stroke-width="1.6" marker-end="url(#s6-arrow2)"/>
+  <text x="624" y="20" text-anchor="middle" class="sv-sub" fill="#0d9488">복리 루프</text>
+  <text x="624" y="100" text-anchor="middle" class="sv-sub" fill="#0d9488">기여=해자</text>
+  <line x1="310" y1="102" x2="310" y2="132" stroke="#64748b" stroke-width="1.4" marker-end="url(#s6-arrow)"/>
+  <text x="322" y="122" class="sv-sub">유입↑ → 위험 완화</text>
+  <rect x="60" y="134" width="500" height="74" rx="8" class="svg-node" stroke="#d97706"/>
+  <text x="78" y="160" class="sv-title">② bus-factor (핵심 인원 의존)</text>
+  <text x="78" y="182" class="svg-label">메인테이너 = greeun 1인 → bus-factor ≈ 1 (위험)</text>
+  <text x="78" y="200" class="sv-sub">완화: 낮은 기여 장벽(①) + MIT 자유 포크로 의존 분산 (research-s1 §6-1)</text>
+  <line x1="310" y1="208" x2="310" y2="238" stroke="#64748b" stroke-width="1.4" marker-end="url(#s6-arrow)"/>
+  <rect x="60" y="240" width="500" height="92" rx="8" class="svg-node" stroke="#dc2626"/>
+  <text x="78" y="266" class="sv-title">③ 상류 의존 리스크</text>
+  <text x="78" y="288" class="svg-label">빌드: sysinfo·ratatui·crossterm·clap·tokio·nix·windows-sys</text>
+  <text x="78" y="306" class="svg-label">런타임 명령: lsof·netstat·taskkill — 부재 시 빈 결과</text>
+  <text x="78" y="324" class="sv-sub">(포트 칸이 비는 정도, 크래시 아님 — 우아한 저하 / codebase-facts §1·§12)</text>
+</svg>
+<figcaption>지속가능성 3축 — ① 낮은 기여 장벽이 복리 루프를 돌려 ② bus-factor 위험을 완화하고, ③ 상류 의존은 명령 부재 시 빈 결과로 우아하게 저하한다.</figcaption>
+<details class="raw"><summary>원본(텍스트)</summary><pre>지속가능성 구조 (3축)
+
+ ┌─ ① 기여 유입(낮은 장벽) ───────────────────────────────┐
+ │  새 런타임/프레임워크 = `Rule` 1개 + enum 값 1개 추가     │  ← research-s1 §9-③ / codebase-facts §2
+ │  → 그 외 코드 변경 불필요 → "내가 쓰는 FW 직접 추가" 동기 │     "기여가 쌓일수록 식별 사전이 복리로 커짐"
+ │  → 기여가 곧 차별화(해자)를 키우는 엔진                   │
+ └────────────────────────────┬───────────────────────────┘
+                              │ 유입이 많을수록 ▼ 위험 완화
+ ┌─ ② bus-factor(핵심 인원 의존) ─────────────────────────┐
+ │  현재 메인테이너 = greeun 1인 → bus-factor ≈ 1 (위험)   │  ← research-s1 §6-1
+ │  완화: 낮은 기여 장벽(①) + MIT(자유 포크) → 단일 인원    │
+ │        의존을 분산할 구조적 여지                          │
+ └────────────────────────────┬───────────────────────────┘
+                              │
+ ┌─ ③ 상류 의존 리스크 ───────────────────────────────────┐
+ │  빌드 의존 크레이트: sysinfo·ratatui·crossterm·clap·    │  ← codebase-facts §1·§12
+ │   tokio·nix·windows-sys → 상류 중단/파괴적 변경 위험     │
+ │  런타임 의존 시스템 명령: lsof·netstat·taskkill →       │
+ │   부재 시 "빈 결과"로 우아하게 저하(graceful degrade)    │     (포트 칸이 비는 정도, 크래시 아님)
+ └────────────────────────────────────────────────────────┘</pre></details>
+</figure>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>축</th><th>현재 상태</th><th>위험</th><th>완화책(근거)</th></tr></thead>
+<tbody>
+<tr><td>기여 유입</td><td>Rule+enum 저장벽 구조</td><td>인지 부족 시 기여 0</td><td>퍼널 ④ 레버(§4)·기여 가이드·good first issue(가설)</td></tr>
+<tr><td>bus-factor</td><td>메인테이너 1인(≈1)</td><td>1인 이탈 시 정체</td><td>낮은 장벽으로 기여자 다변화·MIT 포크 자유(research-s1 §6-6)</td></tr>
+<tr><td>상류 의존</td><td>크레이트 7종 + 시스템 명령 3종</td><td>상류 파손·중단</td><td>널리 쓰이는 크레이트 선택·버전 고정·명령 부재 시 빈 결과(codebase-facts §12)</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout ok">
+<strong>핵심 통찰:</strong> ntop은 <strong>차별화 메커니즘(낮은 기여 장벽 → 복리로 커지는 식별 사전)이 곧 지속가능성
+메커니즘</strong>이다. 즉 "기여를 쉽게 만든 설계"가 해자(02-market-competition / research-s1 §9)와
+지속가능성을 동시에 떠받친다. 재무가 아니라 <strong>이 기여 루프가 살아 있는지</strong>가 ntop 생존의 척도다.
+</div>
+
+<h2 id="s7">7. 기여 / 후원 가치 흐름도 (<span class="chip">B-6</span>·<span class="chip">B-7</span>) — money-flow의 치환 <a class="anchor" href="#s7">#</a></h2>
+<p>표준 비즈니스 모델의 "돈의 흐름"을 ntop에서는 <strong>"코드·후원·피드백의 흐름"</strong> 으로 치환한다. 아래
+다이어그램에는 <strong>결제·정산 화살표가 없다</strong> — 모든 흐름은 무료 OSS 순환이다. (전체 생태계 맵(전 참여자·
+대체재 포함)은 <code>02-market-competition</code> 단일 출처; 여기서는 <strong>지속가능성에 직접 닿는 가치 흐름</strong>만.)</p>
+
+<figure class="viz">
+<svg viewBox="0 0 760 396" role="img" aria-label="기여·후원 가치 흐름 — 결제·정산 화살표 없음">
+  <defs><marker id="f7-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#64748b"/></marker>
+  <marker id="f7-arrow2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#0d9488"/></marker></defs>
+  <path d="M540,330 C706,318 712,30 104,30" fill="none" stroke="#0d9488" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#f7-arrow2)"/>
+  <text x="400" y="20" text-anchor="middle" class="sv-sub" fill="#0d9488">가치 환류(무료): 더 정확한 식별·안전 종료 → 사용자/기여자에게</text>
+  <rect x="20" y="46" width="140" height="50" rx="8" class="svg-node"/>
+  <text x="90" y="76" text-anchor="middle" class="sv-title">기여자</text>
+  <rect x="20" y="136" width="140" height="50" rx="8" class="svg-node"/>
+  <text x="90" y="166" text-anchor="middle" class="sv-title">사용자</text>
+  <rect x="20" y="226" width="140" height="50" rx="8" class="svg-node"/>
+  <text x="90" y="256" text-anchor="middle" class="sv-title">후원자</text>
+  <rect x="320" y="70" width="220" height="172" rx="10" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.8"/>
+  <text x="430" y="100" text-anchor="middle" class="sv-title">ntop repo</text>
+  <text x="430" y="120" text-anchor="middle" class="sv-sub">(GitHub · greeun)</text>
+  <text x="430" y="146" text-anchor="middle" class="svg-label">build · test (CI)</text>
+  <text x="430" y="168" text-anchor="middle" class="svg-label">→ 릴리스 / 머지</text>
+  <text x="430" y="206" text-anchor="middle" class="sv-sub" fill="#dc2626">※ 결제·정산 아님</text>
+  <text x="430" y="224" text-anchor="middle" class="sv-sub" fill="#dc2626">(화살표 = 가치, 돈 아님)</text>
+  <line x1="160" y1="71" x2="318" y2="104" stroke="#64748b" stroke-width="1.4" marker-end="url(#f7-arrow)"/>
+  <text x="240" y="80" text-anchor="middle" class="sv-sub">코드/PR (새 Rule·런타임)</text>
+  <line x1="160" y1="161" x2="318" y2="150" stroke="#64748b" stroke-width="1.4" marker-end="url(#f7-arrow)"/>
+  <text x="240" y="143" text-anchor="middle" class="sv-sub">이슈·Stars·입소문 (피드백)</text>
+  <line x1="160" y1="251" x2="318" y2="200" stroke="#64748b" stroke-width="1.4" marker-end="url(#f7-arrow)"/>
+  <text x="240" y="246" text-anchor="middle" class="sv-sub">GitHub Sponsors (후원 흐름)</text>
+  <line x1="430" y1="242" x2="430" y2="298" stroke="#64748b" stroke-width="1.4" marker-end="url(#f7-arrow)"/>
+  <text x="540" y="274" text-anchor="middle" class="sv-sub">새 버전·새 규칙</text>
+  <rect x="320" y="300" width="220" height="60" rx="10" class="svg-node"/>
+  <text x="430" y="326" text-anchor="middle" class="sv-title">배포 채널 → 사용자</text>
+  <text x="430" y="346" text-anchor="middle" class="sv-sub">cargo · Homebrew · Releases (§3)</text>
+</svg>
+<figcaption>기여·후원 가치 흐름 — 코드(기여자)·피드백(사용자)·후원(후원자)이 repo로 모여 메인테이너 시간을 충전하고, 새 릴리스가 무료로 환류한다. 정산·결제 화살표는 없다.</figcaption>
+<details class="raw"><summary>원본(텍스트)</summary><pre>기여 / 후원 가치 흐름  (정산·결제 0 — 화살표는 전부 "가치", 돈 아님)
+
+   ┌────────────┐  코드/PR(새 Rule·런타임)  ┌───────────────────────┐
+   │  기여자     │ ─────────────────────────▶ │                       │
+   └────────────┘                            │      ntop repo        │
+   ┌────────────┐  이슈·Stars·입소문(피드백)  │   (GitHub · greeun)   │
+   │  사용자     │ ─────────────────────────▶ │   build·test(CI)      │
+   └────────────┘                            │   → 릴리스/머지        │
+   ┌────────────┐  GitHub Sponsors(후원 흐름) │                       │
+   │  후원자     │ ─────────────────────────▶ │   ※ 결제·정산 아님     │
+   └────────────┘                            └───────────┬───────────┘
+        ▲                                                │ 새 버전·새 규칙
+        │ 가치 환류(무료): 더 정확한 식별·안전 종료        │  (배포: §3 채널)
+        │                                                ▼
+        │                                    ┌───────────────────────┐
+        └────────────────────────────────── │  배포 채널 → 사용자    │
+                                             │  (cargo/HB/Releases)   │
+                                             └───────────────────────┘
+
+  ⇒ 흐른 가치가 메인테이너의 "시간·동기"를 충전(§2 비용의 핵심)하고,
+     충전된 시간이 새 버전을 낳아 사용자에게 무료로 환류한다. 이 순환이 ntop의 "수익 모델"을 대신한다.</pre></details>
+</figure>
+
+<p><strong>흐름이 말하는 것:</strong> ntop에는 "돈이 정산되는 시점"이 없다. 대신 <strong>코드(기여자)·피드백(사용자)·
+후원(후원자)</strong> 이 repo로 모여 메인테이너의 시간을 보전하고, 그 시간이 새 릴리스로 환류한다. 후원
+(GitHub Sponsors)조차 <strong>거래가 아니라 일방적 후원 흐름</strong>이라 take-rate·정산이 끼어들 자리가 없다.</p>
+
+<h2 id="verify">자체 검증 (Self-verification) <a class="anchor" href="#verify">#</a></h2>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>#</th><th>체크</th><th>결과</th><th>어디서 충족</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">B-1</span></td><td>배포 채널 ≥3 비교(난이도/업데이트/대상/선결)</td><td><strong>PASS</strong> — 4채널 매트릭스 + 확정/가설 상태 + 마찰 스펙트럼</td><td>§3</td></tr>
+<tr><td><span class="chip">B-2</span></td><td>채택 퍼널 + 단계별 이탈/레버</td><td><strong>PASS</strong> — 4단계 퍼널 다이어그램 + 이탈/레버 표</td><td>§4</td></tr>
+<tr><td><span class="chip">B-3</span></td><td>수익화 = 전부 "가설", Pro/Team "미구현" 명기</td><td><strong>PASS</strong> — §5 표 전 행 "가설", Pro/Team "가설(미구현)"</td><td>§5</td></tr>
+<tr><td><span class="chip">B-4</span></td><td>비용 구조(메인테이너 시간·CI·인프라 0)</td><td><strong>PASS</strong> — 비용 표 + 막대 구조도</td><td>§2</td></tr>
+<tr><td><span class="chip">B-5</span></td><td>지속가능성(기여 저장벽·bus-factor·상류 리스크)</td><td><strong>PASS</strong> — 3축 구조도 + 표 + research-s1 §9 인용</td><td>§6</td></tr>
+<tr><td><span class="chip">B-6</span></td><td>시각화(퍼널·채널 매트릭스·기여/후원 흐름도, 외부 렌더러 0)</td><td><strong>PASS</strong> — 전 다이어그램 순수 ASCII, Mermaid 미사용</td><td>§2~§7</td></tr>
+<tr><td><span class="chip">B-7</span></td><td>정산/take-rate/결제 0(가치=코드·후원·피드백)</td><td><strong>PASS</strong> — 면책 + §7 흐름도에 결제 화살표 없음</td><td>서두, §7</td></tr>
+<tr><td><span class="chip">B-8</span></td><td>단일 출처 준수(가치/MVP/지표=01, 생태계/경쟁=02 참조)</td><td><strong>PASS</strong> — §1·§4·§5·§7에 "01 참조"/"02 참조" 명시</td><td>전체</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>추가 원칙 점검</h4>
+<ul>
+<li><strong>창작 금지(spec §7):</strong> 결제·정산·take-rate·회원 DB·REST 엔드포인트 언급은 전부 <strong>부정·면책 맥락</strong>(서두 면책, §2 "결제/정산 0", §5 "미구현", §7 "결제 아님"). 새 기능·수치 창작 없음. Pro/Team은 명시적 "가설(미구현)".</li>
+<li><strong>가설 라벨링(G-d 일부):</strong> 모든 수익화 옵션과 정량 채택 지표를 "가설"로 표기했고, 정량 지표·목표의 <strong>단일 출처는 01 §6</strong>으로 위임(중복정의 0).</li>
+<li><strong>쉬운 설명(probe 9):</strong> 첫 등장 용어(OSS·MIT·퍼널·이탈·레버·bus-factor·상류·크레이트) 풀이 블록 제공.</li>
+<li><strong>사실 역추적성:</strong> 비용·배포·지속가능성 사실은 codebase-facts(§0-1·§1·§2·§11·§12)와 research-s1(§6·§9)으로 역추적. 확정/가설 채널을 구분 표기(§3).</li>
+</ul>
+
+<h4>알려진 한계(후속 보완)</h4>
+<ul>
+<li>crates.io 게시·Homebrew 포뮬러의 실제 존재 여부는 dossier에서 확정되지 않아 <strong>"가설/예정"으로 표기</strong>(§3) — 메인테이너 확인 시 "확정"으로 승격 가능.</li>
+<li>정량 채택 목표치(Stars/다운로드/기여자 등)는 본 문서에서 산정하지 않고 01 §6(가설)로 위임 — 사실로 제시되는 숫자는 없다.</li>
+</ul>
+
+</main>
+</div>
+
+<script>
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+  var heads = Array.prototype.slice.call(document.querySelectorAll('main h2[id], main h3[id]'));
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(a){ a.classList.remove('active'); });
+        var id = e.target.getAttribute('id');
+        if(map[id]) map[id].classList.add('active');
+      }
+    });
+  }, {rootMargin:'-64px 0px -70% 0px', threshold:0});
+  heads.forEach(function(h){ obs.observe(h); });
+  document.querySelectorAll('main h2, main h3').forEach(function(h){
+    h.style.cursor='pointer';
+    h.addEventListener('click', function(ev){
+      if(ev.target.classList.contains('anchor')) return;
+      if(h.id) history.replaceState(null,'','#'+h.id);
+    });
+  });
+})();
+</script>
+</body>
+</html>

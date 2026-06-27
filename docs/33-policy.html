@@ -1,0 +1,751 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>33 · 정책 — 안전·프라이버시 단일 출처 · ntop</title>
+<style>
+/* ntop 기획 패키지 — 공통 디자인 시스템 (자체완결: 각 NN-name.html <style>에 인라인 복제) */
+/* 외부 의존 0 — CDN/웹폰트/Mermaid 금지. 시스템 폰트만. */
+:root{
+  --accent:#4f46e5;        /* indigo */
+  --accent2:#0d9488;       /* teal */
+  --accent-soft:#eef2ff;
+  --bg:#ffffff;
+  --fg:#1e293b;
+  --muted:#64748b;
+  --line:#e2e8f0;
+  --code-bg:#f1f5f9;
+  --warn:#d97706; --warn-bg:#fffbeb;
+  --bad:#dc2626;  --bad-bg:#fef2f2;
+  --ok:#059669;   --ok-bg:#ecfdf5;
+  --t1:#dc2626; --t2:#d97706; --t3:#ca8a04;
+  --maxw:860px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;color:var(--fg);background:var(--bg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  line-height:1.7;font-size:16px;
+}
+code,pre,.mono{font-family:"SF Mono",SFMono-Regular,ui-monospace,Menlo,Consolas,"D2Coding",monospace}
+
+/* ── 상단바 ── */
+.topbar{
+  position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  padding:10px 18px;background:#0f172a;color:#f8fafc;font-weight:600;font-size:15px;
+  border-bottom:3px solid var(--accent);
+}
+.topbar .doc-no{color:#a5b4fc;font-variant-numeric:tabular-nums}
+.topbar nav{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.topbar nav a,.topbar nav button{
+  color:#e2e8f0;background:#1e293b;border:1px solid #334155;border-radius:6px;
+  padding:4px 10px;font-size:13px;text-decoration:none;cursor:pointer;font-weight:500;
+}
+.topbar nav a:hover,.topbar nav button:hover{background:var(--accent);border-color:var(--accent)}
+
+/* ── 티어 배지 ── */
+.tier{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:700;color:#fff}
+.tier.t1{background:var(--t1)} .tier.t2{background:var(--t2)} .tier.t3{background:var(--t3)}
+
+/* ── 레이아웃: TOC + 본문 ── */
+.layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:0;max-width:1200px;margin:0 auto}
+.toc{position:sticky;top:58px;align-self:start;height:calc(100vh - 58px);overflow:auto;padding:18px 12px;border-right:1px solid var(--line);font-size:13.5px}
+.toc h4{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.toc a{display:block;padding:3px 8px;color:var(--muted);text-decoration:none;border-radius:5px;border-left:2px solid transparent}
+.toc a:hover{background:var(--accent-soft);color:var(--accent)}
+.toc a.active{color:var(--accent);background:var(--accent-soft);border-left-color:var(--accent);font-weight:600}
+.toc a.lv3{padding-left:18px;font-size:12.5px}
+main{padding:26px 34px;max-width:var(--maxw)}
+main h1{font-size:26px;line-height:1.3;margin:0 0 6px}
+main h2{font-size:21px;margin:34px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--line);scroll-margin-top:64px}
+main h3{font-size:17px;margin:24px 0 10px;color:#0f172a;scroll-margin-top:64px}
+main h4{font-size:15px;margin:18px 0 8px;color:var(--muted)}
+main p{margin:10px 0}
+main a{color:var(--accent)}
+.anchor{margin-left:8px;color:var(--line);text-decoration:none;font-weight:400;font-size:.8em}
+main h2:hover .anchor,main h3:hover .anchor{color:var(--accent)}
+
+/* ── 표 ── */
+.table-wrap{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:7px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{background:#f8fafc;font-weight:700;position:sticky;top:0;border-bottom:2px solid var(--line)}
+tbody tr:nth-child(even){background:#fbfcfe}
+tbody tr:hover{background:var(--accent-soft)}
+
+/* ── 코드·칩 ── */
+:not(pre)>code{background:var(--code-bg);padding:1px 6px;border-radius:5px;font-size:.88em;color:#be185d}
+pre{background:#0f172a;color:#e2e8f0;padding:14px 16px;border-radius:8px;overflow-x:auto;font-size:13px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+.chip{display:inline-block;background:var(--accent-soft);color:var(--accent);border:1px solid #c7d2fe;border-radius:5px;padding:0 6px;font-size:.85em;font-weight:600}
+.chip.p0{background:var(--bad-bg);color:var(--bad);border-color:#fecaca}
+.chip.p1{background:var(--warn-bg);color:var(--warn);border-color:#fde68a}
+.chip.ok{background:var(--ok-bg);color:var(--ok);border-color:#a7f3d0}
+
+/* ── 콜아웃 ── */
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+.callout.warn{border-color:var(--warn);background:var(--warn-bg)}
+.callout.bad{border-color:var(--bad);background:var(--bad-bg)}
+.callout.ok{border-color:var(--ok);background:var(--ok-bg)}
+blockquote{border-left:4px solid var(--line);margin:14px 0;padding:4px 16px;color:var(--muted)}
+
+/* ── 인포그래픽 figure ── */
+figure.viz{margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:10px;background:#fcfdff;text-align:center}
+figure.viz svg{max-width:100%;height:auto;display:block;margin:0 auto}
+figure.viz figcaption{margin-top:10px;font-size:13px;color:var(--muted);text-align:center}
+.viz-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+details.raw{margin-top:8px;font-size:13px}
+details.raw summary{cursor:pointer;color:var(--muted);font-size:12.5px}
+details.raw pre{margin-top:6px}
+
+/* SVG 공통 텍스트 */
+svg text{font-family:-apple-system,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+.svg-node{fill:#fff;stroke:var(--accent);stroke-width:1.5}
+.svg-edge{stroke:var(--muted);stroke-width:1.5;fill:none}
+.svg-label{font-size:12px;fill:var(--fg)}
+.svg-accent{fill:var(--accent)} .svg-accent2{fill:var(--accent2)}
+
+/* 화면 mockup 프레임(20/21용) */
+.screen{border:2px solid #334155;border-radius:8px;background:#0f172a;color:#cbd5e1;font-family:"SF Mono",ui-monospace,monospace;font-size:12px;padding:0;overflow:hidden;text-align:left;margin:0 auto;max-width:560px}
+.screen .bar{background:#1e293b;color:#a5b4fc;padding:4px 8px;font-size:11px;border-bottom:1px solid #334155}
+.screen .body{padding:8px 10px;white-space:pre;overflow-x:auto;line-height:1.4}
+
+/* ── print ── */
+@media print{
+  .topbar,.toc,.anchor,details.raw summary{display:none!important}
+  .layout{grid-template-columns:1fr;max-width:none}
+  main{max-width:none;padding:0}
+  details.raw{display:none}
+  *{break-inside:avoid}
+  figure.viz{border:1px solid #ccc}
+}
+/* ── 반응형 ── */
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}
+  main{padding:18px}
+}
+/* ── 페이지 전용 보강 ── */
+svg .ttl{font-size:13px;font-weight:700;fill:var(--fg)}
+svg .sub{font-size:11px;fill:var(--muted)}
+svg .mn{font-family:"SF Mono",ui-monospace,Menlo,monospace}
+svg .b{font-weight:700}
+.legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:14px;height:14px;border-radius:3px;display:inline-block;border:1px solid var(--line)}
+</style></head>
+<body>
+<header class="topbar"><span class="doc-no">33</span> <span class="tier t1">T1</span> · 정책 — 안전·프라이버시 단일 출처
+  <nav><a href="index.html">← 목록</a> <a href="32-api-spec.html">← 이전</a> <a href="40-backlog.html">다음 →</a>
+  <button onclick="window.print()">🖨 인쇄</button></nav></header>
+<div class="layout">
+<nav class="toc"><h4>목차</h4>
+  <a href="#contract">Sprint Contract</a>
+  <a href="#s0">0 · 정책 철학</a>
+  <a href="#s1">1 · kill 확인 게이트</a>
+  <a class="lv3" href="#s1-1">1-1 · 게이트 규칙 표</a>
+  <a href="#s2">2 · 정확한 종료 정책</a>
+  <a class="lv3" href="#s2-1">2-1 · 경로별 종료 정책</a>
+  <a class="lv3" href="#s2-2">2-2 · 정책 해설</a>
+  <a class="lv3" href="#s2-3">2-3 · 플로우차트 (TUI vs CLI)</a>
+  <a href="#s3">3 · 시그널 권한 매트릭스</a>
+  <a class="lv3" href="#s3-1">3-1 · OS×시그널 히트맵</a>
+  <a class="lv3" href="#s3-2">3-2 · 오류 처리 정책</a>
+  <a href="#s4">4 · env 민감값 마스킹</a>
+  <a class="lv3" href="#s4-1">4-1 · 마스킹 규칙</a>
+  <a class="lv3" href="#s4-2">4-2 · 적용 범위 (TUI 전용)</a>
+  <a class="lv3" href="#s4-3">4-3 · 마스킹 적용 시퀀스</a>
+  <a href="#s5">5 · fs 미독 프라이버시 원칙</a>
+  <a class="lv3" href="#s5-1">5-1 · 왜 fs를 안 읽는가</a>
+  <a class="lv3" href="#s5-2">5-2 · 안전 정책과의 연결</a>
+  <a href="#s6">6 · 비용·지속가능성 (참조)</a>
+  <a href="#verify">자체 검증</a>
+</nav>
+<main>
+<h1>33 · 정책 (Policy) — 안전·프라이버시 단일 출처 (ntop)</h1>
+
+<div class="callout"><strong>이 문서는 단일 출처(single source)다.</strong> ntop의 <strong>안전·프라이버시 정책</strong> — kill 확인 게이트, 정확한 종료 정책(TUI vs CLI 경로 구분), 시그널 권한 매트릭스, 환경변수 민감값 마스킹 규칙, <strong>"파일시스템 안 읽음" 프라이버시 원칙</strong> — 은 <strong>여기서만 규칙으로 확정</strong>한다. <code>21-screen-spec</code>·<code>30-functional-spec</code>·<code>40-backlog</code>은 이 정책을 <strong>참조</strong>할 뿐 재정의하지 않는다(spec §4-3).</div>
+
+<div class="callout bad"><strong>★ 이 문서는 ntop의 정체성 문서다.</strong> ntop은 단순 "보기" 도구가 아니라 <strong>프로세스를 죽이는(destructive) 도구</strong>다. 따라서 "어떻게 안전하게 죽이는가 + 어떻게 사용자 데이터를 안 새게 하는가"가 제품의 신뢰 기반이다(sprint-playbook: 안전·프라이버시 = 도구 정체성 → T1 승격).</div>
+
+<div class="callout"><strong>값은 여기서 정의하지 않는다.</strong> Config 기본값(<code>confirm_before_kill=true</code>·<code>graceful_timeout=10</code>·<code>mask_env_values=true</code> 등)과 enum(<code>KillSignal</code>/<code>KillResult</code>/<code>GracefulResult</code>)의 정규 출처는 <strong><code>31-erd</code></strong>, 종료·마스킹의 처리 알고리즘(graceful_kill 폴링·kill_tree 역순·분류)은 <strong><code>30-functional-spec</code></strong>, 외부 인터페이스 계약(CLI 플래그·시스템 명령)은 <strong><code>32-api-spec</code></strong>, 비용·지속가능성은 <strong><code>00-business-model</code></strong>이다. 본 문서는 그 값·동작을 <strong>인용만</strong> 하고(중복정의 0), 그 위에 <strong>규칙·정책·권한</strong>을 정의한다.</div>
+
+<div class="callout"><strong>전제:</strong> ntop은 <strong>이미 v0.2.0까지 구현된 MIT 오픈소스 도구</strong>다. 본 정책은 "앞으로 만들 규칙"이 아니라 <strong>이미 구현된 안전·프라이버시 동작을 역설계한 정책 기술</strong>이며, 모든 규칙은 실제 소스코드(<code>src/process/killer.rs</code>·<code>src/tui/ui.rs</code>·<code>src/tui/widgets/env_tab.rs</code>·<code>src/process/framework.rs</code>·<code>src/main.rs</code>·<code>src/config.rs</code>)에서 추출했다(창작 0).</div>
+
+<div class="callout"><strong>용어 풀이(첫 등장):</strong> <strong>시그널(signal)</strong> = OS가 프로세스에 보내는 짧은 알림/명령(SIGTERM·SIGKILL 등) / <strong>graceful 종료(정상 종료)</strong> = "정리하고 꺼져라"라고 <strong>요청</strong>(SIGTERM, 프로세스가 무시·대비 가능) / <strong>force 종료(강제 종료)</strong> = SIGKILL, 프로세스가 막을 수 없음 / <strong>에스컬레이션</strong> = 정상 요청이 안 통하면 강제로 단계 올림 / <strong>EPERM</strong> = 권한 없음 오류 / <strong>ESRCH</strong> = 그런 프로세스 없음 오류 / <strong>모달(modal)</strong> = 확인을 받을 때까지 다른 조작을 막는 대화상자 / <strong>마스킹(masking)</strong> = 민감한 값을 <code>********</code>로 가림 / <strong>fs(filesystem)</strong> = 파일시스템(디스크의 파일들).</div>
+
+<h2 id="contract">Sprint Contract (self-proposed checks) <a class="anchor" href="#contract">§</a></h2>
+<p>이 문서(g4의 <code>33-policy</code>)가 만족시킬 <strong>관찰 가능한 체크</strong>(playbook §S4-g4 관찰 바 + spec §5(33행)·§8).</p>
+<div class="table-wrap"><table>
+<thead><tr><th>#</th><th>체크</th><th>어떻게 충족하나</th><th>본문 위치</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">P-1</span></td><td><strong>kill 확인 게이트</strong> — <code>confirm_before_kill</code>(기본 true, 31값) + 3 모달(KillConfirm/KillTreeConfirm/ForceKillPrompt) + CLI <code>[y/N]</code></td><td>§1 게이트 규칙 표</td><td>§1</td></tr>
+<tr><td><span class="chip">P-2</span></td><td><strong>★ 정확한 종료 정책(g4a 발견)</strong> — TUI KillConfirm=SIGTERM 직접 send_signal(폴링 아님), 자동 graceful→force는 <strong>CLI 단건 전용</strong>, ForceKillPrompt 수동 분리, kill_tree 역순</td><td>§2 + §2-3 경로 구분 플로우차트</td><td>§2</td></tr>
+<tr><td><span class="chip">P-3</span></td><td><strong>시그널 권한 매트릭스</strong> — OS×시그널 가용성(Unix 6종/Windows 3종) + EPERM→PermissionDenied·ESRCH→AlreadyDead</td><td>§3 히트맵 + 오류 매핑 표</td><td>§3</td></tr>
+<tr><td><span class="chip">P-4</span></td><td><strong>env 민감값 마스킹</strong> — <code>mask_env_values</code>(기본 true, 31값), 8 패턴(PASSWORD/SECRET/TOKEN…), <code>********</code>, <strong>TUI 전용</strong>(CLI info 미마스킹 정직 표기)</td><td>§4 + §4-3 적용 시퀀스</td><td>§4</td></tr>
+<tr><td><span class="chip">P-5</span></td><td><strong>★ fs 미독 프라이버시 원칙</strong> — 분류는 이름+커맨드만, package.json 등 fs 절대 미독(영구 원칙)</td><td>§5 원칙 + 위반 시 결과</td><td>§5</td></tr>
+<tr><td><span class="chip">P-6</span></td><td><strong>시각화(G-g)</strong> — 권한 매트릭스 히트맵 + kill 확인/에스컬레이션 플로우차트(TUI vs CLI) + env 마스킹 시퀀스(외부 렌더러 0)</td><td>§2-3·§3-1·§4-3 ASCII</td><td>§2-3·§3·§4</td></tr>
+<tr><td><span class="chip">P-7</span></td><td><strong>단일 출처 준수</strong> — 값=31·동작=30·계약=32·지속가능성=00 참조, 정책만 소유. 결제/DB/REST 0</td><td>본문 곳곳 참조</td><td>전체</td></tr>
+</tbody></table></div>
+
+<h2 id="s0">0. 정책 철학 — "기본적으로 안전, 명시적으로 위험" <a class="anchor" href="#s0">§</a></h2>
+<div class="callout">ntop의 안전 정책은 두 원칙으로 요약된다. (1) <strong>파괴적 동작은 기본적으로 한 번 더 묻는다</strong>(확인 게이트가 기본 on). (2) <strong>정상 종료(요청)를 먼저, 강제 종료(막을 수 없음)는 명시적으로.</strong> 프라이버시는 한 원칙: (3) <strong>사용자 디스크를 안 읽는다</strong>(분류는 프로세스 정보만).</div>
+
+<figure class="viz">
+<svg viewBox="0 0 780 280" role="img" aria-label="ntop 정책 3축: 확인 게이트, 단계적 종료, fs 미독 프라이버시">
+  <text class="ttl" x="390" y="22" text-anchor="middle">ntop 정책 3축</text>
+  <g>
+  <rect class="svg-node" x="16" y="40" width="240" height="160" rx="10" style="stroke:#dc2626"/>
+  <rect x="16" y="40" width="240" height="30" rx="10" fill="#fef2f2"/>
+  <text class="b" x="136" y="60" text-anchor="middle" fill="#dc2626" font-size="13">① 확인 게이트 (§1)</text>
+  <text class="mn svg-accent" x="30" y="92" font-size="11.5">confirm_before_kill=true</text>
+  <text class="sub" x="30" y="112" font-size="11">죽이기 전 1단계 확인</text>
+  <text class="sub" x="30" y="150" font-size="11">"파괴적 동작은</text>
+  <text class="sub" x="30" y="166" font-size="11">기본적으로 한 번 더 묻는다"</text>
+
+  <rect class="svg-node" x="270" y="40" width="240" height="160" rx="10" style="stroke:#d97706"/>
+  <rect x="270" y="40" width="240" height="30" rx="10" fill="#fffbeb"/>
+  <text class="b" x="390" y="60" text-anchor="middle" fill="#d97706" font-size="13">② 단계적 종료 (§2)</text>
+  <text class="mn" x="284" y="92" font-size="11.5">SIGTERM ─먼저─▶ SIGKILL</text>
+  <text class="sub" x="284" y="112" font-size="11">정상 요청 먼저, 강제는 명시적</text>
+  <text class="sub" x="284" y="150" font-size="11">자동 에스컬레이션은 CLI 단건만</text>
+  <text class="sub" x="284" y="166" font-size="11">TUI 강제는 별도 수동 모달</text>
+
+  <rect class="svg-node" x="524" y="40" width="240" height="160" rx="10" style="stroke:#0d9488"/>
+  <rect x="524" y="40" width="240" height="30" rx="10" fill="#ecfeff"/>
+  <text class="b" x="644" y="60" text-anchor="middle" fill="#0d9488" font-size="13">③ fs 미독 (§5)</text>
+  <text class="mn" x="538" y="92" font-size="11.5">분류 = 이름 + 커맨드만</text>
+  <text class="sub" x="538" y="112" font-size="11">package.json 등 디스크 절대 미독</text>
+  <text class="sub" x="538" y="150" font-size="11">프라이버시 + 오분류 회피</text>
+  <text class="sub" x="538" y="166" font-size="11">영구 설계 원칙(되돌리기 금지)</text>
+  </g>
+  <rect x="16" y="216" width="748" height="46" rx="8" fill="#0f172a"/>
+  <text x="390" y="244" text-anchor="middle" fill="#a5b4fc" font-size="11.5">(+ 부수) env 민감값 마스킹 §3·§4 · 시그널 권한·오류 처리 §3</text>
+</svg>
+<figcaption>§0 — 정책 3축. 확인 게이트(①)·단계적 종료(②)·fs 미독 프라이버시(③) + 부수(마스킹·권한).</figcaption>
+</figure>
+
+<details class="raw"><summary>원본(텍스트) 다이어그램 펼치기</summary><pre><code> ┌──────────────────────────────────────────────────────────────────────────────┐
+ │  ntop 정책 3축                                                                 │
+ │                                                                                │
+ │  ① 확인 게이트(§1)      confirm_before_kill=true(31) → 죽이기 전 1단계 확인     │
+ │       파괴적 동작은 기본적으로 한 번 더 묻는다                                  │
+ │                                                                                │
+ │  ② 단계적 종료(§2)      SIGTERM(정상 요청) ─먼저─▶  SIGKILL(강제)는 명시적으로  │
+ │       자동 에스컬레이션은 CLI 단건에서만 / TUI 강제는 별도 수동 모달            │
+ │                                                                                │
+ │  ③ fs 미독 프라이버시(§5)  분류 = 이름+커맨드만, 디스크(package.json) 절대 미독 │
+ │       프라이버시 + 오분류 회피 = 영구 설계 원칙(되돌리기 금지)                  │
+ │                                                                                │
+ │   (+ 부수: env 민감값 마스킹 §3·§4 / 시그널 권한·오류 처리 §3)                  │
+ └──────────────────────────────────────────────────────────────────────────────┘</code></pre></details>
+
+<p><strong>이 문서가 소유(정규 정의)하는 것:</strong> 확인 게이트 규칙 · 종료 경로별 정책(TUI/CLI 구분) · 시그널 권한 매트릭스와 오류 처리 · env 마스킹 규칙(대상 패턴·적용 범위) · fs 미독 프라이버시 원칙.</p>
+<p><strong>참조(여기서 정의 안 함):</strong> Config 값·enum → <strong>31</strong> · 처리 알고리즘 → <strong>30</strong> · CLI 플래그/시스템명령 → <strong>32</strong> · 키 바인딩 → <strong>21</strong> · 비용/후원/지속가능성 → <strong>00</strong>.</p>
+
+<h2 id="s1">1. kill 확인 게이트 (Confirmation gate) <a class="anchor" href="#s1">§</a></h2>
+<div class="callout"><strong>규칙:</strong> 파괴적 동작(프로세스 종료)은 <strong>기본적으로 한 번 더 확인</strong>을 받는다. 게이트는 설정으로 끌 수 있으나 <strong>기본값은 켜짐</strong>(<code>confirm_before_kill = true</code>, 정규값 31 §4). 게이트는 TUI(모달)와 CLI(<code>[y/N]</code> 프롬프트) 양쪽에 존재한다.</div>
+
+<h3 id="s1-1">1-1. 게이트 규칙 표 <a class="anchor" href="#s1-1">§</a></h3>
+
+<figure class="viz">
+<svg viewBox="0 0 780 320" role="img" aria-label="확인 게이트: TUI 모달 4종과 CLI [y/N] 프롬프트 3종">
+  <g>
+  <rect class="svg-node" x="14" y="16" width="372" height="270" rx="10" style="fill:#fcfdff;stroke:#0d9488"/>
+  <rect x="14" y="16" width="372" height="30" rx="10" fill="#ecfeff"/>
+  <text class="b" x="200" y="36" text-anchor="middle" fill="#0d9488" font-size="13">TUI 게이트 — 모달</text>
+  <g class="mn" font-size="11.5">
+  <rect class="svg-node" x="30" y="58" width="340" height="40" rx="6"/><text class="b" x="42" y="76">KillConfirm (키 x)</text><text class="sub" x="42" y="92" font-size="10.5">단건 — Enter=실행 · Esc=취소</text>
+  <rect class="svg-node" x="30" y="106" width="340" height="40" rx="6"/><text class="b" x="42" y="124">KillTreeConfirm (키 K)</text><text class="sub" x="42" y="140" font-size="10.5">트리 — Enter=실행 · Esc=취소</text>
+  <rect class="svg-node" x="30" y="154" width="340" height="40" rx="6" style="stroke:#dc2626"/><text class="b" x="42" y="172" fill="#dc2626">ForceKillPrompt (강제 전용)</text><text class="sub" x="42" y="188" font-size="10.5">강제 종료 전용 모달</text>
+  <rect class="svg-node" x="30" y="202" width="340" height="40" rx="6"/><text class="b" x="42" y="220">SignalPicker (키 S)</text><text class="sub" x="42" y="236" font-size="10.5">시그널 고른 뒤 Enter=전송</text>
+  </g>
+  <text class="sub" x="200" y="266" text-anchor="middle" font-size="10.5">모달은 항상 — confirm_before_kill은 CLI 프롬프트를 제어</text>
+  </g>
+  <g>
+  <rect class="svg-node" x="394" y="16" width="372" height="270" rx="10" style="fill:#fcfdff;stroke:#4f46e5"/>
+  <rect x="394" y="16" width="372" height="30" rx="10" fill="#eef2ff"/>
+  <text class="b svg-accent" x="580" y="36" text-anchor="middle" font-size="13">CLI 게이트 — [y/N] 프롬프트</text>
+  <g class="mn" font-size="11.5">
+  <rect class="svg-node" x="410" y="58" width="340" height="40" rx="6"/><text class="b" x="422" y="76">ntop kill &lt;PID&gt;</text><text class="sub" x="422" y="92" font-size="10.5">"Kill process &lt;PID&gt; with &lt;SIG&gt;? [y/N]"</text>
+  <rect class="svg-node" x="410" y="106" width="340" height="40" rx="6"/><text class="b" x="422" y="124">ntop kill &lt;PID&gt; --tree</text><text class="sub" x="422" y="140" font-size="10.5">대상 PID 목록 미리보기 + [y/N]</text>
+  <rect class="svg-node" x="410" y="154" width="340" height="40" rx="6"/><text class="b" x="422" y="172">ntop kill --all</text><text class="sub" x="422" y="188" font-size="10.5">서버 목록 미리보기 + [y/N]</text>
+  <rect x="410" y="202" width="340" height="40" rx="6" fill="#fffbeb" stroke="#fde68a"/><text class="b" x="422" y="220" fill="#92400e">게이트 우회</text><text class="sub" x="422" y="236" font-size="10.5">--no-confirm 또는 confirm_before_kill=false</text>
+  </g>
+  <text class="sub" x="580" y="266" text-anchor="middle" font-size="10.5">응답 ≠ y → "Cancelled." (exit 0, 아무것도 안 죽임)</text>
+  </g>
+  <rect x="14" y="296" width="752" height="20" rx="5" fill="#0f172a"/>
+  <text x="390" y="310" text-anchor="middle" fill="#a5b4fc" font-size="10.5">TUI 모달 키 바인딩 정규 출처 = 21-screen-spec · 본 문서는 정책만</text>
+</svg>
+<figcaption>§1-1 — 확인 게이트. TUI는 4종 모달, CLI는 3종 <code>[y/N]</code> 프롬프트(<code>--no-confirm</code>/설정으로만 우회).</figcaption>
+</figure>
+
+<div class="table-wrap"><table>
+<thead><tr><th>경로</th><th>트리거</th><th>게이트 형태</th><th>게이트 우회</th></tr></thead>
+<tbody>
+<tr><td><strong>TUI 단건</strong></td><td>키 <code>x</code></td><td><code>KillConfirm</code> 모달(Enter=실행, Esc=취소)</td><td>(모달은 항상 — <code>confirm_before_kill</code>은 CLI 프롬프트를 제어)</td></tr>
+<tr><td><strong>TUI 트리</strong></td><td>키 <code>K</code></td><td><code>KillTreeConfirm</code> 모달</td><td>〃</td></tr>
+<tr><td><strong>TUI 강제</strong></td><td>(별도 진입)</td><td><code>ForceKillPrompt</code> 모달(강제 종료 전용)</td><td>〃</td></tr>
+<tr><td><strong>TUI 시그널선택</strong></td><td>키 <code>S</code></td><td><code>SignalPicker</code> 모달(시그널 고른 뒤 Enter=전송)</td><td>〃</td></tr>
+<tr><td><strong>CLI 단건</strong></td><td><code>ntop kill &lt;PID&gt;</code></td><td><code>"Kill process &lt;PID&gt; with &lt;SIG&gt;? [y/N]"</code></td><td><code>--no-confirm</code> <strong>또는</strong> <code>confirm_before_kill=false</code>(31)</td></tr>
+<tr><td><strong>CLI 트리</strong></td><td><code>ntop kill &lt;PID&gt; --tree</code></td><td>대상 PID 목록 미리보기 + <code>[y/N]</code></td><td>〃</td></tr>
+<tr><td><strong>CLI 전체</strong></td><td><code>ntop kill --all</code></td><td>서버 목록 미리보기 + <code>[y/N]</code></td><td>〃</td></tr>
+</tbody></table></div>
+
+<div class="callout"><strong>코드-진실:</strong> CLI 프롬프트는 <code>!no_confirm &amp;&amp; config.general.confirm_before_kill</code>일 때만 출력된다(<code>main.rs cmd_kill</code>). 응답이 <code>y</code>(대소문자 무시)가 아니면 <code>"Cancelled."</code> 출력 후 <strong>종료코드 0</strong>(아무 것도 죽이지 않음, 32 §2-7). TUI 확인 모달의 키 바인딩 정규 출처는 <strong>21-screen-spec</strong>(여기서는 정책만).</div>
+
+<h2 id="s2">2. ★ 정확한 종료 정책 (Exact kill policy) — TUI vs CLI 경로 구분 <a class="anchor" href="#s2">§</a></h2>
+<div class="callout bad"><strong>이 절이 ntop 종료 동작의 정책 단일 출처다.</strong> ★ <strong>흔한 오해를 바로잡는다(g4a 발견, 코드 정밀 분석):</strong> "ntop은 항상 SIGTERM을 보내고 안 죽으면 자동으로 SIGKILL로 올린다"는 <strong>부분적으로만 맞다.</strong> 자동 에스컬레이션은 <strong>CLI 단건 종료 경로에서만</strong> 일어난다. <strong>TUI는 그렇게 동작하지 않는다.</strong> 정확히 구분한다.</div>
+
+<h3 id="s2-1">2-1. 경로별 종료 정책 (정규) <a class="anchor" href="#s2-1">§</a></h3>
+<div class="table-wrap"><table>
+<thead><tr><th>경로</th><th>보내는 것</th><th>폴링/대기?</th><th>자동 force 에스컬레이션?</th><th>코드 근거</th></tr></thead>
+<tbody>
+<tr><td><strong>CLI 단건</strong> <code>ntop kill &lt;PID&gt;</code></td><td><code>graceful_kill</code>: SIGTERM</td><td><strong>있음</strong> — 200ms 폴링(30-6), <code>graceful_timeout</code>(31=10s)까지</td><td><strong>있음</strong> — <code>TimedOut</code>이면 <code>force_kill</code>(SIGKILL) 자동 호출</td><td><code>main.rs cmd_kill</code></td></tr>
+<tr><td><strong>TUI 단건</strong> <code>KillConfirm</code>(Enter)</td><td><strong><code>send_signal(pid, SIGTERM)</code> 직접 1회</strong></td><td><strong>없음</strong> — 폴링/대기 안 함, <code>needs_rescan=true</code>만</td><td><strong>없음</strong></td><td><code>ui.rs</code> L99·L102</td></tr>
+<tr><td><strong>TUI 강제</strong> <code>ForceKillPrompt</code>(Enter)</td><td><strong><code>force_kill(pid)</code> = SIGKILL</strong></td><td>없음</td><td>(이미 강제) — <strong>수동 별도 모달</strong></td><td><code>ui.rs</code> L187</td></tr>
+<tr><td><strong>TUI 트리</strong> <code>KillTreeConfirm</code>(Enter)</td><td><code>kill_tree(pids, SIGTERM)</code> — <strong>역순(자식부터)</strong></td><td>없음(각 PID 1회씩)</td><td>없음</td><td><code>ui.rs</code> L116</td></tr>
+<tr><td><strong>TUI 시그널선택</strong> <code>SignalPicker</code>(Enter)</td><td><code>send_signal(pid, 선택시그널)</code> 1회</td><td>없음</td><td>없음</td><td><code>ui.rs</code> L145</td></tr>
+<tr><td><strong>CLI 트리</strong> <code>--tree</code></td><td><code>kill_tree(pids, signal)</code> — 역순</td><td>없음</td><td>없음</td><td><code>main.rs cmd_kill</code></td></tr>
+<tr><td><strong>CLI 전체</strong> <code>--all</code></td><td>각 서버에 <code>send_signal(signal)</code> 1회씩</td><td>없음</td><td>없음</td><td><code>main.rs cmd_kill</code></td></tr>
+</tbody></table></div>
+
+<h3 id="s2-2">2-2. 정책 해설 (왜 이렇게 갈리나) <a class="anchor" href="#s2-2">§</a></h3>
+<ul>
+<li><strong>CLI 단건만 자동 에스컬레이션:</strong> 비대화형/스크립트 맥락에서는 "안 죽으면 어쩌지"를 사람이 다시 판단할 수 없으므로, <strong>SIGTERM → (10초 안 죽으면) → SIGKILL</strong>까지 한 호출에서 끝낸다(편의·결정성).</li>
+<li><strong>TUI 단건은 SIGTERM만, 강제는 수동 분리:</strong> 대화형 화면에서는 <strong>사용자가 직접 다음 단계를 결정</strong>한다. <code>KillConfirm</code>은 정상 종료(SIGTERM)만 보내고, 안 죽으면 사용자가 <strong>별도로 <code>ForceKillPrompt</code>(강제 종료 전용 모달)</strong> 를 띄워 SIGKILL을 보낸다. 즉 <strong>TUI에서 강제 종료는 항상 명시적·수동</strong>이다("기본적으로 안전, 명시적으로 위험" 원칙).</li>
+<li><strong>트리 종료는 자식부터 역순:</strong> <code>kill_tree</code>는 <code>pids.rev()</code>로 <strong>자식을 먼저</strong> 죽인다(30-7). 부모를 먼저 죽이면 자식이 고아(orphan)가 되어 추적/회수가 어려워지므로, 역순이 고아를 막는다.</li>
+<li><strong>폴링 상수:</strong> graceful 폴링 간격 <code>200ms</code>는 알고리즘 상수(30 소유), 대기 한계 <code>graceful_timeout</code>은 Config 값(31). 본 문서는 인용만.</li>
+</ul>
+
+<h3 id="s2-3">2-3. 시각화 — kill 확인/에스컬레이션 플로우차트 (TUI vs CLI 구분, G-g) <a class="anchor" href="#s2-3">§</a></h3>
+
+<figure class="viz">
+<svg viewBox="0 0 800 562" role="img" aria-label="종료 요청이 TUI 경로(SIGTERM 직접·강제 수동)와 CLI 경로(자동 graceful→force 에스컬레이션)로 갈리는 플로우차트">
+  <rect class="svg-node" x="300" y="8" width="200" height="30" rx="8" style="fill:#0f172a;stroke:#0f172a"/>
+  <text class="b" x="400" y="28" text-anchor="middle" fill="#f8fafc" font-size="12">종료 요청 발생</text>
+  <line class="svg-edge" x1="400" y1="38" x2="400" y2="50"/>
+  <line class="svg-edge" x1="200" y1="50" x2="600" y2="50"/>
+  <line class="svg-edge" x1="200" y1="50" x2="200" y2="64" marker-end="url(#a33c)"/>
+  <line class="svg-edge" x1="600" y1="50" x2="600" y2="64" marker-end="url(#a33c)"/>
+  <text class="sub" x="200" y="46" text-anchor="middle" font-size="10.5">대화형</text>
+  <text class="sub" x="600" y="46" text-anchor="middle" font-size="10.5">비대화형/스크립트</text>
+
+  <!-- TUI lane -->
+  <rect x="14" y="64" width="378" height="452" rx="10" fill="#fcfdff" stroke="#0d9488"/>
+  <rect x="14" y="64" width="378" height="28" rx="10" fill="#ecfeff"/>
+  <text class="b" x="203" y="83" text-anchor="middle" fill="#0d9488" font-size="12.5">TUI 경로</text>
+  <g class="mn" font-size="11">
+  <rect class="svg-node" x="28" y="104" width="350" height="42" rx="6"/><text class="b" x="40" y="122">KillConfirm 모달 (키 x)</text><text class="sub" x="40" y="138" font-size="10">confirm 게이트(31) · Enter</text>
+  <line class="svg-edge" x1="203" y1="146" x2="203" y2="160" marker-end="url(#a33c)"/>
+  <rect class="svg-node" x="28" y="160" width="350" height="44" rx="6"/><text class="b svg-accent" x="40" y="179">send_signal(SIGTERM) 1회</text><text class="sub" x="40" y="195" font-size="10">폴링 없음 · needs_rescan=true</text>
+  <line class="svg-edge" x1="203" y1="204" x2="203" y2="224" marker-end="url(#a33c)"/>
+  <text class="sub" x="213" y="219" font-size="10">안 죽었나? (사용자가 화면에서 판단)</text>
+  <rect class="svg-node" x="28" y="224" width="350" height="46" rx="6" style="stroke:#dc2626"/><text class="b" x="40" y="244" fill="#dc2626">ForceKillPrompt 모달 (수동 진입)</text><text class="sub" x="40" y="261" font-size="10">Enter → force_kill(SIGKILL) · 명시적·수동</text>
+  <line x1="28" y1="288" x2="378" y2="288" stroke="#cbd5e1" stroke-dasharray="4 3"/>
+  <rect class="svg-node" x="28" y="300" width="350" height="44" rx="6"/><text class="b" x="40" y="319">트리: KillTreeConfirm (키 K)</text><text class="sub" x="40" y="335" font-size="10">kill_tree(pids,SIGTERM) 역순(자식부터)·폴링없음</text>
+  <rect class="svg-node" x="28" y="354" width="350" height="44" rx="6"/><text class="b" x="40" y="373">시그널: SignalPicker (키 S)</text><text class="sub" x="40" y="389" font-size="10">send_signal(선택시그널) 1회</text>
+  </g>
+  <rect x="28" y="446" width="350" height="56" rx="7" fill="#ecfeff" stroke="#0d9488"/>
+  <text class="b" x="203" y="470" text-anchor="middle" fill="#0d9488" font-size="11.5">▲ TUI: SIGTERM은 1회 직접 전송</text>
+  <text class="sub" x="203" y="489" text-anchor="middle" font-size="10.5">강제(SIGKILL)는 항상 명시적·수동</text>
+
+  <!-- CLI lane -->
+  <rect x="408" y="64" width="378" height="452" rx="10" fill="#fcfdff" stroke="#4f46e5"/>
+  <rect x="408" y="64" width="378" height="28" rx="10" fill="#eef2ff"/>
+  <text class="b svg-accent" x="597" y="83" text-anchor="middle" font-size="12.5">CLI 경로</text>
+  <g class="mn" font-size="11">
+  <rect class="svg-node" x="422" y="104" width="350" height="50" rx="6"/><text class="b" x="434" y="122">ntop kill &lt;PID&gt;</text><text class="sub" x="434" y="138" font-size="10">confirm_before_kill(31) &amp; !--no-confirm</text><text class="sub" x="434" y="151" font-size="10">→ "Kill &lt;PID&gt;? [y/N]"</text>
+  <rect x="440" y="160" width="318" height="24" rx="5" fill="#fffbeb" stroke="#fde68a"/><text class="sub" x="450" y="176" font-size="10">└ y 아니면 → "Cancelled." (exit 0)</text>
+  <line class="svg-edge" x1="597" y1="184" x2="597" y2="198" marker-end="url(#a33c)"/><text class="b ok" fill="#059669" x="607" y="195" font-size="10">y</text>
+  <rect class="svg-node" x="422" y="198" width="350" height="38" rx="6"/><text class="b" x="434" y="221">graceful_kill(pid, 10s 31) → SIGTERM</text>
+  <line class="svg-edge" x1="597" y1="236" x2="597" y2="248" marker-end="url(#a33c)"/>
+  <rect class="svg-node" x="422" y="248" width="350" height="44" rx="6"/><text class="b" x="434" y="267">200ms 폴링 is_alive… (30)</text><text class="sub" x="434" y="283" font-size="10">죽음 → Terminated · 10s 초과 → TimedOut</text>
+  <line class="svg-edge" x1="597" y1="292" x2="597" y2="304" marker-end="url(#a33c)"/>
+  <rect class="svg-node" x="422" y="304" width="350" height="50" rx="6" style="fill:#fef2f2;stroke:#dc2626"/><text class="b" x="434" y="324" fill="#dc2626">TimedOut → ★ 자동 에스컬레이션</text><text class="sub" x="434" y="341" font-size="10">"Force killing..." → force_kill(SIGKILL)</text>
+  <line x1="422" y1="368" x2="772" y2="368" stroke="#cbd5e1" stroke-dasharray="4 3"/>
+  <rect class="svg-node" x="422" y="380" width="350" height="38" rx="6"/><text x="434" y="403">--tree: 확인 → kill_tree(pids,sig) 역순</text>
+  <rect class="svg-node" x="422" y="424" width="350" height="38" rx="6"/><text x="434" y="447">--all: 확인 → 각 서버 send_signal(sig) 1회</text>
+  </g>
+  <rect x="422" y="470" width="350" height="32" rx="7" fill="#eef2ff" stroke="#4f46e5"/>
+  <text class="b svg-accent" x="597" y="490" text-anchor="middle" font-size="11">▲ CLI 단건만 SIGTERM→(timeout)→SIGKILL 자동</text>
+
+  <rect x="14" y="524" width="772" height="32" rx="6" fill="#0f172a"/>
+  <text x="400" y="544" text-anchor="middle" fill="#a5b4fc" font-size="10.5">키 바인딩 정규 출처 = 21 · 알고리즘 = 30 · 값(graceful_timeout=10 · SIGTERM 기본) = 31</text>
+  <defs><marker id="a33c" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#64748b"/></marker></defs>
+</svg>
+<figcaption>§2-3 — 종료 정책 플로우차트. <strong>TUI</strong>=SIGTERM 직접 1회·강제는 수동 / <strong>CLI 단건</strong>=graceful→(timeout)→force 자동 에스컬레이션.</figcaption>
+</figure>
+
+<details class="raw"><summary>원본(텍스트) 플로우차트 펼치기</summary><pre><code>                         ┌──────────────────────────────────┐
+                         │  종료 요청 발생                    │
+                         └───────────────┬──────────────────┘
+            ┌──────────────────────────┴───────────────────────────┐
+            ▼ (대화형)                                              ▼ (비대화형/스크립트)
+ ╔══════════ TUI 경로 ═════════════════════╗      ╔══════════ CLI 경로 ════════════════════════╗
+ ║ KillConfirm 모달(키 x)                   ║      ║ ntop kill &lt;PID&gt;                             ║
+ ║   confirm 게이트(31)                     ║      ║   confirm_before_kill(31) &amp; !--no-confirm   ║
+ ║   Enter ─▶ send_signal(SIGTERM) 1회      ║      ║   → "Kill &lt;PID&gt;? [y/N]"                      ║
+ ║   (폴링 없음, needs_rescan=true)         ║      ║      └ y 아니면 → "Cancelled." (exit 0)     ║
+ ║      │                                   ║      ║   y ─▶ graceful_kill(pid, 10s 31)           ║
+ ║      ▼ 안 죽었나? (사용자가 화면에서 판단)║      ║      ├ SIGTERM 전송                          ║
+ ║   ForceKillPrompt 모달(수동 진입)        ║      ║      ├ 200ms 폴링 is_alive… (30)             ║
+ ║   Enter ─▶ force_kill(SIGKILL)           ║      ║      │   ├ 죽음 ───────────▶ Terminated      ║
+ ║   (강제는 항상 명시적·수동)               ║      ║      │   └ 10s 초과 ───────▶ TimedOut        ║
+ ╠═════════════════════════════════════════╣      ║      ▼ TimedOut 이면 (★자동 에스컬레이션)    ║
+ ║ 트리: KillTreeConfirm(키 K)              ║      ║   "Force killing..." ─▶ force_kill(SIGKILL)  ║
+ ║   Enter ─▶ kill_tree(pids, SIGTERM)      ║      ║   (이 자동 force는 CLI 단건에서만!)          ║
+ ║   = pids.rev() 역순(자식부터), 폴링 없음 ║      ╠═════════════════════════════════════════════╣
+ ║ 시그널: SignalPicker(키 S)               ║      ║ --tree: 확인 → kill_tree(pids,sig) 역순      ║
+ ║   Enter ─▶ send_signal(선택시그널) 1회   ║      ║ --all : 확인 → 각 서버 send_signal(sig) 1회  ║
+ ╚═════════════════════════════════════════╝      ╚═════════════════════════════════════════════╝
+   ▲ TUI: SIGTERM은 1회 직접 전송, 강제는 수동       ▲ CLI 단건만 SIGTERM→(timeout)→SIGKILL 자동
+   (키 바인딩 정규 출처 = 21 / 알고리즘 = 30 / 값 graceful_timeout=10·SIGTERM 기본 = 31)</code></pre></details>
+
+<h2 id="s3">3. 시그널 권한 매트릭스 (Signal &amp; permission matrix) <a class="anchor" href="#s3">§</a></h2>
+<div class="callout"><strong>규칙:</strong> 보낼 수 있는 시그널은 <strong>OS에 따라 다르다.</strong> Unix는 6종, Windows는 3종만 가능하다(<code>KillSignal::all()</code>, 31 §3-4). 시그널 전송 결과는 <strong>권한·존재 여부에 따라 enum으로 분류</strong>되며, 권한 부족(EPERM)이나 이미 죽음(ESRCH)을 <strong>예외(크래시)가 아니라 결과 값</strong>으로 다룬다.</div>
+
+<h3 id="s3-1">3-1. ★ OS × 시그널 가용성 히트맵 (G-g) <a class="anchor" href="#s3-1">§</a></h3>
+
+<figure class="viz">
+<svg viewBox="0 0 780 332" role="img" aria-label="6개 시그널의 Unix/Windows 가용성 히트맵: Unix 6종 전부 가능, Windows는 Term/Kill/Int 3종만 가능">
+  <g font-size="11.5">
+  <!-- header -->
+  <rect x="20" y="16" width="100" height="30" fill="#f8fafc" stroke="#e2e8f0"/><text class="b" x="30" y="36">KillSignal</text>
+  <rect x="120" y="16" width="110" height="30" fill="#f8fafc" stroke="#e2e8f0"/><text class="b" x="130" y="36">name()</text>
+  <rect x="230" y="16" width="370" height="30" fill="#f8fafc" stroke="#e2e8f0"/><text class="b" x="240" y="36">의미 (description)</text>
+  <rect x="600" y="16" width="80" height="30" fill="#f8fafc" stroke="#e2e8f0"/><text class="b" x="640" y="36" text-anchor="middle">Unix</text>
+  <rect x="680" y="16" width="80" height="30" fill="#f8fafc" stroke="#e2e8f0"/><text class="b" x="720" y="36" text-anchor="middle">Win</text>
+  <!-- rows -->
+  <g class="mn">
+  <!-- Term -->
+  <rect x="20" y="46" width="100" height="32" fill="#fff" stroke="#e2e8f0"/><text x="30" y="66">Term</text>
+  <rect x="120" y="46" width="110" height="32" fill="#fff" stroke="#e2e8f0"/><text x="130" y="66">SIGTERM</text>
+  <rect x="230" y="46" width="370" height="32" fill="#fff" stroke="#e2e8f0"/><text x="240" y="66" font-size="11">Graceful termination request (정상 종료 요청) · 기본</text>
+  <rect x="600" y="46" width="80" height="32" fill="#ecfdf5" stroke="#e2e8f0"/><text x="640" y="66" text-anchor="middle" fill="#059669" class="b">✓</text>
+  <rect x="680" y="46" width="80" height="32" fill="#ecfdf5" stroke="#e2e8f0"/><text x="720" y="66" text-anchor="middle" fill="#059669" class="b">✓</text>
+  <!-- Kill -->
+  <rect x="20" y="78" width="100" height="32" fill="#fbfcfe" stroke="#e2e8f0"/><text x="30" y="98">Kill</text>
+  <rect x="120" y="78" width="110" height="32" fill="#fbfcfe" stroke="#e2e8f0"/><text x="130" y="98">SIGKILL</text>
+  <rect x="230" y="78" width="370" height="32" fill="#fbfcfe" stroke="#e2e8f0"/><text x="240" y="98" font-size="11">Force kill (cannot be caught) (막을 수 없음) · 강제</text>
+  <rect x="600" y="78" width="80" height="32" fill="#ecfdf5" stroke="#e2e8f0"/><text x="640" y="98" text-anchor="middle" fill="#059669" class="b">✓</text>
+  <rect x="680" y="78" width="80" height="32" fill="#ecfdf5" stroke="#e2e8f0"/><text x="720" y="98" text-anchor="middle" fill="#059669" class="b">✓</text>
+  <!-- Int -->
+  <rect x="20" y="110" width="100" height="32" fill="#fff" stroke="#e2e8f0"/><text x="30" y="130">Int</text>
+  <rect x="120" y="110" width="110" height="32" fill="#fff" stroke="#e2e8f0"/><text x="130" y="130">SIGINT</text>
+  <rect x="230" y="110" width="370" height="32" fill="#fff" stroke="#e2e8f0"/><text x="240" y="130" font-size="11">Interrupt (like Ctrl+C)</text>
+  <rect x="600" y="110" width="80" height="32" fill="#ecfdf5" stroke="#e2e8f0"/><text x="640" y="130" text-anchor="middle" fill="#059669" class="b">✓</text>
+  <rect x="680" y="110" width="80" height="32" fill="#ecfdf5" stroke="#e2e8f0"/><text x="720" y="130" text-anchor="middle" fill="#059669" class="b">✓</text>
+  <!-- Hup -->
+  <rect x="20" y="142" width="100" height="32" fill="#fbfcfe" stroke="#e2e8f0"/><text x="30" y="162">Hup</text>
+  <rect x="120" y="142" width="110" height="32" fill="#fbfcfe" stroke="#e2e8f0"/><text x="130" y="162">SIGHUP</text>
+  <rect x="230" y="142" width="370" height="32" fill="#fbfcfe" stroke="#e2e8f0"/><text x="240" y="162" font-size="11">Hangup / reload configuration (설정 리로드) · Unix 전용</text>
+  <rect x="600" y="142" width="80" height="32" fill="#ecfdf5" stroke="#e2e8f0"/><text x="640" y="162" text-anchor="middle" fill="#059669" class="b">✓</text>
+  <rect x="680" y="142" width="80" height="32" fill="#fef2f2" stroke="#e2e8f0"/><text x="720" y="162" text-anchor="middle" fill="#dc2626" class="b">✗</text>
+  <!-- Usr1 -->
+  <rect x="20" y="174" width="100" height="32" fill="#fff" stroke="#e2e8f0"/><text x="30" y="194">Usr1</text>
+  <rect x="120" y="174" width="110" height="32" fill="#fff" stroke="#e2e8f0"/><text x="130" y="194">SIGUSR1</text>
+  <rect x="230" y="174" width="370" height="32" fill="#fff" stroke="#e2e8f0"/><text x="240" y="194" font-size="11">User-defined (Node.js: activate debugger) · Unix 전용</text>
+  <rect x="600" y="174" width="80" height="32" fill="#ecfdf5" stroke="#e2e8f0"/><text x="640" y="194" text-anchor="middle" fill="#059669" class="b">✓</text>
+  <rect x="680" y="174" width="80" height="32" fill="#fef2f2" stroke="#e2e8f0"/><text x="720" y="194" text-anchor="middle" fill="#dc2626" class="b">✗</text>
+  <!-- Usr2 -->
+  <rect x="20" y="206" width="100" height="32" fill="#fbfcfe" stroke="#e2e8f0"/><text x="30" y="226">Usr2</text>
+  <rect x="120" y="206" width="110" height="32" fill="#fbfcfe" stroke="#e2e8f0"/><text x="130" y="226">SIGUSR2</text>
+  <rect x="230" y="206" width="370" height="32" fill="#fbfcfe" stroke="#e2e8f0"/><text x="240" y="226" font-size="11">User-defined signal · Unix 전용</text>
+  <rect x="600" y="206" width="80" height="32" fill="#ecfdf5" stroke="#e2e8f0"/><text x="640" y="226" text-anchor="middle" fill="#059669" class="b">✓</text>
+  <rect x="680" y="206" width="80" height="32" fill="#fef2f2" stroke="#e2e8f0"/><text x="720" y="226" text-anchor="middle" fill="#dc2626" class="b">✗</text>
+  </g>
+  <!-- footer counts -->
+  <rect x="20" y="238" width="580" height="32" fill="#0f172a" stroke="#0f172a"/><text class="mn" x="30" y="258" fill="#a5b4fc" font-size="11">all() 반환: Unix [Term,Kill,Hup,Int,Usr1,Usr2] · Windows [Term,Kill,Int]</text>
+  <rect x="600" y="238" width="80" height="32" fill="#0f172a"/><text class="b" x="640" y="258" text-anchor="middle" fill="#f8fafc">6</text>
+  <rect x="680" y="238" width="80" height="32" fill="#0f172a"/><text class="b" x="720" y="258" text-anchor="middle" fill="#f8fafc">3</text>
+  </g>
+  <text class="sub" x="20" y="290" font-size="11">※ Windows에 HUP/USR1/USR2가 없는 것은 OS 한계 — SignalPicker는 그 OS의 all()만 노출(40-backlog).</text>
+  <text class="sub" x="20" y="310" font-size="11">※ from_str("SIGTERM"|"TERM" 등) 대소문자·SIG 접두 무시 허용(31 §3-4). enum 정의 = 31.</text>
+</svg>
+<figcaption>§3-1 — OS×시그널 히트맵. Unix 6종 모두 가능, Windows는 <code>Term</code>/<code>Kill</code>/<code>Int</code> 3종만(HUP/USR1/USR2 없음).</figcaption>
+</figure>
+
+<div class="legend"><span><i style="background:#ecfdf5"></i>✓ 보낼 수 있음</span><span><i style="background:#fef2f2"></i>✗ 그 OS엔 없음</span></div>
+
+<details class="raw"><summary>원본(텍스트) 히트맵 펼치기</summary><pre><code>                    가용성 매트릭스 (✓ = 보낼 수 있음 · ✗ = 그 OS엔 없음)
+ ┌────────────┬──────────┬─────────────────────────────────────────────┬──────────┐
+ │ KillSignal │ name()   │ 의미(description)                            │ Unix│Win │
+ ├────────────┼──────────┼─────────────────────────────────────────────┼─────┼────┤
+ │ Term       │ SIGTERM  │ Graceful termination request (정상 종료 요청)│  ✓  │ ✓  │  ← 기본 시그널
+ │ Kill       │ SIGKILL  │ Force kill (cannot be caught) (막을 수 없음) │  ✓  │ ✓  │  ← 강제
+ │ Int        │ SIGINT   │ Interrupt (like Ctrl+C)                      │  ✓  │ ✓  │
+ │ Hup        │ SIGHUP   │ Hangup / reload configuration (설정 리로드)  │  ✓  │ ✗  │  ← Unix 전용
+ │ Usr1       │ SIGUSR1  │ User-defined (Node.js: activate debugger)    │  ✓  │ ✗  │  ← Unix 전용
+ │ Usr2       │ SIGUSR2  │ User-defined signal                          │  ✓  │ ✗  │  ← Unix 전용
+ ├────────────┴──────────┴─────────────────────────────────────────────┼─────┼────┤
+ │  all() 반환 개수/순서                                                 │  6  │ 3  │
+ │  Unix: [Term, Kill, Hup, Int, Usr1, Usr2]   Windows: [Term, Kill, Int]│     │    │
+ └──────────────────────────────────────────────────────────────────────┴─────┴────┘
+   ※ Windows에 HUP/USR1/USR2가 없는 것은 OS 한계 — SignalPicker는 그 OS의 all()만 노출(40-backlog).
+   ※ from_str("SIGTERM"|"TERM" 등) 대소문자·SIG 접두 무시 허용 (31 §3-4). enum 정의 = 31.</code></pre></details>
+
+<h3 id="s3-2">3-2. 시그널 전송 결과·오류 처리 정책 <a class="anchor" href="#s3-2">§</a></h3>
+<div class="callout"><strong>규칙:</strong> 권한·존재 오류는 <strong>사용자에게 명확한 결과로 보고</strong>하고 도구를 중단시키지 않는다(graceful). 코드 근거: <code>killer.rs</code> unix_impl(<code>signal::kill</code> 결과 매핑) / windows_impl.</div>
+
+<figure class="viz">
+<svg viewBox="0 0 780 268" role="img" aria-label="시그널 전송 상황(성공/EPERM/ESRCH/기타)을 KillResult와 GracefulResult enum 값으로 매핑">
+  <g text-anchor="middle">
+  <text class="b sub" x="160" y="32" font-size="12">상황 (Unix errno)</text>
+  <text class="b svg-accent" x="430" y="32" font-size="12">KillResult (단건)</text>
+  <text class="b svg-accent2" x="660" y="32" font-size="12">GracefulResult</text>
+  </g>
+  <g class="mn" font-size="11.5">
+  <!-- 성공 -->
+  <rect class="svg-node" x="30" y="44" width="260" height="40" rx="6" style="fill:#ecfdf5;stroke:#059669"/><text x="160" y="68" text-anchor="middle" fill="#065f46" class="b">성공</text>
+  <line class="svg-edge" x1="290" y1="64" x2="320" y2="64" marker-end="url(#a33e)"/>
+  <rect class="svg-node" x="320" y="44" width="200" height="40" rx="6"/><text x="420" y="68" text-anchor="middle">Success</text>
+  <line class="svg-edge" x1="520" y1="64" x2="548" y2="64" marker-end="url(#a33e)"/>
+  <rect class="svg-node" x="548" y="44" width="216" height="40" rx="6"/><text x="656" y="62" text-anchor="middle" font-size="10.5">폴링 → Terminated</text><text x="656" y="76" text-anchor="middle" font-size="10.5">/ TimedOut</text>
+  <!-- EPERM -->
+  <rect class="svg-node" x="30" y="92" width="260" height="40" rx="6" style="fill:#fffbeb;stroke:#d97706"/><text x="160" y="116" text-anchor="middle" fill="#92400e" class="b">EPERM (권한 없음)</text>
+  <line class="svg-edge" x1="290" y1="112" x2="320" y2="112" marker-end="url(#a33e)"/>
+  <rect class="svg-node" x="320" y="92" width="200" height="40" rx="6"/><text x="420" y="116" text-anchor="middle">PermissionDenied</text>
+  <line class="svg-edge" x1="520" y1="112" x2="548" y2="112" marker-end="url(#a33e)"/>
+  <rect class="svg-node" x="548" y="92" width="216" height="40" rx="6"/><text x="656" y="116" text-anchor="middle">PermissionDenied</text>
+  <!-- ESRCH -->
+  <rect class="svg-node" x="30" y="140" width="260" height="40" rx="6" style="fill:#f8fafc;stroke:#64748b"/><text x="160" y="164" text-anchor="middle" class="b">ESRCH (없는 PID)</text>
+  <line class="svg-edge" x1="290" y1="160" x2="320" y2="160" marker-end="url(#a33e)"/>
+  <rect class="svg-node" x="320" y="140" width="200" height="40" rx="6"/><text x="420" y="164" text-anchor="middle">AlreadyDead</text>
+  <line class="svg-edge" x1="520" y1="160" x2="548" y2="160" marker-end="url(#a33e)"/>
+  <rect class="svg-node" x="548" y="140" width="216" height="40" rx="6"/><text x="656" y="164" text-anchor="middle">AlreadyDead</text>
+  <!-- 기타 -->
+  <rect class="svg-node" x="30" y="188" width="260" height="40" rx="6" style="fill:#fef2f2;stroke:#dc2626"/><text x="160" y="212" text-anchor="middle" fill="#991b1b" class="b">기타 errno</text>
+  <line class="svg-edge" x1="290" y1="208" x2="320" y2="208" marker-end="url(#a33e)"/>
+  <rect class="svg-node" x="320" y="188" width="200" height="40" rx="6"/><text x="420" y="212" text-anchor="middle">Error(문자열)</text>
+  <line class="svg-edge" x1="520" y1="208" x2="548" y2="208" marker-end="url(#a33e)"/>
+  <rect class="svg-node" x="548" y="188" width="216" height="40" rx="6"/><text x="656" y="212" text-anchor="middle">Error(문자열)</text>
+  </g>
+  <text class="sub" x="390" y="252" text-anchor="middle" font-size="11">권한 부족·이미 죽음 = 정상 흐름의 결과 → 메시지로 알리고 계속 동작 (CLI exit 0). 패닉 안 함.</text>
+  <defs><marker id="a33e" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#64748b"/></marker></defs>
+</svg>
+<figcaption>§3-2 — 오류 매핑. EPERM→<code>PermissionDenied</code>, ESRCH→<code>AlreadyDead</code>; 모두 enum 결과값으로 다뤄 패닉하지 않는다.</figcaption>
+</figure>
+
+<div class="table-wrap"><table>
+<thead><tr><th>상황(Unix errno)</th><th>단건 결과 <code>KillResult</code></th><th>graceful 결과 <code>GracefulResult</code></th><th>사용자에게 의미</th></tr></thead>
+<tbody>
+<tr><td>성공</td><td><code>Success</code></td><td>(폴링 진행 → <code>Terminated</code>/<code>TimedOut</code>)</td><td>시그널 전달됨</td></tr>
+<tr><td><strong>EPERM</strong>(권한 없음)</td><td><code>PermissionDenied</code></td><td><code>PermissionDenied</code></td><td>내 권한으로 못 죽임(예: 다른 사용자/루트 소유)</td></tr>
+<tr><td><strong>ESRCH</strong>(없는 PID)</td><td><code>AlreadyDead</code></td><td><code>AlreadyDead</code></td><td>이미 죽었거나 사라진 PID</td></tr>
+<tr><td>기타 errno</td><td><code>Error(문자열)</code></td><td><code>Error(문자열)</code></td><td>원인 메시지 표시</td></tr>
+</tbody></table></div>
+
+<div class="callout"><strong>Windows 매핑(동등 정책):</strong> <code>Kill</code>은 <code>OpenProcess</code>+<code>TerminateProcess</code>(에러 5→<code>PermissionDenied</code>, 87→<code>AlreadyDead</code>), <code>Term</code>/<code>Int</code>은 <code>taskkill /PID</code>(stderr <code>"Access"</code>→<code>PermissionDenied</code>, <code>"not found"</code>→<code>AlreadyDead</code>). 결과 enum은 31 §3-4, 처리 절차는 30-8, 시스템 명령 계약은 32 §5.</div>
+<div class="callout warn"><strong>정책 함의:</strong> 권한 부족·이미 죽음은 <strong>정상 흐름의 결과</strong>다 — ntop은 이를 메시지로 알리고 계속 동작한다(CLI는 종료코드도 0, 32 §2-7). "권한 없으면 패닉/비정상 종료"하지 않는다.</div>
+
+<h2 id="s4">4. 환경변수 민감값 마스킹 (Env masking) <a class="anchor" href="#s4">§</a></h2>
+<div class="callout"><strong>규칙:</strong> 상세 패널의 환경변수 표시에서 <strong>민감해 보이는 키의 값은 기본적으로 가린다</strong>(<code>mask_env_values = true</code>, 정규값 31 §4). 패스워드·토큰 등이 어깨너머·화면 공유로 새는 것을 막는다(PRB-6).</div>
+
+<h3 id="s4-1">4-1. 마스킹 규칙 (정규) <a class="anchor" href="#s4-1">§</a></h3>
+<div class="table-wrap"><table>
+<thead><tr><th>항목</th><th>규칙</th><th>코드 근거</th></tr></thead>
+<tbody>
+<tr><td><strong>토글</strong></td><td><code>display.mask_env_values</code>(기본 <code>true</code>, 31값). false면 원문 표시</td><td><code>env_tab.rs</code> L42</td></tr>
+<tr><td><strong>대상 판정</strong></td><td>키를 <strong>대문자로 변환</strong> 후, 아래 8개 패턴 중 하나라도 <strong>부분 문자열로 포함</strong>하면 민감</td><td><code>is_sensitive</code> L25-30</td></tr>
+<tr><td><strong>민감 패턴(8)</strong></td><td><code>PASSWORD</code> · <code>SECRET</code> · <code>TOKEN</code> · <code>KEY</code> · <code>API_KEY</code> · <code>PRIVATE</code> · <code>CREDENTIALS</code> · <code>AUTH</code></td><td><code>SENSITIVE_PATTERNS</code> L13-22</td></tr>
+<tr><td><strong>가린 값</strong></td><td>값을 <code>********</code>(별표 8개)로 치환. 키 이름은 그대로 노출</td><td><code>env_tab.rs</code> L48-49</td></tr>
+</tbody></table></div>
+
+<div class="callout"><strong>판정 예:</strong> <code>DB_PASSWORD</code>→가림(PASSWORD 포함), <code>GITHUB_TOKEN</code>→가림, <code>API_KEY</code>→가림, <code>MY_SECRET_X</code>→가림, <code>AUTH_HEADER</code>→가림, <code>PUBLIC_URL</code>→노출(패턴 없음). <code>KEY</code>가 부분일치라 <code>KEYBOARD_LAYOUT</code> 같은 무해한 키도 가려질 수 있다(과(過)마스킹은 안전 측 — 정직 표기, 정밀화는 40-backlog).</div>
+
+<h3 id="s4-2">4-2. ★ 적용 범위(코드-진실) — TUI 전용 <a class="anchor" href="#s4-2">§</a></h3>
+<div class="callout bad"><strong>정직 표기(중요):</strong> 마스킹은 <strong>TUI 상세 Env 탭에서만</strong> 적용된다. <strong>CLI <code>ntop info</code>의 환경변수 출력은 마스킹하지 않고 <code>KEY=VALUE</code> 원문을 그대로 찍는다</strong>(<code>main.rs cmd_info</code> L503-505, 32 §2-3). 즉 화면 공유 중 <code>ntop info</code>로 env를 덤프하면 민감값이 노출된다. 이는 실제 v0.2.0 동작이며 프라이버시 갭으로 식별됨 — <strong>개선(예: info에도 마스킹 적용)은 40-backlog 후보</strong>(창작 아님, 현재 한계의 정직한 기록).</div>
+
+<figure class="viz">
+<svg viewBox="0 0 780 180" role="img" aria-label="마스킹 적용 여부: TUI Env 탭은 마스킹, CLI info는 미마스킹, list --json/csv는 env 미포함">
+  <g font-size="11.5">
+  <rect class="svg-node" x="20" y="20" width="240" height="64" rx="8" style="fill:#ecfdf5;stroke:#059669"/><text class="b" x="140" y="44" text-anchor="middle" fill="#065f46">TUI Env 탭</text><text class="mn sub" x="140" y="64" text-anchor="middle" font-size="10.5">mask_env_values=true</text><text class="b" x="140" y="80" text-anchor="middle" fill="#059669">✓ 마스킹 (민감 키 → ********)</text>
+  <rect class="svg-node" x="270" y="20" width="240" height="64" rx="8" style="fill:#fef2f2;stroke:#dc2626"/><text class="b mn" x="390" y="44" text-anchor="middle" fill="#991b1b">CLI ntop info</text><text class="mn sub" x="390" y="64" text-anchor="middle" font-size="10.5">env_vars 원문 KEY=VALUE</text><text class="b" x="390" y="80" text-anchor="middle" fill="#dc2626">✗ 마스킹 안 됨 (40-backlog)</text>
+  <rect class="svg-node" x="520" y="20" width="240" height="64" rx="8" style="fill:#f8fafc;stroke:#64748b"/><text class="b mn" x="640" y="44" text-anchor="middle">list --json / csv</text><text class="sub" x="640" y="64" text-anchor="middle" font-size="10.5">env 컬럼 없음</text><text class="b sub" x="640" y="80" text-anchor="middle">— 해당 없음</text>
+  </g>
+  <rect x="20" y="104" width="740" height="56" rx="8" fill="#fffbeb" stroke="#fde68a"/>
+  <text class="b" x="390" y="128" text-anchor="middle" fill="#92400e" font-size="12">⚠ 화면 공유 중 ntop info로 env 덤프 시 민감값 노출</text>
+  <text class="sub" x="390" y="148" text-anchor="middle" font-size="11">CLI info는 마스킹 분기를 거치지 않음 — 실제 v0.2.0 동작(개선 후보 = 40-backlog)</text>
+</svg>
+<figcaption>§4-2 — 마스킹 적용 범위. <strong>TUI Env 탭만</strong> 마스킹; CLI <code>info</code>는 원문(프라이버시 갭, 40-backlog).</figcaption>
+</figure>
+
+<details class="raw"><summary>원본(텍스트) 적용 여부 펼치기</summary><pre><code> 적용 여부 한눈:
+   TUI Env 탭        : mask_env_values=true → 민감 키 값 ********  ✓ 마스킹
+   CLI `ntop info`   : env_vars 원문 KEY=VALUE                    ✗ 마스킹 안 됨 (40-backlog)
+   `list --json/csv` : env 미포함(env 컬럼 없음)                  — 해당 없음</code></pre></details>
+
+<h3 id="s4-3">4-3. 시각화 — env 마스킹 적용 시퀀스 (G-g) <a class="anchor" href="#s4-3">§</a></h3>
+
+<figure class="viz">
+<svg viewBox="0 0 780 372" role="img" aria-label="env 마스킹 플로우: mask_env_values와 is_sensitive 판정으로 민감 키 값을 별표로 치환">
+  <rect class="svg-node" x="290" y="14" width="200" height="40" rx="8"/><text class="b mn" x="390" y="33" text-anchor="middle" font-size="11">env_vars 각 (key, value)</text><text class="sub" x="390" y="48" text-anchor="middle" font-size="10">TUI Env 탭 render</text>
+  <line class="svg-edge" x1="390" y1="54" x2="390" y2="70" marker-end="url(#a33f)"/>
+  <!-- decision: mask toggle -->
+  <polygon points="390,70 480,100 390,130 300,100" class="svg-node" style="fill:#eef2ff;stroke:#4f46e5"/>
+  <text class="mn b" x="390" y="98" text-anchor="middle" font-size="10.5">mask_env_values?</text>
+  <text class="sub" x="390" y="114" text-anchor="middle" font-size="10">(기본 true)</text>
+  <!-- false branch -->
+  <line class="svg-edge" x1="300" y1="100" x2="150" y2="100" marker-end="url(#a33f)"/><text class="sub" x="225" y="92" text-anchor="middle" font-size="10">false</text>
+  <rect class="svg-node" x="20" y="80" width="130" height="40" rx="6"/><text class="mn" x="85" y="104" text-anchor="middle" font-size="10.5">value 원문</text>
+  <!-- true branch -->
+  <line class="svg-edge" x1="390" y1="130" x2="390" y2="150" marker-end="url(#a33f)"/><text class="sub" x="402" y="146" font-size="10">true</text>
+  <rect class="svg-node" x="270" y="150" width="240" height="44" rx="6" style="fill:#fffbeb;stroke:#d97706"/><text class="mn b" x="390" y="170" text-anchor="middle" font-size="10.5">is_sensitive(key)?</text><text class="sub" x="390" y="186" text-anchor="middle" font-size="10">key.to_uppercase() + 8패턴 contains?</text>
+  <!-- sensitive true -->
+  <line class="svg-edge" x1="510" y1="172" x2="600" y2="172" marker-end="url(#a33f)"/><text class="sub" x="555" y="164" text-anchor="middle" font-size="10">true(민감)</text>
+  <rect class="svg-node" x="600" y="152" width="160" height="40" rx="6" style="fill:#fef2f2;stroke:#dc2626"/><text class="mn b" x="680" y="176" text-anchor="middle" font-size="11" fill="#dc2626">value = "********"</text>
+  <!-- sensitive false -->
+  <line class="svg-edge" x1="390" y1="194" x2="390" y2="214" marker-end="url(#a33f)"/><text class="sub" x="402" y="210" font-size="10">false(무해)</text>
+  <rect class="svg-node" x="300" y="214" width="180" height="36" rx="6"/><text class="mn" x="390" y="236" text-anchor="middle" font-size="10.5">value 원문</text>
+  <!-- outputs -->
+  <line class="svg-edge" x1="85" y1="120" x2="85" y2="280" marker-end="url(#a33f)"/>
+  <line class="svg-edge" x1="680" y1="192" x2="680" y2="280" marker-end="url(#a33f)"/>
+  <line class="svg-edge" x1="390" y1="250" x2="390" y2="280" marker-end="url(#a33f)"/>
+  <rect x="20" y="280" width="160" height="34" rx="6" fill="#0f172a"/><text class="mn" x="100" y="301" text-anchor="middle" fill="#a5b4fc" font-size="10">DB_HOST=localhost</text>
+  <rect x="300" y="280" width="200" height="34" rx="6" fill="#0f172a"/><text class="mn" x="400" y="301" text-anchor="middle" fill="#a5b4fc" font-size="10">PUBLIC_URL=https://…</text>
+  <rect x="590" y="280" width="180" height="34" rx="6" fill="#0f172a"/><text class="mn" x="680" y="301" text-anchor="middle" fill="#fca5a5" font-size="10">DB_PASSWORD=********</text>
+  <text class="sub" x="390" y="338" text-anchor="middle" font-size="10.5">민감 패턴(8): PASSWORD · SECRET · TOKEN · KEY · API_KEY · PRIVATE · CREDENTIALS · AUTH</text>
+  <text class="sub" x="390" y="358" text-anchor="middle" font-size="10.5">※ CLI ntop info는 이 분기를 거치지 않고 원문 출력 — §4-2 정직 표기</text>
+  <defs><marker id="a33f" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#64748b"/></marker></defs>
+</svg>
+<figcaption>§4-3 — env 마스킹 시퀀스. <code>mask_env_values</code>→<code>is_sensitive</code>(8패턴 부분일치) 통과 시 값을 <code>********</code>로 치환(TUI 전용).</figcaption>
+</figure>
+
+<details class="raw"><summary>원본(텍스트) 시퀀스 펼치기</summary><pre><code> 사용자          TUI Env 탭(render)        is_sensitive(key)         화면
+   │                  │                        │                      │
+   │ 상세 → Env 탭     │                        │                      │
+   ├─────────────────▶│ for (key, value) in env_vars:                 │
+   │                  │ mask_env_values?(31 기본 true)                │
+   │                  │   ├ false → value 원문 ───────────────────────▶ "DB_HOST=localhost"
+   │                  │   └ true  → is_sensitive(key)?                 │
+   │                  ├───────────────────────▶│ key.to_uppercase()   │
+   │                  │                        │ 8패턴 중 contains?    │
+   │                  │◀── true(민감) ─────────┤                      │
+   │                  │   value = "********" ─────────────────────────▶ "DB_PASSWORD=********"
+   │                  │◀── false(무해) ────────┤                      │
+   │                  │   value 원문 ────────────────────────────────▶ "PUBLIC_URL=https://…"
+   (※ CLI `ntop info`는 이 분기를 거치지 않고 원문 출력 — §4-2 정직 표기)</code></pre></details>
+
+<h2 id="s5">5. ★ "파일시스템 안 읽음" 프라이버시 원칙 (No-filesystem-read) <a class="anchor" href="#s5">§</a></h2>
+<div class="callout bad"><strong>★ 영구 설계 원칙(되돌리기 금지).</strong> ntop의 프로세스 분류는 <strong>프로세스 이름 + 커맨드라인만</strong> 본다. <strong><code>package.json</code>·<code>.env</code>·프로젝트 설정 등 디스크의 어떤 파일도 읽지 않는다</strong>(코드 근거: <code>framework.rs classify</code>는 <code>name</code>/<code>command</code>/<code>&amp;Config</code>만 입력으로 받고 cwd/fs 미접근, 30-1·32 §4). 이 원칙은 <strong>반전을 제안하는 것 자체가 정책 위반</strong>이다(spec §7).</div>
+
+<figure class="viz">
+<svg viewBox="0 0 780 300" role="img" aria-label="classify는 name/command/Config만 입력으로 받고 package.json 등 파일시스템은 절대 읽지 않음">
+  <rect class="svg-node" x="250" y="14" width="280" height="40" rx="8" style="fill:#0f172a;stroke:#0f172a"/>
+  <text class="mn b" x="390" y="38" text-anchor="middle" fill="#f8fafc" font-size="11">FrameworkDetector::classify(…)</text>
+  <!-- inputs (ok) -->
+  <rect class="svg-node" x="40" y="84" width="320" height="120" rx="10" style="fill:#ecfdf5;stroke:#059669"/>
+  <text class="b" x="200" y="108" text-anchor="middle" fill="#065f46" font-size="13">✓ 입력으로 사용</text>
+  <g class="mn" font-size="11.5">
+  <rect x="64" y="122" width="272" height="24" rx="5" fill="#fff" stroke="#a7f3d0"/><text x="76" y="139">name (프로세스 이름)</text>
+  <rect x="64" y="150" width="272" height="24" rx="5" fill="#fff" stroke="#a7f3d0"/><text x="76" y="167">command (커맨드라인)</text>
+  <rect x="64" y="178" width="272" height="20" rx="5" fill="#fff" stroke="#a7f3d0"/><text x="76" y="193">&amp;Config (설정)</text>
+  </g>
+  <!-- fs (never) -->
+  <rect class="svg-node" x="420" y="84" width="320" height="120" rx="10" style="fill:#fef2f2;stroke:#dc2626"/>
+  <text class="b" x="580" y="108" text-anchor="middle" fill="#991b1b" font-size="13">✗ 절대 미접근 (fs)</text>
+  <g class="mn" font-size="11.5">
+  <rect x="444" y="122" width="272" height="24" rx="5" fill="#fff" stroke="#fecaca"/><text x="456" y="139">package.json</text>
+  <rect x="444" y="150" width="272" height="24" rx="5" fill="#fff" stroke="#fecaca"/><text x="456" y="167">.env / 프로젝트 설정</text>
+  <rect x="444" y="178" width="272" height="20" rx="5" fill="#fff" stroke="#fecaca"/><text x="456" y="193">cwd 디렉터리의 어떤 파일도</text>
+  </g>
+  <line x1="365" y1="144" x2="415" y2="144" stroke="#dc2626" stroke-width="2.5"/>
+  <line x1="372" y1="136" x2="408" y2="152" stroke="#dc2626" stroke-width="2.5"/>
+  <line x1="372" y1="152" x2="408" y2="136" stroke="#dc2626" stroke-width="2.5"/>
+  <rect x="40" y="224" width="700" height="60" rx="8" fill="#eef2ff" stroke="#c7d2fe"/>
+  <text class="b svg-accent" x="390" y="248" text-anchor="middle" font-size="12">영구 설계 원칙 — 되돌리기 금지</text>
+  <text class="sub" x="390" y="268" text-anchor="middle" font-size="11">"fs를 읽어 분류 강화" 제안 = 원칙 위반(spec §7) · 프라이버시 + 오분류 회피</text>
+</svg>
+<figcaption>§5 — fs 미독 원칙. 분류 입력은 <code>name</code>/<code>command</code>/<code>&amp;Config</code>뿐; 디스크 파일은 절대 읽지 않는다(영구 원칙).</figcaption>
+</figure>
+
+<h3 id="s5-1">5-1. 왜 fs를 안 읽는가 — 두 이유 <a class="anchor" href="#s5-1">§</a></h3>
+<div class="table-wrap"><table>
+<thead><tr><th>이유</th><th>설명</th></tr></thead>
+<tbody>
+<tr><td><strong>① 프라이버시</strong></td><td>사용자 프로젝트 디렉터리의 파일을 열지 않으므로, <strong>모니터링 도구가 소스/설정/비밀파일을 읽을 일이 없다.</strong> 도구가 보는 것은 OS가 이미 노출하는 프로세스 메타데이터(이름·커맨드·cwd 문자열)뿐.</td></tr>
+<tr><td><strong>② 오분류 회피(정확성)</strong></td><td>cwd 기반 fs 읽기는 <strong>전역 실행 프로세스를 오분류</strong>한다. 예: <code>npx</code>로 띄운 MCP 서버나 CLI 도구는 <strong>상속된(엉뚱한) cwd</strong>를 가질 수 있어, 그 cwd의 <code>package.json</code>을 읽으면 "그 디렉터리의 프레임워크"로 잘못 찍힌다. 이름+커맨드만 보면 이 함정을 피한다.</td></tr>
+</tbody></table></div>
+
+<h3 id="s5-2">5-2. 안전 정책과의 연결 (왜 "안전"에 중요한가) <a class="anchor" href="#s5-2">§</a></h3>
+
+<figure class="viz">
+<svg viewBox="0 0 780 240" role="img" aria-label="fs 미독이 프라이버시 신뢰와 오분류 회피로 이어지고, 분류 정확성이 엉뚱한 프로세스 kill 위험을 낮추는 흐름">
+  <rect class="svg-node" x="20" y="96" width="130" height="48" rx="8" style="fill:#0f172a;stroke:#0f172a"/><text class="b mn" x="85" y="125" text-anchor="middle" fill="#f8fafc" font-size="12">fs 미독</text>
+  <!-- branch 1 -->
+  <path class="svg-edge" d="M150,112 C190,112 190,46 230,46" marker-end="url(#a33h)"/>
+  <rect class="svg-node" x="230" y="26" width="290" height="40" rx="7" style="fill:#ecfeff;stroke:#0d9488"/><text x="375" y="50" text-anchor="middle" font-size="11.5">[프라이버시] 사용자 디스크 파일 미독 → 신뢰</text>
+  <!-- branch 2 -->
+  <path class="svg-edge" d="M150,128 C190,128 190,108 230,108" marker-end="url(#a33h)"/>
+  <rect class="svg-node" x="230" y="88" width="200" height="40" rx="7"/><text x="330" y="112" text-anchor="middle" font-size="11.5">[오분류 회피] → 분류 정확</text>
+  <line class="svg-edge" x1="430" y1="108" x2="462" y2="108" marker-end="url(#a33h)"/>
+  <rect class="svg-node" x="462" y="84" width="298" height="48" rx="7"/><text x="611" y="104" text-anchor="middle" font-size="11">"서버"로 식별된 것만 kill 후보 풀에</text><text class="sub" x="611" y="121" text-anchor="middle" font-size="10.5">(비서버 = None = 미표시, 30-1)</text>
+  <line class="svg-edge" x1="611" y1="132" x2="611" y2="160" marker-end="url(#a33h)"/>
+  <rect class="svg-node" x="430" y="160" width="360" height="44" rx="7" style="fill:#fef2f2;stroke:#dc2626"/><text class="b" x="610" y="180" text-anchor="middle" fill="#991b1b" font-size="12">엉뚱한 프로세스를 죽일 위험 ↓</text><text class="sub" x="610" y="197" text-anchor="middle" font-size="10.5">(PRB-3, F3 · 확인 게이트 §1 · 단계적 종료 §2와 합쳐져)</text>
+  <defs><marker id="a33h" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#64748b"/></marker></defs>
+</svg>
+<figcaption>§5-2 — fs 미독 → 분류 정확 → "서버"만 종료 후보 → 엉뚱한 kill 위험 ↓(확인 게이트·단계적 종료와 결합).</figcaption>
+</figure>
+
+<details class="raw"><summary>원본(텍스트) 다이어그램 펼치기</summary><pre><code> fs 미독 ──┬─▶ [프라이버시]  도구가 사용자 디스크 파일을 안 읽음 → 신뢰
+           │
+           └─▶ [오분류 회피] ──▶ 분류 정확 ──▶ "서버"로 식별된 것만 kill 후보 풀에 들어감
+                                                  (비서버=None=미표시, 30-1)
+                                                       │
+                                                       ▼
+                                       엉뚱한 프로세스를 죽일 위험 ↓ (PRB-3, F3)</code></pre></details>
+
+<ul>
+<li>fs 미독으로 분류가 정확해지면, <strong>"서버로 식별된 것"만 종료 후보</strong>가 된다(미분류=<code>None</code>=목록 비노출, 30-1). 이는 §1·§2의 확인 게이트·단계적 종료와 합쳐져 <strong>"엉뚱한 프로세스 kill"</strong> 위험을 낮춘다(F3, 10-prd §5 프라이버시·안전성 NFR).</li>
+<li><strong>금지(spec §7):</strong> "fs를 읽어 분류를 강화하자"는 제안은 이 원칙(영구)과 충돌 → 정책 위반. 향후 로드맵도 이 원칙을 반전하지 않는 범위에서만 다룬다(40-backlog).</li>
+</ul>
+
+<h2 id="s6">6. 비용·지속가능성 정책 (참조 — 00 소유) <a class="anchor" href="#s6">§</a></h2>
+<div class="callout">ntop은 <strong>MIT 라이선스 OSS</strong>이며 결제·정산·회원 과금이 없다. 안전·프라이버시 정책을 유지·발전시키는 <strong>비용 구조(메인테이너 시간·CI), 채택 퍼널, 수익화 가설(GitHub Sponsors·기업 후원 등 — 전부 "가설")의 단일 출처는 <code>00-business-model</code></strong>이다. 본 문서는 정책만 소유하며 비용/수익 수치를 재정의하지 않는다(중복 0). <strong>결제 파트너·take-rate·정산 규칙은 존재하지 않는다</strong>(spec §7 — 창작 금지).</div>
+
+<h2 id="verify">자체 검증 (Self-verification) <a class="anchor" href="#verify">§</a></h2>
+<div class="table-wrap"><table>
+<thead><tr><th>#</th><th>체크</th><th>결과</th><th>어디서 충족</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">P-1</span></td><td>kill 확인 게이트(기본 true 31 + 3모달 + CLI [y/N] + 우회)</td><td><span class="chip ok">PASS</span> — §1-1 표(경로별 게이트·우회 조건), 취소 시 exit 0</td><td>§1</td></tr>
+<tr><td><span class="chip">P-2</span></td><td>★ 정확한 종료 정책(TUI SIGTERM 직접/CLI 단건만 자동 force/ForceKillPrompt 수동/트리 역순)</td><td><span class="chip ok">PASS</span> — §2-1 경로별 표 + §2-2 해설 + §2-3 TUI vs CLI 플로우차트</td><td>§2</td></tr>
+<tr><td><span class="chip">P-3</span></td><td>시그널 권한 매트릭스(Unix6/Win3) + EPERM·ESRCH 처리</td><td><span class="chip ok">PASS</span> — §3-1 히트맵 + §3-2 오류 매핑 표(KillResult/GracefulResult)</td><td>§3</td></tr>
+<tr><td><span class="chip">P-4</span></td><td>env 마스킹(기본 true 31, 8패턴, ********, TUI 전용/CLI 미마스킹 정직)</td><td><span class="chip ok">PASS</span> — §4-1 규칙 + §4-2 적용범위 정직표기 + §4-3 시퀀스</td><td>§4</td></tr>
+<tr><td><span class="chip">P-5</span></td><td>★ fs 미독 프라이버시 원칙(영구, 반전 금지)</td><td><span class="chip ok">PASS</span> — §5 두 이유(프라이버시·오분류 회피) + 안전 연결 + 금지 명시</td><td>§5</td></tr>
+<tr><td><span class="chip">P-6</span></td><td>시각화(히트맵·플로우차트·시퀀스, 외부 렌더러 0)</td><td><span class="chip ok">PASS</span> — §3-1 히트맵·§2-3 플로우차트·§4-3 시퀀스(mermaid 0)</td><td>§2-3·§3·§4</td></tr>
+<tr><td><span class="chip">P-7</span></td><td>단일 출처 + 창작 0</td><td><span class="chip ok">PASS</span> — 값=31·동작=30·계약=32·지속=00 참조, 결제/DB/REST 0(§6)</td><td>전체</td></tr>
+</tbody></table></div>
+
+<p><strong>추가 원칙 점검:</strong></p>
+<ul>
+<li><strong>창작 금지(spec §7):</strong> 결제·정산·take-rate·DB·REST·회원 정책 <strong>0</strong>(§6 명시). 모든 규칙은 실제 소스(<code>killer.rs</code>·<code>ui.rs</code>·<code>env_tab.rs</code>·<code>framework.rs</code>·<code>main.rs</code>·<code>config.rs</code>)에서 추출.</li>
+<li><strong>코드-진실 정직 표기:</strong> ① TUI KillConfirm은 graceful 폴링이 아니라 <strong>SIGTERM 직접 전송</strong>, 자동 force는 <strong>CLI 단건 전용</strong>, TUI 강제는 <strong>수동 ForceKillPrompt</strong>(§2-1, g4a 발견); ② env 마스킹은 <strong>TUI 전용</strong>, CLI <code>info</code>는 미마스킹(§4-2); ③ <code>KEY</code> 부분일치로 인한 과마스킹 가능성(§4-1) — 모두 실제 v0.2.0 동작(개선 = 40-backlog).</li>
+<li><strong>중복정의 0:</strong> <code>confirm_before_kill=true</code>·<code>graceful_timeout=10</code>·<code>mask_env_values=true</code>·<code>SIGTERM</code> 기본은 값으로 재정의하지 않고 "31값" 인용, 폴링 200ms·kill_tree 역순 등 알고리즘은 "30 참조", CLI 플래그·시스템 명령은 "32 참조", 비용/수익은 "00 참조".</li>
+<li><strong>fs 미독 원칙 미반전:</strong> §5에서 영구 원칙으로 명시하고 반전 제안을 정책 위반으로 규정(spec §7 준수).</li>
+<li><strong>쉬운 설명:</strong> 시그널·graceful·force·에스컬레이션·EPERM·ESRCH·모달·마스킹·fs 첫 등장 풀이.</li>
+</ul>
+<p><strong>알려진 한계(후속 보완):</strong></p>
+<ul>
+<li>CLI <code>ntop info</code>의 env 미마스킹은 프라이버시 갭 — 개선 후보(단일 출처 40-backlog).</li>
+<li>마스킹 패턴이 부분일치라 과마스킹 가능(<code>KEY</code> 등) — 정밀화 여지(40-backlog).</li>
+<li>Windows는 Unix 전용 시그널(HUP/USR1/USR2) 부재 — OS 한계(40-backlog).</li>
+<li>정책 값(게이트·timeout·마스킹 기본)이 코드/31-erd에서 바뀌면 본 문서가 그 정규값을 따른다.</li>
+</ul>
+
+</main></div>
+<script>
+(function(){
+  var links=[].slice.call(document.querySelectorAll('.toc a'));
+  var map={};links.forEach(function(a){map[a.getAttribute('href').slice(1)]=a;});
+  var obs=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(l){l.classList.remove('active');});
+        var a=map[e.target.id];if(a)a.classList.add('active');
+      }
+    });
+  },{rootMargin:'-64px 0px -70% 0px'});
+  document.querySelectorAll('main h2[id],main h3[id]').forEach(function(h){obs.observe(h);});
+})();
+</script>
+</body></html>

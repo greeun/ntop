@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>13 · 유저 플로우 / 유저 저니 (ntop)</title>
+<style>
+/* ntop 기획 패키지 — 공통 디자인 시스템 (자체완결: 각 NN-name.html <style>에 인라인 복제) */
+/* 외부 의존 0 — CDN/웹폰트/Mermaid 금지. 시스템 폰트만. */
+:root{
+  --accent:#4f46e5;        /* indigo */
+  --accent2:#0d9488;       /* teal */
+  --accent-soft:#eef2ff;
+  --bg:#ffffff;
+  --fg:#1e293b;
+  --muted:#64748b;
+  --line:#e2e8f0;
+  --code-bg:#f1f5f9;
+  --warn:#d97706; --warn-bg:#fffbeb;
+  --bad:#dc2626;  --bad-bg:#fef2f2;
+  --ok:#059669;   --ok-bg:#ecfdf5;
+  --t1:#dc2626; --t2:#d97706; --t3:#ca8a04;
+  --maxw:860px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;color:var(--fg);background:var(--bg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  line-height:1.7;font-size:16px;
+}
+code,pre,.mono{font-family:"SF Mono",SFMono-Regular,ui-monospace,Menlo,Consolas,"D2Coding",monospace}
+
+/* ── 상단바 ── */
+.topbar{
+  position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  padding:10px 18px;background:#0f172a;color:#f8fafc;font-weight:600;font-size:15px;
+  border-bottom:3px solid var(--accent);
+}
+.topbar .doc-no{color:#a5b4fc;font-variant-numeric:tabular-nums}
+.topbar nav{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.topbar nav a,.topbar nav button{
+  color:#e2e8f0;background:#1e293b;border:1px solid #334155;border-radius:6px;
+  padding:4px 10px;font-size:13px;text-decoration:none;cursor:pointer;font-weight:500;
+}
+.topbar nav a:hover,.topbar nav button:hover{background:var(--accent);border-color:var(--accent)}
+
+/* ── 티어 배지 ── */
+.tier{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:700;color:#fff}
+.tier.t1{background:var(--t1)} .tier.t2{background:var(--t2)} .tier.t3{background:var(--t3)}
+
+/* ── 레이아웃: TOC + 본문 ── */
+.layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:0;max-width:1200px;margin:0 auto}
+.toc{position:sticky;top:58px;align-self:start;height:calc(100vh - 58px);overflow:auto;padding:18px 12px;border-right:1px solid var(--line);font-size:13.5px}
+.toc h4{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.toc a{display:block;padding:3px 8px;color:var(--muted);text-decoration:none;border-radius:5px;border-left:2px solid transparent}
+.toc a:hover{background:var(--accent-soft);color:var(--accent)}
+.toc a.active{color:var(--accent);background:var(--accent-soft);border-left-color:var(--accent);font-weight:600}
+.toc a.lv3{padding-left:18px;font-size:12.5px}
+main{padding:26px 34px;max-width:var(--maxw)}
+main h1{font-size:26px;line-height:1.3;margin:0 0 6px}
+main h2{font-size:21px;margin:34px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--line);scroll-margin-top:64px}
+main h3{font-size:17px;margin:24px 0 10px;color:#0f172a;scroll-margin-top:64px}
+main h4{font-size:15px;margin:18px 0 8px;color:var(--muted)}
+main p{margin:10px 0}
+main a{color:var(--accent)}
+.anchor{margin-left:8px;color:var(--line);text-decoration:none;font-weight:400;font-size:.8em}
+main h2:hover .anchor,main h3:hover .anchor{color:var(--accent)}
+
+/* ── 표 ── */
+.table-wrap{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:7px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{background:#f8fafc;font-weight:700;position:sticky;top:0;border-bottom:2px solid var(--line)}
+tbody tr:nth-child(even){background:#fbfcfe}
+tbody tr:hover{background:var(--accent-soft)}
+
+/* ── 코드·칩 ── */
+:not(pre)>code{background:var(--code-bg);padding:1px 6px;border-radius:5px;font-size:.88em;color:#be185d}
+pre{background:#0f172a;color:#e2e8f0;padding:14px 16px;border-radius:8px;overflow-x:auto;font-size:13px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+.chip{display:inline-block;background:var(--accent-soft);color:var(--accent);border:1px solid #c7d2fe;border-radius:5px;padding:0 6px;font-size:.85em;font-weight:600}
+.chip.p0{background:var(--bad-bg);color:var(--bad);border-color:#fecaca}
+.chip.p1{background:var(--warn-bg);color:var(--warn);border-color:#fde68a}
+.chip.ok{background:var(--ok-bg);color:var(--ok);border-color:#a7f3d0}
+
+/* ── 콜아웃 ── */
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+.callout.warn{border-color:var(--warn);background:var(--warn-bg)}
+.callout.bad{border-color:var(--bad);background:var(--bad-bg)}
+.callout.ok{border-color:var(--ok);background:var(--ok-bg)}
+blockquote{border-left:4px solid var(--line);margin:14px 0;padding:4px 16px;color:var(--muted)}
+
+/* ── 인포그래픽 figure ── */
+figure.viz{margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:10px;background:#fcfdff;text-align:center}
+figure.viz svg{max-width:100%;height:auto;display:block;margin:0 auto}
+figure.viz figcaption{margin-top:10px;font-size:13px;color:var(--muted);text-align:center}
+.viz-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+details.raw{margin-top:8px;font-size:13px}
+details.raw summary{cursor:pointer;color:var(--muted);font-size:12.5px}
+details.raw pre{margin-top:6px}
+
+/* SVG 공통 텍스트 */
+svg text{font-family:-apple-system,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+.svg-node{fill:#fff;stroke:var(--accent);stroke-width:1.5}
+.svg-edge{stroke:var(--muted);stroke-width:1.5;fill:none}
+.svg-label{font-size:12px;fill:var(--fg)}
+.svg-accent{fill:var(--accent)} .svg-accent2{fill:var(--accent2)}
+
+/* 화면 mockup 프레임(20/21용) */
+.screen{border:2px solid #334155;border-radius:8px;background:#0f172a;color:#cbd5e1;font-family:"SF Mono",ui-monospace,monospace;font-size:12px;padding:0;overflow:hidden;text-align:left;margin:0 auto;max-width:560px}
+.screen .bar{background:#1e293b;color:#a5b4fc;padding:4px 8px;font-size:11px;border-bottom:1px solid #334155}
+.screen .body{padding:8px 10px;white-space:pre;overflow-x:auto;line-height:1.4}
+
+/* ── print ── */
+@media print{
+  .topbar,.toc,.anchor,details.raw summary{display:none!important}
+  .layout{grid-template-columns:1fr;max-width:none}
+  main{max-width:none;padding:0}
+  details.raw{display:none}
+  *{break-inside:avoid}
+  figure.viz{border:1px solid #ccc}
+}
+/* ── 반응형 ── */
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}
+  main{padding:18px}
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/* 13-user-flows 페이지 전용 (SVG 라벨·플로우 노드) */
+svg .lbl{font-size:12px;fill:#1e293b}
+svg .lbl-b{font-size:12px;font-weight:700;fill:#0f172a}
+svg .lbl-s{font-size:10.5px;fill:#475569}
+svg .lbl-xs{font-size:9.5px;fill:#64748b}
+svg .lbl-w{font-size:12px;fill:#fff;font-weight:600}
+svg .lbl-wb{font-size:12.5px;fill:#fff;font-weight:700}
+svg .edge{stroke:#94a3b8;stroke-width:1.5;fill:none}
+svg .edge-d{stroke:#94a3b8;stroke-width:1.5;fill:none;stroke-dasharray:5 3}
+svg .life{stroke:#cbd5e1;stroke-width:1.3;fill:none;stroke-dasharray:3 3}
+/* 플로우 노드 역할별 색 */
+.fl-start{fill:#0f172a;stroke:#0f172a}
+.fl-screen{fill:#e0e7ff;stroke:#4f46e5;stroke-width:1.6}
+.fl-act{fill:#f8fafc;stroke:#94a3b8;stroke-width:1.4}
+.fl-dec{fill:#fffbeb;stroke:#d97706;stroke-width:1.6}
+.fl-danger{fill:#fef2f2;stroke:#dc2626;stroke-width:1.6}
+.fl-ok{fill:#ecfdf5;stroke:#059669;stroke-width:1.4}
+.fl-cli{fill:#f0fdfa;stroke:#0d9488;stroke-width:1.6}
+.fl-empty{fill:#ecfeff;stroke:#0891b2;stroke-width:1.6}
+.fl-tab{fill:#fef9c3;stroke:#ca8a04;stroke-width:1.4}
+.fl-tabA{fill:#ca8a04;stroke:#a16207;stroke-width:1.4}
+.fl-mode{fill:#fffbeb;stroke:#d97706;stroke-width:1.6}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <span class="doc-no">13</span> <span class="tier t1">T1</span> · 유저 플로우 / 유저 저니
+  <nav>
+    <a href="index.html">← 목록</a>
+    <a href="12-ia.html">← 이전</a>
+    <a href="20-wireframes.html">다음 →</a>
+    <button onclick="window.print()">🖨 인쇄</button>
+  </nav>
+</header>
+
+<div class="layout">
+<nav class="toc">
+  <h4>목차</h4>
+  <a href="#sprint-contract">Sprint Contract</a>
+  <a href="#s0">0. 표기 규약 (코드-진실)</a>
+  <a href="#s1">1. 답하는 것 + 플로우 인덱스</a>
+  <a href="#s1-1" class="lv3">1-1. 플로우 인덱스</a>
+  <a href="#s1-2" class="lv3">1-2. 가치 루프 위 6 플로우</a>
+  <a href="#uf1">2. UF-1 척추 플로우</a>
+  <a href="#uf2">3. UF-2 필터/정렬/Node-only</a>
+  <a href="#uf3">4. UF-3 kill 단건</a>
+  <a href="#uf4">5. UF-4 kill 트리</a>
+  <a href="#uf5">6. UF-5 SignalPicker</a>
+  <a href="#uf6">7. UF-6 CLI 자동화</a>
+  <a href="#s8">8. 종료 상태/시퀀스</a>
+  <a href="#s8-1" class="lv3">8-1. 상태 다이어그램</a>
+  <a href="#s8-2" class="lv3">8-2. 시퀀스 다이어그램</a>
+  <a href="#s9">9. 플로우×화면×기능×PRB</a>
+  <a href="#s9-1" class="lv3">9-1. 단계 추적표</a>
+  <a href="#s9-2" class="lv3">9-2. 양방향 커버리지</a>
+  <a href="#verify">자체 검증</a>
+</nav>
+
+<main>
+<h1>13 · 유저 플로우 / 유저 저니 (ntop)</h1>
+
+<div class="callout">
+<p>이 문서는 ntop <strong>유저 플로우의 단일 출처</strong>다. 사용자가 ntop으로 <strong>무엇을 어떤 순서로</strong> 하는지(주요 경로 + 분기 + 상태 전이)를 플로우차트로 정리하고, 각 단계를 <strong>화면 ID(<code>12-ia</code>) · 기능 ID(<code>10-prd</code>) · 문제(PRB, <code>research-s2</code>)</strong> 로 링크한다.</p>
+<p><strong>ntop은 터미널 도구다.</strong> 플로우의 "화면"은 웹 페이지가 아니라 <strong>TUI 뷰/패널/탭/다이얼로그 + CLI 명령 출력</strong>이다(spec §4-0).</p>
+<p><strong>플로우 ID 표기:</strong> 본 문서는 플로우를 <strong><span class="chip">UF-1</span>~<span class="chip">UF-6</span></strong>(User Flow)으로 부른다. 기능 ID(<code>F1</code>~<code>F21</code>, 10-prd)와의 <strong>혼동을 피하기 위해</strong> 일부러 다른 접두어를 쓴다(연구 산출물 <code>research-s3</code>의 플로우 "F1~F6"에 1:1 대응 — §1 인덱스 참조).</p>
+<p><strong>참조(재정의 0):</strong> 화면 ID는 <strong><code>12-ia</code></strong>, 기능 ID(F1~F21)·우선순위는 <strong><code>10-prd</code></strong>, <strong>키 바인딩의 정규 출처는 <code>21-screen-spec</code></strong>(현재 <code>research-s3</code> §7), 문제(PRB-1~8)는 <strong><code>research-s2</code>(→03 §2)</strong>, 페르소나(P1 박서연·P2 정태호·P3 이준)는 <strong><code>03-personas</code></strong>, Config 기본값(<code>graceful_timeout=10</code> 등)·<code>GracefulResult</code>/<code>KillSignal</code> enum은 <strong><code>31-erd</code></strong>, kill 처리 로직 정규 출처는 <strong><code>30-functional-spec</code></strong> 이다. 본 문서는 <strong>플로우</strong>를 소유하고 나머지는 인용만 한다(spec §4-3).</p>
+<p><strong>전제:</strong> ntop은 <strong>이미 v0.2.0까지 구현된 MIT 오픈소스 도구</strong>다(codebase-facts §0). 모든 플로우는 신규 설계가 아니라 <strong>이미 구현된 동작을 역설계</strong>한 것이다(창작 0). 사실은 codebase-facts(이하 "도시에") §4·§5·§6·§7 <strong>또는 실제 소스코드</strong>(<code>src/tui/ui.rs</code>·<code>event.rs</code>·<code>process/killer.rs</code>·<code>main.rs</code>)에 역추적된다.</p>
+</div>
+
+<div class="callout">
+<p><strong>용어 풀이(첫 등장):</strong> <strong>유저 플로우</strong> = 사용자가 목적을 이루기까지 거치는 화면·동작의 순서 / <strong>2-pass 스캔</strong> = 한 번 훑어 서버를 모으고(1패스) 다시 훑어 그 부모를 채우는(2패스) 2단계 스캔 / <strong>graceful 종료(정상 종료)</strong> = "정리하고 꺼져라"라고 <strong>요청</strong>(SIGTERM)하는 것, 강제 종료(SIGKILL)와 다름 / <strong>에스컬레이션(escalation)</strong> = 정상 요청이 안 통하면 강제로 <strong>단계 올림</strong> / <strong>폴링(polling)</strong> = 일정 간격으로 "아직 살아있나?"를 반복 확인 / <strong>트리 종료</strong> = 부모-자식을 묶어 함께 종료 / <strong>헤드리스(headless)</strong> = 화면(GUI) 없이 명령만으로 쓰는 환경(예: SSH 서버) / <strong>상태 다이어그램</strong> = 시스템이 거치는 상태와 그 사이 전이를 그린 그림 / <strong>시퀀스 다이어그램</strong> = 참여자(actor) 사이에 오가는 메시지를 시간순으로 그린 그림.</p>
+</div>
+
+<h2 id="sprint-contract">Sprint Contract (self-proposed checks)<a class="anchor" href="#sprint-contract">#</a></h2>
+<p>이 문서(g2의 <code>13-user-flows</code>)가 만족시킬 <strong>관찰 가능한 체크</strong>(playbook §S4-g2 관찰 바 "13=핵심 플로우·분기·화면·기능 ID 링크·플로우차트+시퀀스" + spec §5(13행)·§8에서 도출).</p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>#</th><th>체크</th><th>어떻게 충족하나</th><th>본문 위치</th></tr></thead>
+<tbody>
+<tr><td><strong>L-1</strong></td><td><strong>핵심 플로우 6종</strong>(research-s3 F1~F6) 플로우차트</td><td>§2~§7 UF-1~UF-6 ASCII 플로우차트(분기 <code>◇</code>)</td><td>§2~§7</td></tr>
+<tr><td><strong>L-2</strong></td><td><strong>각 단계 → 화면 ID(12) + 기능 ID(10) + PRB</strong> 링크</td><td>각 플로우 단계 라벨 + §9 플로우×화면×기능×PRB 추적표</td><td>§2~§7·§9</td></tr>
+<tr><td><strong>L-3</strong></td><td><strong>핵심 세션 상태 다이어그램</strong> — kill graceful→force 에스컬레이션</td><td>§8-1 상태기계(SIGTERM→200ms 폴링→graceful_timeout 10s→Terminated/TimedOut→SIGKILL)</td><td>§8-1</td></tr>
+<tr><td><strong>L-4</strong></td><td><strong>핵심 세션 시퀀스 다이어그램</strong> — User↔App↔ProcessKiller↔OS↔Process</td><td>§8-2 시퀀스(GracefulResult 분기·TUI/CLI 에스컬레이션 차이)</td><td>§8-2</td></tr>
+<tr><td><strong>L-5</strong></td><td><strong>분기(branch) 명시</strong> — graceful 결과·필터 종료·CLI 확인 등</td><td>각 플로우 <code>◇</code> 분기 + GracefulResult 5분기</td><td>§2~§8</td></tr>
+<tr><td><strong>L-6</strong></td><td><strong>사실 정정 반영</strong> — 세로 레이아웃(목록 위/상세 아래)·목록에 FRAMEWORK 컬럼 없음</td><td>§0 표기 규약 + UF-1 단계</td><td>§0·§2</td></tr>
+<tr><td><strong>L-7</strong></td><td><strong>시각화(G-g)</strong> — 모든 플로우/세션 ASCII 다이어그램(외부 렌더러 0)</td><td>§2~§8 전부 ASCII</td><td>전체</td></tr>
+<tr><td><strong>L-8</strong></td><td><strong>단일 출처 준수</strong> — 화면=12·기능=10·키=21·문제=research-s2·Config값=31 참조</td><td>본문 참조 표기, 재정의 0</td><td>전체</td></tr>
+</tbody>
+</table>
+</div>
+<blockquote>게이트 공급: <strong>G-g</strong>(플로우차트·시퀀스/상태 다이어그램 적합), <strong>C1 일부</strong>(플로우↔문제 일관, 각 단계 PRB 링크), <strong>G-a 보조</strong>(기능 ID 링크).</blockquote>
+
+<h2 id="s0">0. 표기 규약 (코드-진실 포함)<a class="anchor" href="#s0">#</a></h2>
+
+<figure class="viz">
+<svg viewBox="0 0 760 150" role="img" aria-label="플로우 표기 기호 범례">
+  <text x="20" y="24" class="lbl-b">기호 범례</text>
+  <g class="lbl">
+    <text x="20" y="52"><tspan style="font-weight:700;fill:#4f46e5">─▶</tspan>  순방향 진행</text>
+    <text x="230" y="52"><tspan style="font-weight:700;fill:#d97706">◇</tspan>  분기(조건/사용자 결정)</text>
+    <text x="500" y="52"><tspan style="font-weight:700;fill:#4f46e5">│ ▼</tspan>  흐름 연결</text>
+    <text x="20" y="80"><tspan style="font-weight:700;fill:#ca8a04">↻</tspan>  탭/상태 순환</text>
+    <text x="230" y="80"><tspan class="lbl-b">[화면ID]</tspan>  12-ia 화면(V-/TAB-/DLG-/CLI-)</text>
+    <text x="20" y="108"><tspan class="lbl-b">(Fn)</tspan>  10-prd 기능 ID</text>
+    <text x="230" y="108"><tspan style="color:#b45309" class="lbl-b">PRB-n</tspan>  research-s2 문제 번호</text>
+    <text x="500" y="108"><tspan class="lbl-b">`키`</tspan>  키 입력(정규 출처=21)</text>
+  </g>
+  <rect x="14" y="124" width="732" height="0.5" fill="#e2e8f0"/>
+</svg>
+<figcaption>그림 0 · 플로우 표기 기호 — 화살표/분기/순환 + 화면·기능·문제·키 라벨 규약.</figcaption>
+</figure>
+
+<div class="callout warn">
+<p><strong>★ 코드-진실(반드시 준수, 12-ia §0):</strong></p>
+<ul style="margin:6px 0">
+<li>레이아웃 = <strong>세로(상/하)</strong>: <span class="chip">V-LIST</span> 위(55%) / <span class="chip">V-DETAIL</span> 아래(45%) (<code>ui.rs</code> L37–44)</li>
+<li>TUI 목록(<span class="chip">V-LIST</span>)에는 <strong>별도 FRAMEWORK 컬럼이 없다</strong> → 별도 열로는 상세 Info 탭(<span class="chip">TAB-INFO</span>) 또는 CLI <code>ntop list</code> 테이블에서만 확인.</li>
+<li>단, 목록 NAME 컬럼은 인라인 배지로 프레임워크를 노출한다(<code>next-server (Next.js)</code> / <code>uvicorn [Python]</code>, <code>process_list.rs</code> L121·L127). → "별도 FRAMEWORK 컬럼 없음"일 뿐, 프레임워크명은 NAME에서도 보인다.</li>
+</ul>
+</div>
+
+<details class="raw"><summary>원본 ASCII 표기 규약 보기</summary>
+<pre>
+ 기호      의미
+ ────────────────────────────────────────────────────────────
+ ─▶        순방향 진행                ◇        분기(조건/사용자 결정)
+ │ ▼       흐름 연결                  ↻        탭/상태 순환
+ [화면ID]  12-ia의 화면(V-/TAB-/DLG-/CLI-)      (Fn)  10-prd 기능 ID
+ PRB-n     research-s2 문제 번호      `키`     키 입력(정규 출처=21-screen-spec)
+ ────────────────────────────────────────────────────────────
+ ★ 코드-진실(반드시 준수, 12-ia §0):
+   · 레이아웃 = 세로(상/하): V-LIST 위(55%) / V-DETAIL 아래(45%)  (ui.rs L37–44)
+   · TUI 목록(V-LIST)에는 별도 FRAMEWORK 컬럼이 없다 → 별도 열로는
+     상세 Info 탭(TAB-INFO) 또는 CLI `ntop list` 테이블에서만 확인.
+   · 단, 목록 NAME 컬럼은 인라인 배지로 프레임워크를 노출한다
+     (`next-server (Next.js)` / `uvicorn [Python]`, `process_list.rs` L121·L127).
+     → "별도 FRAMEWORK 컬럼 없음"일 뿐, 프레임워크명은 NAME에서도 보인다.
+</pre>
+</details>
+
+<h2 id="s1">1. 이 문서가 답하는 것 + 플로우 인덱스<a class="anchor" href="#s1">#</a></h2>
+<p>ntop 사용은 <strong>세 가지 가치 동작</strong>으로 수렴한다 — <strong>식별 → 점검 → 안전 종료</strong>(research-s2 §5의 3대 능력군, 01 §4 가치 루프). 6개 핵심 플로우가 이 루프 위에 있다.</p>
+
+<h3 id="s1-1">1-1. 플로우 인덱스 (UF-1~UF-6 ↔ research-s3 F1~F6)<a class="anchor" href="#s1-1">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>플로우 ID</th><th>(research-s3)</th><th>플로우</th><th>진입점</th><th>주 화면</th><th>주 기능</th><th>주 PRB</th><th>페르소나</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">UF-1</span></td><td>F1</td><td>기동→스캔(2-pass)→선택→상세 4탭 점검→종료</td><td><code>ntop</code></td><td>V-EMPTY·V-LIST·V-DETAIL(4탭)</td><td>F1·F2·F5·F10·F15·F18</td><td>1·2·6·8</td><td>P1</td></tr>
+<tr><td><span class="chip">UF-2</span></td><td>F2</td><td>필터(<code>/</code>)/정렬(<code>s</code>,<code>r</code>)/Node-only(<code>n</code>) 토글</td><td>V-LIST</td><td>V-FILTER·V-LIST</td><td>F11·F12·F13</td><td>1·4</td><td>P1·P3</td></tr>
+<tr><td><span class="chip">UF-3</span></td><td>F3</td><td>kill 단건 (<code>x</code> → SIGTERM 1회; 자동 force는 CLI 전용)</td><td>V-LIST/V-DETAIL</td><td>DLG-KILL</td><td>F7</td><td>3·5</td><td>P1</td></tr>
+<tr><td><span class="chip">UF-4</span></td><td>F4</td><td>kill 트리 (<code>K</code>, 자식부터 역순)</td><td>V-LIST</td><td>DLG-KILLTREE</td><td>F8</td><td>5</td><td>P2</td></tr>
+<tr><td><span class="chip">UF-5</span></td><td>F5</td><td>SignalPicker (<code>S</code>)로 임의 시그널</td><td>V-LIST/V-DETAIL</td><td>DLG-SIGNAL</td><td>F9</td><td>5</td><td>P1</td></tr>
+<tr><td><span class="chip">UF-6</span></td><td>F6</td><td>CLI: <code>list --json</code> → <code>kill --tree</code></td><td>셸/스크립트</td><td>CLI-LIST·CLI-KILL</td><td>F19·F7·F8</td><td>7·5</td><td>P2</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="s1-2">1-2. 가치 루프 위의 6 플로우 (한눈)<a class="anchor" href="#s1-2">#</a></h3>
+
+<figure class="viz">
+<svg viewBox="0 0 860 330" role="img" aria-label="가치 루프와 6 플로우 저니맵">
+  <defs><marker id="a-loop" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#4f46e5"/></marker></defs>
+  <!-- 루프 -->
+  <text x="430" y="22" text-anchor="middle" class="lbl-b" style="font-size:13px;fill:#4f46e5">ntop 가치 루프</text>
+  <rect x="70" y="38" width="180" height="50" rx="25" fill="#eef2ff" stroke="#4f46e5" stroke-width="2"/>
+  <text x="160" y="68" text-anchor="middle" class="lbl-b" style="font-size:14px">식별</text>
+  <rect x="340" y="38" width="180" height="50" rx="25" fill="#eef2ff" stroke="#4f46e5" stroke-width="2"/>
+  <text x="430" y="68" text-anchor="middle" class="lbl-b" style="font-size:14px">점검</text>
+  <rect x="610" y="38" width="180" height="50" rx="25" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
+  <text x="700" y="68" text-anchor="middle" class="lbl-b" style="font-size:14px;fill:#b91c1c">안전 종료</text>
+  <path d="M250,63 L334,63" class="edge" style="stroke:#4f46e5" marker-end="url(#a-loop)"/>
+  <path d="M520,63 L604,63" class="edge" style="stroke:#4f46e5" marker-end="url(#a-loop)"/>
+  <!-- 반복 return -->
+  <path d="M700,88 C700,120 160,120 160,90" class="edge-d" style="stroke:#4f46e5" marker-end="url(#a-loop)"/>
+  <text x="430" y="118" text-anchor="middle" class="lbl-s" style="fill:#4f46e5">(반복)</text>
+
+  <!-- 6 flow cards -->
+  <g>
+    <rect x="20" y="150" width="250" height="64" rx="8" class="fl-screen"/>
+    <text x="30" y="170" class="lbl-b">UF-1 척추 플로우</text>
+    <text x="30" y="188" class="lbl-s">기동→스캔→식별→점검→종료</text>
+    <text x="30" y="205" class="lbl-s">P1 · PRB-1·2·6·8</text>
+
+    <rect x="290" y="150" width="270" height="64" rx="8" class="fl-mode"/>
+    <text x="300" y="170" class="lbl-b" style="fill:#b45309">UF-2 식별 좁히기</text>
+    <text x="300" y="188" class="lbl-s">필터/정렬/Node-only (인플레이스)</text>
+    <text x="300" y="205" class="lbl-s">P1·P3 · PRB-1·4</text>
+
+    <rect x="580" y="150" width="260" height="64" rx="8" class="fl-danger"/>
+    <text x="590" y="170" class="lbl-b" style="fill:#b91c1c">UF-3 kill 단건</text>
+    <text x="590" y="188" class="lbl-s">x → SIGTERM 1회 (확인 게이트)</text>
+    <text x="590" y="205" class="lbl-s">P1 · PRB-3·5</text>
+
+    <rect x="20" y="232" width="250" height="64" rx="8" class="fl-danger"/>
+    <text x="30" y="252" class="lbl-b" style="fill:#b91c1c">UF-4 kill 트리</text>
+    <text x="30" y="270" class="lbl-s">K → 자식부터 역순 (고아 방지)</text>
+    <text x="30" y="287" class="lbl-s">P2 · PRB-5</text>
+
+    <rect x="290" y="232" width="270" height="64" rx="8" class="fl-tab"/>
+    <text x="300" y="252" class="lbl-b" style="fill:#854d0e">UF-5 SignalPicker</text>
+    <text x="300" y="270" class="lbl-s">S → 임의 시그널 (정밀 제어)</text>
+    <text x="300" y="287" class="lbl-s">P1 · PRB-5</text>
+
+    <rect x="580" y="232" width="260" height="64" rx="8" class="fl-cli"/>
+    <text x="590" y="252" class="lbl-b" style="fill:#0f766e">UF-6 CLI 자동화</text>
+    <text x="590" y="270" class="lbl-s">list --json → kill --tree (헤드리스)</text>
+    <text x="590" y="287" class="lbl-s">P2 · PRB-7·5</text>
+  </g>
+</svg>
+<figcaption>그림 1 · 가치 루프(식별→점검→안전 종료→반복)와 그 위의 6 플로우 — 저니맵. UF-1 척추, UF-2 식별 좁히기, UF-3/4/5 종료 계열, UF-6 헤드리스 자동화.</figcaption>
+</figure>
+
+<details class="raw"><summary>원본 ASCII 가치 루프 보기</summary>
+<pre>
+                          ┌──────────────── ntop 가치 루프 ────────────────┐
+                          │  식별  ──▶  점검  ──▶  안전 종료  ──▶ (반복)    │
+                          └────────────────────────────────────────────────┘
+            ┌──────────────┴──────────────┐        ┌────────┴────────┐
+            ▼                              ▼        ▼                 ▼
+  UF-1 기동→스캔→식별→점검→종료    UF-2 필터/정렬/Node-only   UF-3 kill 단건   UF-4 kill 트리
+        (척추 플로우)                  (식별 좁히기)         (SIGTERM 1회)     (고아 방지)
+                                                              UF-5 SignalPicker(정밀 제어)
+                                                              UF-6 CLI 자동화(헤드리스, PRB-7)
+</pre>
+</details>
+
+<h2 id="uf1">2. UF-1 — 기동 → 스캔(2-pass) → 선택 → 상세 4탭 점검 → 종료<a class="anchor" href="#uf1">#</a></h2>
+<blockquote>척추 플로우. research-s3 F1. PRB-1(식별)·PRB-2(포트)·PRB-6(점검)·PRB-8(왕복 제거). 화자 P1 박서연.</blockquote>
+
+<figure class="viz">
+<svg viewBox="0 0 820 720" role="img" aria-label="UF-1 척추 플로우차트">
+  <defs><marker id="a-uf1" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#94a3b8"/></marker></defs>
+  <!-- 기동 -->
+  <rect x="40" y="20" width="380" height="36" rx="6" class="fl-start"/>
+  <text x="52" y="43" class="lbl-w">$ ntop ─▶ 터미널 셋업(raw_mode / AltScreen)</text>
+  <text x="440" y="35" class="lbl-s">CLI 진입 [A] · main.rs run_tui</text>
+  <text x="440" y="50" class="lbl-s">(F20 / PRB-8)</text>
+  <path d="M120,56 L120,76" class="edge" marker-end="url(#a-uf1)"/>
+  <!-- 이벤트 루프 -->
+  <rect x="40" y="78" width="380" height="34" rx="6" class="fl-act"/>
+  <text x="52" y="100" class="lbl">이벤트 루프 ── Tick ──▶ do_scan() (event.rs)</text>
+  <path d="M120,112 L120,130" class="edge" marker-end="url(#a-uf1)"/>
+  <!-- 스캔 박스 -->
+  <rect x="40" y="132" width="560" height="92" rx="6" class="fl-act"/>
+  <text x="52" y="152" class="lbl-b">스캔: 2-pass + 포트  (F1·F5·F10 / PRB-1·2)</text>
+  <text x="52" y="172" class="lbl-s">Pass1: 전체 열거 → classify → 서버(runtime=Some) 수집</text>
+  <text x="52" y="190" class="lbl-s">Pass2: 서버의 부모(launchd/claude/shell) backfill(runtime=None)</text>
+  <text x="52" y="208" class="lbl-s">포트: NetworkInspector LISTEN만 PID별 채움(분류 후 별도)</text>
+  <path d="M300,224 L300,242" class="edge" marker-end="url(#a-uf1)"/>
+  <!-- 분기 -->
+  <polygon points="300,246 410,288 300,330 190,288" class="fl-dec"/>
+  <text x="300" y="285" text-anchor="middle" class="lbl-b" style="fill:#b45309">◇ flat_list</text>
+  <text x="300" y="300" text-anchor="middle" class="lbl-s" style="fill:#b45309">비었나?</text>
+  <!-- 예 -->
+  <path d="M210,300 L120,300 L120,344" class="edge" marker-end="url(#a-uf1)"/>
+  <text x="150" y="293" class="lbl-s">예</text>
+  <rect x="40" y="346" width="200" height="56" rx="6" class="fl-empty"/>
+  <text x="50" y="367" class="lbl-b" style="fill:#0e7490">[V-EMPTY] 스피너</text>
+  <text x="50" y="385" class="lbl-s">"Scanning…" (F1 / PRB-1 대기)</text>
+  <text x="50" y="399" class="lbl-xs">(서버 뜨면 다음 Tick에 ↓)</text>
+  <!-- 아니오 -->
+  <path d="M390,300 L500,300 L500,344" class="edge" marker-end="url(#a-uf1)"/>
+  <text x="430" y="293" class="lbl-s">아니오</text>
+  <rect x="400" y="346" width="280" height="56" rx="6" class="fl-screen"/>
+  <text x="410" y="367" class="lbl-b">[V-LIST] 트리 표시 (first_load면 전체 확장)</text>
+  <text x="410" y="385" class="lbl-s">상단바 [BAR-TOP] Servers:n (F18)</text>
+  <text x="410" y="399" class="lbl-xs">PRB-1 식별 시작</text>
+  <!-- 합류 -->
+  <path d="M140,402 L140,424 L300,424" class="edge"/>
+  <path d="M540,402 L540,424 L300,424" class="edge"/>
+  <path d="M300,424 L300,444" class="edge" marker-end="url(#a-uf1)"/>
+  <!-- 선택 -->
+  <rect x="40" y="446" width="720" height="62" rx="6" class="fl-screen"/>
+  <text x="52" y="466" class="lbl-b">[선택] [V-LIST] 포커스  (F10·F12 / PRB-1·4)</text>
+  <text x="52" y="484" class="lbl-s">↑↓/jk 이동 · Enter 트리 토글 · →/l 확장 · ←/h 축소 · Space 다중선택 · s 정렬 · / 필터(→UF-2)</text>
+  <text x="52" y="501" class="lbl-xs">목록 컬럼: [✓]PID·NAME·PORT·THR·CPU·MEM·USER·STS·UPTIME (FRAMEWORK 없음)</text>
+  <path d="M400,508 L400,528" class="edge" marker-end="url(#a-uf1)"/>
+  <text x="408" y="522" class="lbl-s">`Tab`</text>
+  <!-- 점검 -->
+  <rect x="40" y="530" width="720" height="40" rx="6" class="fl-screen"/>
+  <text x="52" y="554" class="lbl-b">[점검] [V-DETAIL] 포커스 — Tab/→ 다음 탭 · BackTab/← 이전 탭 · ↑↓ 스크롤  (F15 / PRB-1·6)</text>
+  <path d="M400,570 L400,586" class="edge"/>
+  <!-- 4 tabs -->
+  <rect x="40" y="588" width="170" height="48" rx="6" class="fl-tabA"/>
+  <text x="50" y="608" class="lbl-w">TAB-INFO</text><text x="50" y="624" class="lbl-xs" style="fill:#fef9c3">프레임워크·CPU·메모리 (F1·F18)</text>
+  <rect x="222" y="588" width="170" height="48" rx="6" class="fl-tab"/>
+  <text x="232" y="608" class="lbl-b" style="fill:#854d0e">TAB-LOG</text><text x="232" y="624" class="lbl-xs">실시간 로그 tail (F16)</text>
+  <rect x="404" y="588" width="170" height="48" rx="6" class="fl-tab"/>
+  <text x="414" y="608" class="lbl-b" style="fill:#854d0e">TAB-NET</text><text x="414" y="624" class="lbl-xs">LISTEN 포트·TCP (F6 / PRB-2)</text>
+  <rect x="586" y="588" width="174" height="48" rx="6" class="fl-tab"/>
+  <text x="596" y="608" class="lbl-b" style="fill:#854d0e">TAB-ENV</text><text x="596" y="624" class="lbl-xs">환경변수 마스킹 (F17 / PRB-6)</text>
+  <!-- Esc 복귀 -->
+  <path d="M40,612 L20,612 L20,477 L40,477" class="edge-d" marker-end="url(#a-uf1)"/>
+  <text x="4" y="545" class="lbl-xs" transform="rotate(-90 12 545)">`Esc` → [V-LIST] 복귀</text>
+  <path d="M400,636 L400,656" class="edge" marker-end="url(#a-uf1)"/>
+  <!-- 종료 -->
+  <rect x="40" y="658" width="560" height="40" rx="6" class="fl-start"/>
+  <text x="52" y="682" class="lbl-w">[종료] `q` 또는 `Ctrl+C` ─▶ should_quit ─▶ 터미널 복원(raw 해제·AltScreen 나감·커서)  (F20 / PRB-8)</text>
+</svg>
+<figcaption>그림 2 · UF-1 척추 플로우 — 기동→2-pass 스캔+포트→◇flat_list 비었나(V-EMPTY/V-LIST)→선택→V-DETAIL 4탭 점검→종료. 한 화면(V-MAIN) 안에서 완결.</figcaption>
+</figure>
+
+<p><strong>UF-1이 말하는 것:</strong> 한 화면(V-MAIN) 안에서 식별(V-LIST)→점검(V-DETAIL 4탭)→종료(<code>q</code>)가 끝난다. 프레임워크 정체는 목록이 아니라 <strong>상세 Info 탭</strong>에서 확인한다(코드-진실). 별도 GUI로 나갈 필요가 없어 <span class="chip p1">PRB-8</span>을 제거한다(<span class="chip">F20</span>). kill로 이어지면 UF-3로 분기한다.</p>
+
+<details class="raw"><summary>원본 ASCII UF-1 보기</summary>
+<pre>
+[기동]                                              [스캔: 2-pass + 포트]
+$ ntop ─▶ 터미널 셋업(raw/AltScreen) ─▶ 이벤트 루프 ──Tick──▶ do_scan()       (F1·F5 / PRB-1·2)
+  (CLI 진입 [A])   (main.rs run_tui)                 (event.rs)     │
+                                                                   ▼
+                          Pass1: 전체 열거 → classify → 서버(runtime=Some) 수집   (F1)
+                          Pass2: 서버의 부모(launchd/claude/shell) backfill(runtime=None) (F10)
+                          포트:  NetworkInspector LISTEN만 PID별 채움(분류 후 별도) (F5 / PRB-2)
+                                                                   │
+                           ┌─────────── ◇ flat_list 비었나? ───────┤
+                           │ 예                                   아니오
+                           ▼                                       ▼
+                  [V-EMPTY] 스피너 "Scanning…"          [V-LIST] 트리 표시(first_load면 전체 확장)
+                  (F1 / PRB-1 대기)                     상단바 [BAR-TOP] Servers:n  (F18 / PRB-1 식별 시작)
+                           │ (서버 뜨면 다음 Tick에)             │
+                           └─────────────────────────────────────┤
+                                                                  ▼
+[선택]  [V-LIST] 포커스 ─ `↑↓/jk` 이동 · `Enter` 트리 토글 · `→/l` 확장 · `←/h` 축소 ·   (F10·F12)
+                          `Space` 다중선택 · `s` 정렬 · `/` 필터(→UF-2)                   / PRB-1·4
+                          ※ 목록 컬럼: [✓]PID·NAME·PORT·THR·CPU·MEM·USER·STS·UPTIME (FRAMEWORK 없음)
+                                                                  │  `Tab`
+                                                                  ▼
+[점검]  [V-DETAIL] 포커스 ─ `Tab`/`→/l` 다음 탭 · `BackTab`/`←/h` 이전 탭 · `↑↓` 스크롤    (F15 / PRB-1·6)
+        ┌────────────────┬────────────────┬────────────────┬────────────────┐
+        ▼                ▼                ▼                ▼
+   [TAB-INFO]        [TAB-LOG]        [TAB-NET]        [TAB-ENV]
+   프레임워크 정체·  실시간 로그 tail  LISTEN 포트·     환경변수
+   CPU·메모리        (F16)            TCP 연결         (민감값 마스킹)
+   (F1·F18/PRB-1·6)                  (F6 / PRB-2)     (F17 / PRB-6)
+        │                │                │                │
+        └────────────────┴───────┬────────┴────────────────┘   (`Esc` → [V-LIST] 복귀)
+                                  ▼
+[종료]  `q` 또는 `Ctrl+C` ─▶ should_quit ─▶ 터미널 복원(raw 해제·AltScreen 나감·커서 표시)  (F20 / PRB-8)
+</pre>
+</details>
+
+<h2 id="uf2">3. UF-2 — 필터(<code>/</code>) / 정렬(<code>s</code>,<code>r</code>) / Node-only(<code>n</code>) 토글<a class="anchor" href="#uf2">#</a></h2>
+<blockquote>research-s3 F2. PRB-1(식별 좁힘)·PRB-4(멀티런타임↔Node 집중). 모두 화면 전환 없이 <strong>인플레이스 갱신</strong>(<code>rebuild_view()</code>). 화자 P1 박서연 / Node-only는 P3 이준.</blockquote>
+
+<figure class="viz">
+<svg viewBox="0 0 820 430" role="img" aria-label="UF-2 필터/정렬/Node-only 플로우차트">
+  <defs><marker id="a-uf2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#94a3b8"/></marker></defs>
+  <!-- V-LIST -->
+  <rect x="40" y="20" width="220" height="40" rx="6" class="fl-screen"/>
+  <text x="52" y="44" class="lbl-b">[V-LIST] (normal 포커스)</text>
+  <path d="M150,60 L150,80" class="edge" marker-end="url(#a-uf2)"/>
+  <!-- 3 branches -->
+  <text x="52" y="98" class="lbl-s">세 가지 분기 (모두 rebuild_view() 인플레이스)</text>
+
+  <!-- / 필터 -->
+  <path d="M150,104 L150,124" class="edge" marker-end="url(#a-uf2)"/>
+  <rect x="40" y="126" width="420" height="46" rx="6" class="fl-mode"/>
+  <text x="50" y="146" class="lbl-b" style="fill:#b45309">`/` ─▶ [V-FILTER] (모드) · Char 입력마다 rebuild_view() 실시간 (F11 / PRB-1·4)</text>
+  <text x="50" y="164" class="lbl-s">하단바 " /{텍스트}█  [Enter]Apply [Esc]Cancel" · 매칭: name·command·pid·framework·runtime·ports 부분일치</text>
+  <path d="M250,172 L250,192" class="edge" marker-end="url(#a-uf2)"/>
+  <!-- 분기 종료 -->
+  <polygon points="250,196 330,224 250,252 170,224" class="fl-dec"/>
+  <text x="250" y="222" text-anchor="middle" class="lbl-b" style="fill:#b45309">◇ 종료</text>
+  <text x="250" y="237" text-anchor="middle" class="lbl-s" style="fill:#b45309">방식</text>
+  <path d="M170,224 L70,224 L70,266" class="edge" marker-end="url(#a-uf2)"/>
+  <text x="95" y="217" class="lbl-s">`Enter`</text>
+  <rect x="40" y="268" width="190" height="40" rx="6" class="fl-ok"/>
+  <text x="50" y="288" class="lbl-b" style="fill:#047857">필터 유지 + normal 복귀</text>
+  <text x="50" y="302" class="lbl-xs">(좁혀진 목록 유지)</text>
+  <path d="M330,224 L430,224 L430,266" class="edge" marker-end="url(#a-uf2)"/>
+  <text x="360" y="217" class="lbl-s">`Esc`</text>
+  <rect x="350" y="268" width="190" height="40" rx="6" class="fl-act"/>
+  <text x="360" y="288" class="lbl-b">filter_text 비우고 복귀</text>
+  <text x="360" y="302" class="lbl-xs">(전체로)</text>
+
+  <!-- s/r 정렬 -->
+  <rect x="500" y="126" width="300" height="58" rx="6" class="fl-act"/>
+  <text x="510" y="146" class="lbl-b">`s` ─▶ sort_column 순환 (F12 / PRB-1)</text>
+  <text x="510" y="163" class="lbl-s">PID→NAME→PORT→THR→CPU→MEM→USER→STATUS→UPTIME</text>
+  <text x="510" y="178" class="lbl-s">`r` ─▶ sort_ascending 반전 (헤더 ^/v) → rebuild_view()</text>
+
+  <!-- n Node-only -->
+  <rect x="500" y="200" width="300" height="64" rx="6" class="fl-tab"/>
+  <text x="510" y="220" class="lbl-b" style="fill:#854d0e">`n` ─▶ node_only 토글 → rebuild_view() (F13 / PRB-4)</text>
+  <text x="510" y="237" class="lbl-s">Node 서버만 + 트리 부모 유지 · Deno/Bun 숨김</text>
+  <text x="510" y="252" class="lbl-s">상단바 [BAR-TOP] Servers↔Nodes · [Node-only] 토글</text>
+
+  <text x="40" y="345" class="lbl-s" style="font-style:italic">정렬·Node-only는 토글이라 분기 없이 즉시 반영 · 셋 다 다음 스캔 tick 기다리지 않고 키 입력 즉시 갱신</text>
+</svg>
+<figcaption>그림 3 · UF-2 — 필터(/, Enter 유지 vs Esc 비움 분기) · 정렬(s/r) · Node-only(n) 토글. 모두 화면 전환 없이 <code>rebuild_view()</code> 인플레이스.</figcaption>
+</figure>
+
+<p><strong>분기 포인트:</strong> 필터의 <code>Enter</code>(유지) vs <code>Esc</code>(비움)가 핵심 차이다. 정렬·Node-only는 토글이라 분기 없이 즉시 반영된다. 셋 다 <strong>다음 스캔 tick을 기다리지 않고</strong> 키 입력 즉시 목록이 바뀐다(저마찰).</p>
+
+<details class="raw"><summary>원본 ASCII UF-2 보기</summary>
+<pre>
+ [V-LIST] (normal 포커스)
+   │
+   ├── `/` ─▶ [V-FILTER] (모드)  ─ `Char` 입력마다 rebuild_view() 실시간 ──┐   (F11 / PRB-1·4)
+   │            하단바 " /{텍스트}█   [Enter]Apply  [Esc]Cancel"           │
+   │            매칭: name·command·pid·framework·runtime·ports 부분일치(대소문자 무시)
+   │                                                                       │
+   │          ◇ 종료 방식                                                  │
+   │          ├ `Enter` ─▶ 필터 **유지**하고 normal 복귀 (좁혀진 목록 유지)
+   │          └ `Esc`   ─▶ filter_text **비우고** normal 복귀 (전체로) ────┘
+   │
+   ├── `s` ─▶ sort_column 순환 (PID→NAME→PORT→THR→CPU→MEM→USER→STATUS→UPTIME) ─▶ rebuild_view()  (F12 / PRB-1)
+   ├── `r` ─▶ sort_ascending 반전 (헤더 ^/v 표시) ───────────────────────────▶ rebuild_view()  (F12 / PRB-1)
+   │
+   └── `n` ─▶ node_only 토글 ─▶ rebuild_view()                                                  (F13 / PRB-4)
+              (Node 서버만 + 트리 부모 유지 · Deno/Bun은 숨김)
+              상단바 [BAR-TOP] 라벨 Servers↔Nodes · `[Node-only]` 표식 토글
+</pre>
+</details>
+
+<h2 id="uf3">4. UF-3 — kill 단건 (<code>x</code> → KillConfirm → <code>Enter</code> → SIGTERM 1회 직접)<a class="anchor" href="#uf3">#</a></h2>
+<blockquote>research-s3 F3. PRB-3(오kill)·PRB-5(데이터 유실). 가장 위험한 플로우 → <strong>확인 게이트 + SIGTERM 우선(정리 시간 부여)</strong>의 안전. 화자 P1 박서연. <strong>TUI는 SIGTERM을 1회만 보내고 자동 force 승격을 하지 않는다</strong>(자동 graceful→force는 CLI 단건 전용 — §7·§8). 처리 로직 정규 출처 <code>30</code> §2-6·§8-3 / 정책 <code>33</code> §2-1. (상태기계/시퀀스 상세는 §8.)</blockquote>
+
+<figure class="viz">
+<svg viewBox="0 0 820 430" role="img" aria-label="UF-3 kill 단건 플로우차트">
+  <defs><marker id="a-uf3" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#94a3b8"/></marker></defs>
+  <rect x="250" y="18" width="320" height="34" rx="6" class="fl-screen"/>
+  <text x="262" y="40" class="lbl-b">[V-LIST] / [V-DETAIL]</text>
+  <path d="M410,52 L410,72" class="edge" marker-end="url(#a-uf3)"/>
+  <text x="418" y="66" class="lbl-s">`x`</text>
+  <rect x="250" y="74" width="320" height="46" rx="6" class="fl-danger"/>
+  <text x="262" y="94" class="lbl-b" style="fill:#b91c1c">[DLG-KILL] KillConfirm (모달·위험) (F7 / PRB-3·5)</text>
+  <text x="262" y="111" class="lbl-s">대상 PID·NAME·포트 표시 + [Enter]Confirm [Esc]Cancel</text>
+  <path d="M410,120 L410,140" class="edge" marker-end="url(#a-uf3)"/>
+  <polygon points="410,144 500,176 410,208 320,176" class="fl-dec"/>
+  <text x="410" y="174" text-anchor="middle" class="lbl-b" style="fill:#b45309">◇ 사용자</text>
+  <text x="410" y="189" text-anchor="middle" class="lbl-s" style="fill:#b45309">결정</text>
+  <!-- Esc -->
+  <path d="M320,176 L160,176 L160,210" class="edge" marker-end="url(#a-uf3)"/>
+  <text x="220" y="169" class="lbl-s">`Esc`</text>
+  <rect x="70" y="212" width="180" height="34" rx="6" class="fl-act"/>
+  <text x="80" y="234" class="lbl-b">취소 (원상 복귀)</text>
+  <!-- Enter -->
+  <path d="M500,176 L600,176 L600,210" class="edge" marker-end="url(#a-uf3)"/>
+  <text x="530" y="169" class="lbl-s">`Enter`</text>
+  <rect x="430" y="212" width="350" height="46" rx="6" class="fl-danger"/>
+  <text x="440" y="232" class="lbl-b" style="fill:#b91c1c">send_signal(pid, SIGTERM) 1회 직접 (ui.rs L95-108)</text>
+  <text x="440" y="249" class="lbl-s">· 폴링 없음 · 자동 force 없음 · needs_rescan=true</text>
+  <path d="M605,258 L605,278" class="edge" marker-end="url(#a-uf3)"/>
+  <!-- 3 outcomes -->
+  <rect x="430" y="280" width="110" height="56" rx="6" class="fl-ok"/>
+  <text x="440" y="300" class="lbl-b" style="fill:#047857">전송 성공</text>
+  <text x="440" y="316" class="lbl-xs">다음 스캔에서</text>
+  <text x="440" y="328" class="lbl-xs">종료 반영(사라짐)</text>
+  <rect x="548" y="280" width="110" height="56" rx="6" class="fl-danger"/>
+  <text x="558" y="300" class="lbl-b" style="fill:#b91c1c">EPERM</text>
+  <text x="558" y="316" class="lbl-xs">PermissionDenied</text>
+  <text x="558" y="328" class="lbl-xs">(권한 부족 메시지)</text>
+  <rect x="666" y="280" width="114" height="56" rx="6" class="fl-act"/>
+  <text x="676" y="300" class="lbl-b">ESRCH</text>
+  <text x="676" y="316" class="lbl-xs">AlreadyDead</text>
+  <text x="676" y="328" class="lbl-xs">(이미 정리됨)</text>
+  <path d="M605,258 L490,278" class="edge" marker-end="url(#a-uf3)"/>
+  <path d="M605,258 L723,278" class="edge" marker-end="url(#a-uf3)"/>
+  <!-- DLG-FORCE 미도달 -->
+  <rect x="70" y="280" width="320" height="56" rx="6" fill="#f1f5f9" stroke="#94a3b8" stroke-dasharray="6 4"/>
+  <text x="80" y="300" class="lbl-b" style="fill:#64748b">[DLG-FORCE] ForceKillPrompt — 미도달 죽은 코드</text>
+  <text x="80" y="316" class="lbl-xs">핸들러·위젯은 코드에 있으나 띄우는 경로 없음</text>
+  <text x="80" y="328" class="lbl-xs">자동 force 승격은 CLI kill 단건 전용 (40 M1)</text>
+  <text x="40" y="375" class="lbl-s" style="font-style:italic">안전장치: ① 확인 게이트(PRB-3 오발사 차단) ② SIGTERM(graceful) 우선 — 프로세스에 정리 시간(PRB-5)</text>
+</svg>
+<figcaption>그림 4 · UF-3 kill 단건 — x→DLG-KILL 확인→◇사용자 결정→Enter면 SIGTERM 1회 직접(폴링·자동 force 없음). 3 결과(성공/EPERM/ESRCH). DLG-FORCE는 점선=미도달 죽은 코드.</figcaption>
+</figure>
+
+<p><strong>TUI vs CLI 차이(중요·코드-진실):</strong> <strong>TUI <code>KillConfirm</code>은 <code>send_signal(SIGTERM)</code>을 1회 직접 보내고 끝</strong>이다 — 폴링도, 자동 SIGKILL 승격도 없다(<code>needs_rescan=true</code>만 세팅, <code>ui.rs</code> L95-108). <strong>자동 graceful→force 에스컬레이션은 CLI(<code>ntop kill &lt;PID&gt;</code>) 단건 경로에서만</strong> 일어난다(<code>main.rs</code> <code>graceful_kill</code>: SIGTERM→200ms 폴링→<code>graceful_timeout</code> 초과 시 자동 SIGKILL, §7·§8). <code>GracefulResult</code> 5분기(Terminated/TimedOut/AlreadyDead/PermissionDenied/Error)는 CLI 단건 경로의 반환값이다(§8-1).</p>
+
+<details class="raw"><summary>원본 ASCII UF-3 보기</summary>
+<pre>
+ [V-LIST]/[V-DETAIL] ─ `x` ─▶ [DLG-KILL] (KillConfirm · 모달·위험)               (F7 / PRB-3·5)
+                               │ "대상 PID·NAME·포트 표시 + [Enter]Confirm [Esc]Cancel"
+                  ┌───────────◇ 사용자 결정
+                  │ `Esc`                          │ `Enter`
+                  ▼                                ▼
+              취소(원상 복귀)            send_signal(pid, SIGTERM) 1회 직접 (ui.rs L95-108)
+                                                   │  · 폴링 없음 · needs_rescan=true
+                       ┌───────────────────────────┼───────────────────────┐
+                       │ 전송 성공                  │ EPERM(권한 거부)        │ ESRCH(이미 죽음)
+                       ▼                            ▼                        ▼
+                 다음 스캔에서 종료 반영        PermissionDenied         AlreadyDead
+                 (목록서 사라짐)               메시지 노출(권한 부족)    (이미 정리됨)
+   ↳ 안전장치: ① 확인 게이트(PRB-3 오발사 차단) ② SIGTERM(graceful) 우선 — 프로세스에 정리 시간(PRB-5)
+   ↳ 자동 force 승격(graceful→force)은 **CLI `ntop kill` 단건 전용**(§7). TUI 강제 모달 ForceKillPrompt
+      (DLG-FORCE) 핸들러는 코드에 있으나 **현재 트리거 경로가 없는 미도달 코드**다(`40` M1).
+</pre>
+</details>
+
+<h2 id="uf4">5. UF-4 — kill 트리 (<code>K</code>, KillTreeConfirm · 자식부터 역순)<a class="anchor" href="#uf4">#</a></h2>
+<blockquote>research-s3 F4. PRB-5(고아 프로세스 방지). 화자 P2 정태호(플랫폼/운영).</blockquote>
+
+<figure class="viz">
+<svg viewBox="0 0 820 320" role="img" aria-label="UF-4 kill 트리 플로우차트">
+  <defs><marker id="a-uf4" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#94a3b8"/></marker></defs>
+  <rect x="300" y="18" width="220" height="34" rx="6" class="fl-screen"/>
+  <text x="312" y="40" class="lbl-b">[V-LIST]</text>
+  <path d="M410,52 L410,72" class="edge" marker-end="url(#a-uf4)"/>
+  <text x="418" y="66" class="lbl-s">`K`</text>
+  <rect x="270" y="74" width="280" height="46" rx="6" class="fl-danger"/>
+  <text x="282" y="94" class="lbl-b" style="fill:#b91c1c">[DLG-KILLTREE] KillTreeConfirm (F8 / PRB-5)</text>
+  <text x="282" y="111" class="lbl-s">부모+자식 전체 트리 PID 표시 + [Enter]/[Esc]</text>
+  <path d="M410,120 L410,140" class="edge" marker-end="url(#a-uf4)"/>
+  <polygon points="410,144 490,172 410,200 330,172" class="fl-dec"/>
+  <text x="410" y="170" text-anchor="middle" class="lbl-b" style="fill:#b45309">◇ 결정</text>
+  <path d="M330,172 L190,172 L190,206" class="edge" marker-end="url(#a-uf4)"/>
+  <text x="240" y="165" class="lbl-s">`Esc`</text>
+  <rect x="100" y="208" width="180" height="34" rx="6" class="fl-act"/>
+  <text x="110" y="230" class="lbl-b">취소 (원상)</text>
+  <path d="M490,172 L600,172 L600,206" class="edge" marker-end="url(#a-uf4)"/>
+  <text x="520" y="165" class="lbl-s">`Enter`</text>
+  <rect x="430" y="208" width="350" height="46" rx="6" class="fl-danger"/>
+  <text x="440" y="228" class="lbl-b" style="fill:#b91c1c">kill_tree(pids, SIGTERM)</text>
+  <text x="440" y="245" class="lbl-s">pids를 역순(자식부터) 시그널 → Vec&lt;(pid, KillResult)&gt;</text>
+  <path d="M605,254 L605,274" class="edge" marker-end="url(#a-uf4)"/>
+  <rect x="430" y="276" width="350" height="34" rx="6" class="fl-ok"/>
+  <text x="440" y="298" class="lbl-b" style="fill:#047857">자식 먼저 → 부모 정리 ⇒ 고아 프로세스 0 (PRB-5 해소)</text>
+</svg>
+<figcaption>그림 5 · UF-4 kill 트리 — K→DLG-KILLTREE 확인→Enter면 kill_tree가 PID를 역순(자식부터) 시그널 → 고아 0. KillResult: Success/AlreadyDead/PermissionDenied/Error.</figcaption>
+</figure>
+
+<p><strong>왜 역순인가:</strong> 부모를 먼저 죽이면 자식이 고아(orphan)로 남아 포트를 계속 점유할 수 있다. <code>kill_tree</code>는 트리 PID를 <strong>자식부터</strong> 보내 이 사고를 구조적으로 막는다(도시에 §5). CLI는 <code>ntop kill &lt;PID&gt; --tree</code>로 동일 동작(UF-6).</p>
+
+<details class="raw"><summary>원본 ASCII UF-4 보기</summary>
+<pre>
+ [V-LIST] ─ `K` ─▶ [DLG-KILLTREE] (KillTreeConfirm · 모달·위험)                  (F8 / PRB-5)
+                    │ "부모+자식 전체 트리 PID 표시 + [Enter]Confirm [Esc]Cancel"
+        ┌──────────◇ 사용자 결정
+        │ `Esc`                    │ `Enter`
+        ▼                          ▼
+     취소(원상)            kill_tree(pids, SIGTERM)
+                              │  pids를 **역순(자식부터)** 으로 시그널 → Vec&lt;(pid, KillResult)&gt;
+                              ▼
+                      자식 먼저 정리 → 부모 정리  ⇒  고아 프로세스 0  (PRB-5 해소)
+                      (각 PID 결과는 KillResult: Success/AlreadyDead/PermissionDenied/Error)
+</pre>
+</details>
+
+<h2 id="uf5">6. UF-5 — SignalPicker (<code>S</code>)로 임의 시그널<a class="anchor" href="#uf5">#</a></h2>
+<blockquote>research-s3 F5. PRB-5(정밀 제어 — 모든 제어가 "종료"는 아님). 화자 P1 박서연.</blockquote>
+
+<figure class="viz">
+<svg viewBox="0 0 820 340" role="img" aria-label="UF-5 SignalPicker 플로우차트">
+  <defs><marker id="a-uf5" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#94a3b8"/></marker></defs>
+  <rect x="280" y="18" width="260" height="34" rx="6" class="fl-screen"/>
+  <text x="292" y="40" class="lbl-b">[V-LIST] / [V-DETAIL]</text>
+  <path d="M410,52 L410,72" class="edge" marker-end="url(#a-uf5)"/>
+  <text x="418" y="66" class="lbl-s">`S`</text>
+  <rect x="230" y="74" width="360" height="86" rx="6" class="fl-tab"/>
+  <text x="240" y="94" class="lbl-b" style="fill:#854d0e">[DLG-SIGNAL] SignalPicker (모달) (F9 / PRB-5)</text>
+  <text x="240" y="112" class="lbl-s">대상 PID·NAME 표시 + 시그널 목록(KillSignal::all)</text>
+  <text x="240" y="129" class="lbl-s">Unix 6종: Term·Kill·Hup·Int·Usr1·Usr2</text>
+  <text x="240" y="146" class="lbl-s">Windows 3종: Term·Kill·Int (HUP/USR1/USR2 없음 · 도시에 §12)</text>
+  <path d="M410,160 L410,180" class="edge" marker-end="url(#a-uf5)"/>
+  <polygon points="410,184 490,212 410,240 330,212" class="fl-dec"/>
+  <text x="410" y="210" text-anchor="middle" class="lbl-b" style="fill:#b45309">◇ 조작</text>
+  <text x="410" y="225" text-anchor="middle" class="lbl-xs" style="fill:#b45309">Up/Down 이동</text>
+  <path d="M330,212 L190,212 L190,250" class="edge" marker-end="url(#a-uf5)"/>
+  <text x="240" y="205" class="lbl-s">`Esc`</text>
+  <rect x="100" y="252" width="180" height="34" rx="6" class="fl-act"/>
+  <text x="110" y="274" class="lbl-b">원상 복귀</text>
+  <path d="M490,212 L600,212 L600,250" class="edge" marker-end="url(#a-uf5)"/>
+  <text x="520" y="205" class="lbl-s">`Enter`</text>
+  <rect x="430" y="252" width="350" height="46" rx="6" class="fl-tab"/>
+  <text x="440" y="272" class="lbl-b" style="fill:#854d0e">send_signal(pid, 선택 시그널)</text>
+  <text x="440" y="289" class="lbl-s">예: SIGHUP=설정 리로드 · SIGUSR1=디버거 활성 (정밀 제어)</text>
+</svg>
+<figcaption>그림 6 · UF-5 SignalPicker — S→DLG-SIGNAL(Unix 6 / Win 3 시그널)→◇Up/Down 선택→Enter 전송 / Esc 취소. 종료가 아니라 임의 제어라 graceful 폴링·force 없음(단발).</figcaption>
+</figure>
+
+<p><strong>분기 포인트:</strong> 시그널 선택(Up/Down) → <code>Enter</code> 전송 / <code>Esc</code> 취소. 종료가 아니라 <strong>임의 제어</strong>라 graceful 폴링·force 에스컬레이션이 없다(단발 전송). 시그널 가용성(Unix 6 / Win 3)의 정규 출처는 <code>31-erd</code>/<code>33-policy</code>.</p>
+
+<details class="raw"><summary>원본 ASCII UF-5 보기</summary>
+<pre>
+ [V-LIST]/[V-DETAIL] ─ `S` ─▶ [DLG-SIGNAL] (SignalPicker · 모달)                 (F9 / PRB-5)
+                               │ 대상: PID·NAME 표시 + 시그널 목록(KillSignal::all)
+                               │   Unix 6종 : Term · Kill · Hup · Int · Usr1 · Usr2
+                               │   Windows 3종: Term · Kill · Int   (HUP/USR1/USR2 없음 · 도시에 §12)
+                               │   각 항목 설명(예: Hup="reload config", Usr1="Node.js 디버거 활성")
+                   ┌───────────◇ 조작
+                   │ `Up/k`·`Down/j` 이동           │ `Esc` 취소
+                   ▼                                ▼
+              `Enter` ─▶ send_signal(pid, 선택 시그널)   원상 복귀
+                         (예: SIGHUP=설정 리로드 · SIGUSR1=디버거 활성 — graceful/force 대신 정밀 제어)
+</pre>
+</details>
+
+<h2 id="uf6">7. UF-6 — CLI: <code>list --json</code> → <code>kill --tree &lt;PID&gt;</code> (헤드리스 자동화)<a class="anchor" href="#uf6">#</a></h2>
+<blockquote>research-s3 F6. PRB-7(헤드리스·스크립트 자동화). 화자 P2 정태호(SSH 운영 시나리오).</blockquote>
+
+<figure class="viz">
+<svg viewBox="0 0 820 420" role="img" aria-label="UF-6 CLI 자동화 플로우차트">
+  <defs><marker id="a-uf6" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#94a3b8"/></marker></defs>
+  <text x="40" y="22" class="lbl-s">[자동화/SSH 헤드리스]  (research-s2 P2 운영자 시나리오)</text>
+  <rect x="40" y="32" width="380" height="34" rx="6" class="fl-start"/>
+  <text x="52" y="54" class="lbl-w">$ ntop list --json  (F19 / PRB-7)</text>
+  <path d="M120,66 L120,86" class="edge" marker-end="url(#a-uf6)"/>
+  <rect x="40" y="88" width="540" height="58" rx="6" class="fl-cli"/>
+  <text x="52" y="108" class="lbl-b" style="fill:#0f766e">[CLI-LIST]</text>
+  <text x="52" y="126" class="lbl-s">scan_blocking()(sleep+scan 1회) → classify → NetworkInspector</text>
+  <text x="52" y="142" class="lbl-s">→ JSON 출력(모든 필드 + depth)</text>
+  <path d="M120,146 L120,166" class="edge" marker-end="url(#a-uf6)"/>
+  <rect x="40" y="168" width="380" height="30" rx="6" class="fl-act"/>
+  <text x="52" y="188" class="lbl">jq 등으로 파싱 → 대상 PID 추출</text>
+  <path d="M120,198 L120,218" class="edge" marker-end="url(#a-uf6)"/>
+  <rect x="40" y="220" width="420" height="34" rx="6" class="fl-start"/>
+  <text x="52" y="242" class="lbl-w">$ ntop kill --tree &lt;PID&gt; [--no-confirm]  (F19·F8·F7 / PRB-5·7)</text>
+  <path d="M120,254 L120,274" class="edge" marker-end="url(#a-uf6)"/>
+  <rect x="40" y="276" width="600" height="118" rx="6" class="fl-cli"/>
+  <text x="52" y="296" class="lbl-b" style="fill:#0f766e">[CLI-KILL]</text>
+  <text x="52" y="314" class="lbl-s">재귀로 트리 PID 전부 수집</text>
+  <text x="52" y="332" class="lbl-s">◇ 확인 프롬프트 ── `--no-confirm`이면 생략</text>
+  <text x="52" y="350" class="lbl-s">각 PID graceful(SIGTERM → timeout 초과 시 <tspan style="font-weight:700;fill:#b91c1c">자동</tspan> SIGKILL)</text>
+  <text x="52" y="368" class="lbl-s">종료 결과 출력 → 종료코드 반환</text>
+  <text x="52" y="386" class="lbl-xs" style="fill:#0f766e">↳ 동일 코어(ProcessScanner+NetworkInspector)를 TUI와 공유 → 스크립트 연결(PRB-7)</text>
+</svg>
+<figcaption>그림 7 · UF-6 CLI 자동화 — list --json → jq 파싱 → kill --tree(◇확인 또는 --no-confirm) → 각 PID graceful + timeout 후 자동 SIGKILL → 종료코드. 대화형 모달 없음.</figcaption>
+</figure>
+
+<p><strong>TUI와의 대비:</strong> CLI는 확인을 <strong>프롬프트(또는 <code>--no-confirm</code> 생략)</strong> 로, 에스컬레이션을 <strong>자동</strong>으로 처리한다 — 대화형 모달(DLG-*)이 없다. 출력 스키마(JSON 필드·CSV 9컬럼·table 컬럼)의 정규 출처는 <code>32-api-spec</code>이다.</p>
+
+<details class="raw"><summary>원본 ASCII UF-6 보기</summary>
+<pre>
+[자동화/SSH 헤드리스]                                  (research-s2 P2 운영자 시나리오)
+$ ntop list --json                                                              (F19 / PRB-7)
+  [CLI-LIST] ─▶ scan_blocking()(sleep+scan 1회) ─▶ classify ─▶ NetworkInspector
+             ─▶ JSON 출력(모든 필드 + depth)
+                           │  jq 등으로 파싱 → 대상 PID 추출
+                           ▼
+$ ntop kill --tree &lt;PID&gt; [--no-confirm]                                         (F19·F8·F7 / PRB-5·7)
+  [CLI-KILL] ─▶ 재귀로 트리 PID 전부 수집
+             ─▶ ◇ 확인 프롬프트  ── `--no-confirm`이면 생략
+             ─▶ 각 PID graceful(SIGTERM → timeout 초과 시 **자동** SIGKILL)
+             ─▶ 종료 결과 출력 → 종료코드 반환
+   ↳ 동일 코어(ProcessScanner+NetworkInspector)를 TUI와 공유 → 스크립트에 그대로 연결(PRB-7)
+</pre>
+</details>
+
+<h2 id="s8">8. 핵심 세션 — kill graceful→force 상태/시퀀스 다이어그램<a class="anchor" href="#s8">#</a></h2>
+<div class="callout bad">
+<p>ntop의 가장 위험하고 중요한 세션 = <strong>종료</strong>. <strong>경로별로 동작이 다르다(코드-진실)</strong>: <strong>CLI 단건</strong>(<code>ntop kill &lt;PID&gt;</code>)만 <code>graceful_kill</code>로 SIGTERM→200ms 폴링→<code>graceful_timeout</code> 초과 시 <strong>자동 SIGKILL 에스컬레이션</strong>한다. <strong>TUI <code>KillConfirm</code>은 <code>send_signal(SIGTERM)</code>을 1회 직접</strong> 보내고(폴링·자동 force 없음, <code>needs_rescan</code>만), TUI 강제 모달 <code>ForceKillPrompt</code>(<span class="chip p0">DLG-FORCE</span>)는 코드에 있으나 <strong>현재 트리거 경로가 없는 미도달 코드</strong>다(<code>40</code> M1). 처리 로직 정규 출처는 <code>30-functional-spec</code>(§2-6·§8-3), 정책은 <code>33</code>(§2-1), enum 정의는 <code>31-erd</code>.</p>
+</div>
+
+<h3 id="s8-1">8-1. 상태 다이어그램 (state machine) — L-3<a class="anchor" href="#s8-1">#</a></h3>
+
+<figure class="viz">
+<svg viewBox="0 0 900 660" role="img" aria-label="종료 2-lane 상태기계">
+  <defs><marker id="a-st" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#94a3b8"/></marker></defs>
+  <!-- Idle -->
+  <rect x="380" y="16" width="140" height="40" rx="20" class="fl-start"/>
+  <text x="450" y="41" text-anchor="middle" class="lbl-w">Idle</text>
+  <path d="M450,56 L450,90" class="edge" marker-end="url(#a-st)"/>
+  <text x="458" y="78" class="lbl-s">`x` 또는 `kill &lt;PID&gt;` (종료 의도)</text>
+  <!-- Confirming -->
+  <rect x="360" y="92" width="180" height="48" rx="8" class="fl-dec"/>
+  <text x="450" y="113" text-anchor="middle" class="lbl-b" style="fill:#b45309">Confirming</text>
+  <text x="450" y="130" text-anchor="middle" class="lbl-s">TUI=[DLG-KILL] · CLI=`[y/N]`</text>
+  <!-- back to Idle -->
+  <path d="M360,116 L250,116 L250,40 L380,40" class="edge-d" marker-end="url(#a-st)"/>
+  <text x="256" y="80" class="lbl-s">`Esc`/취소 → Idle</text>
+  <path d="M450,140 L450,168" class="edge" marker-end="url(#a-st)"/>
+  <text x="458" y="158" class="lbl-s">`Enter`/`y` (또는 --no-confirm)</text>
+  <!-- 경로 분기 divider -->
+  <rect x="60" y="170" width="780" height="26" rx="6" fill="#fff7ed" stroke="#d97706" stroke-dasharray="5 3"/>
+  <text x="450" y="187" text-anchor="middle" class="lbl-b" style="fill:#b45309">경로 분기 (코드-진실: 동작이 다름)</text>
+  <path d="M380,196 L250,222" class="edge" marker-end="url(#a-st)"/>
+  <path d="M520,196 L650,222" class="edge" marker-end="url(#a-st)"/>
+
+  <!-- Lane ① TUI -->
+  <rect x="40" y="210" width="360" height="430" rx="10" fill="#fafbff" stroke="#4f46e5" stroke-width="1.4"/>
+  <text x="54" y="232" class="lbl-b">① TUI KillConfirm</text>
+  <rect x="70" y="248" width="300" height="80" rx="8" class="fl-screen"/>
+  <text x="80" y="270" class="lbl-b">send_signal(pid, TERM)</text>
+  <text x="80" y="288" class="lbl-s">once, direct (ui.rs L99)</text>
+  <text x="80" y="305" class="lbl-s">no poll / no force</text>
+  <text x="80" y="322" class="lbl-s">needs_rescan = true</text>
+  <path d="M220,328 L220,360" class="edge" marker-end="url(#a-st)"/>
+  <text x="228" y="350" class="lbl-s">next scan → 목록서 제거</text>
+  <rect x="120" y="362" width="200" height="38" rx="19" class="fl-start"/>
+  <text x="220" y="386" text-anchor="middle" class="lbl-w">(→ Idle)</text>
+  <!-- DLG-FORCE note in lane 1 -->
+  <rect x="70" y="430" width="300" height="100" rx="8" fill="#f1f5f9" stroke="#94a3b8" stroke-dasharray="6 4"/>
+  <text x="80" y="452" class="lbl-b" style="fill:#64748b">DLG-FORCE (ForceKillPrompt)</text>
+  <text x="80" y="470" class="lbl-xs">①에 등장하지 않는다 — 핸들러·위젯은</text>
+  <text x="80" y="486" class="lbl-xs">코드에 있으나 띄우는 경로가 현재 없음</text>
+  <text x="80" y="502" class="lbl-xs">(미도달 죽은 코드, 40 M1).</text>
+  <text x="80" y="520" class="lbl-xs" style="font-weight:700">자동 SIGKILL 승격은 ②에만 있다.</text>
+
+  <!-- Lane ② CLI -->
+  <rect x="500" y="210" width="380" height="430" rx="10" fill="#fffdf8" stroke="#d97706" stroke-width="1.4"/>
+  <text x="514" y="232" class="lbl-b" style="fill:#b45309">② CLI `ntop kill &lt;PID&gt;` 단건</text>
+  <rect x="540" y="248" width="300" height="50" rx="8" class="fl-cli"/>
+  <text x="550" y="268" class="lbl-b" style="fill:#0f766e">graceful_kill(pid, 10s)</text>
+  <text x="550" y="285" class="lbl-s">step1: send SIGTERM</text>
+  <path d="M690,298 L690,320" class="edge" marker-end="url(#a-st)"/>
+  <!-- poll -->
+  <rect x="540" y="322" width="300" height="50" rx="8" class="fl-act"/>
+  <text x="550" y="342" class="lbl-b">poll is_alive @200ms</text>
+  <text x="550" y="359" class="lbl-s">until graceful_timeout 10s</text>
+  <path d="M840,347 C880,347 880,300 845,300" class="edge-d" marker-end="url(#a-st)"/>
+  <text x="846" y="324" class="lbl-xs">alive &amp;&amp; !timeout → 반복</text>
+  <path d="M690,372 L690,392" class="edge" marker-end="url(#a-st)"/>
+  <!-- 4 outcomes -->
+  <rect x="514" y="394" width="86" height="58" rx="6" class="fl-ok"/>
+  <text x="557" y="414" text-anchor="middle" class="lbl-b" style="font-size:11px;fill:#047857">Terminated</text>
+  <text x="557" y="430" text-anchor="middle" class="lbl-xs">die</text>
+  <rect x="606" y="394" width="86" height="58" rx="6" class="fl-danger"/>
+  <text x="649" y="410" text-anchor="middle" class="lbl-b" style="font-size:11px;fill:#b91c1c">PermDenied</text>
+  <text x="649" y="426" text-anchor="middle" class="lbl-xs">EPERM</text>
+  <rect x="698" y="394" width="86" height="58" rx="6" class="fl-act"/>
+  <text x="741" y="410" text-anchor="middle" class="lbl-b" style="font-size:11px">AlreadyD.</text>
+  <text x="741" y="426" text-anchor="middle" class="lbl-xs">ESRCH</text>
+  <rect x="790" y="394" width="86" height="58" rx="6" class="fl-danger"/>
+  <text x="833" y="410" text-anchor="middle" class="lbl-b" style="font-size:11px;fill:#b91c1c">TimedOut</text>
+  <text x="833" y="426" text-anchor="middle" class="lbl-xs">timeout</text>
+  <text x="833" y="440" text-anchor="middle" class="lbl-xs">&amp;&amp; alive</text>
+  <path d="M690,392 L557,394" class="edge" marker-end="url(#a-st)"/>
+  <path d="M690,392 L649,394" class="edge" marker-end="url(#a-st)"/>
+  <path d="M690,392 L741,394" class="edge" marker-end="url(#a-st)"/>
+  <path d="M690,392 L833,394" class="edge" marker-end="url(#a-st)"/>
+  <path d="M833,452 L833,478" class="edge" marker-end="url(#a-st)"/>
+  <rect x="730" y="480" width="146" height="44" rx="6" class="fl-danger"/>
+  <text x="803" y="500" text-anchor="middle" class="lbl-b" style="font-size:11px;fill:#b91c1c">force_kill → SIGKILL</text>
+  <text x="803" y="516" text-anchor="middle" class="lbl-xs">auto (사용자 확인 없음)</text>
+  <!-- all -> Idle -->
+  <path d="M557,452 L557,560 L690,560" class="edge" marker-end="url(#a-st)"/>
+  <path d="M649,452 L649,560" class="edge"/>
+  <path d="M741,452 L741,540 L690,560" class="edge"/>
+  <path d="M803,524 L803,560 L760,560" class="edge"/>
+  <rect x="600" y="566" width="180" height="40" rx="20" class="fl-start"/>
+  <text x="690" y="591" text-anchor="middle" class="lbl-w">메시지 / needs_rescan → Idle</text>
+</svg>
+<figcaption>그림 8 · 종료 2-lane 상태기계 (코드-진실) — 경로 ① TUI <code>KillConfirm</code>=SIGTERM 1회·폴링/force 없음·needs_rescan→Idle / 경로 ② CLI <code>graceful_kill</code>=SIGTERM→200ms 폴링→10s 타임아웃→Terminated/PermDenied/AlreadyDead/TimedOut(→자동 SIGKILL). DLG-FORCE는 ①에 미도달.</figcaption>
+</figure>
+
+<p><code>GracefulResult</code> enum 매핑(killer.rs · 도시에 §5 · <strong>CLI 단건 <code>graceful_kill</code>의 반환값</strong> · 정의 정규 출처 31): <strong>Terminated</strong>(timeout 내 사망) · <strong>TimedOut</strong>(살아남음→<strong>CLI 자동</strong> force 에스컬레이션) · <strong>AlreadyDead</strong>(이미 죽음, ESRCH) · <strong>PermissionDenied</strong>(EPERM) · <strong>Error</strong>(기타). (TUI <code>KillConfirm</code>은 <code>graceful_kill</code>을 호출하지 않고 <code>send_signal</code>만 쓰므로 이 분기를 거치지 않는다 — <code>30</code> §2-6·§8-3.)</p>
+
+<details class="raw"><summary>원본 ASCII 상태기계 보기</summary>
+<pre>
+                    ┌─────────┐
+                    │  Idle   │
+                    └────┬────┘
+                         │  `x`  또는  `kill <PID>`   (사용자 종료 의도)
+                         ▼
+                  ┌──────────────┐
+                  │  Confirming  │   TUI=[DLG-KILL]  ·  CLI=`[y/N]`
+                  └──────┬───────┘   `Esc`/취소 → Idle
+                         │  `Enter` / `y`  (또는 --no-confirm)
+                         ▼
+        ┌─────── 경로 분기 (코드-진실: 동작이 다름) ───────┐
+        │                                                 │
+  ① TUI KillConfirm                      ② CLI `ntop kill <PID>` 단건
+        │                                                 │
+ ┌──────▼───────────────┐          ┌──────────────────────▼──────────┐
+ │ send_signal(pid,TERM)│          │ graceful_kill(pid, 10s)         │
+ │ once, direct (L99)   │          │   step1: send SIGTERM           │
+ │ no poll / no force   │          └──────────────┬──────────────────┘
+ │ needs_rescan = true  │                         ▼
+ └──────────┬───────────┘          ┌─────────────────────────────────┐ alive &&
+            │                       │ poll is_alive @200ms            │◀─┐ !timeout
+   next scan → 목록서 제거          │ until graceful_timeout 10s      │  │ → 반복
+            │                       └──┬──────┬───────┬───────────┬───┘──┘
+            ▼                         die    EPERM   ESRCH   timeout && alive
+       (→ Idle)                        ▼      ▼       ▼          ▼
+                          ┌───────────┐┌──────────┐┌─────────┐┌──────────────┐
+                          │Terminated ││PermDenied││AlreadyD.││ TimedOut     │
+                          │           ││ (EPERM)  ││ (ESRCH) ││ →force_kill  │
+                          └─────┬─────┘└────┬─────┘└────┬────┘│  SIGKILL auto│
+                                │           │           │     └──────┬───────┘
+                                └───────────┴───────────┴────────────┘
+                                        (모두 → 메시지 / needs_rescan → Idle)
+
+   ※ TUI 강제 모달 DLG-FORCE(ForceKillPrompt)는 ①에 등장하지 않는다 — 핸들러·위젯은 코드에 있으나
+     이 모달을 띄우는 경로가 현재 없음(미도달 죽은 코드, `40` M1). 자동 SIGKILL 승격은 ②(CLI 단건)에만 있다.
+</pre>
+</details>
+
+<h3 id="s8-2">8-2. 시퀀스 다이어그램 (actor 간 메시지) — L-4<a class="anchor" href="#s8-2">#</a></h3>
+
+<figure class="viz">
+<svg viewBox="0 0 820 280" role="img" aria-label="시퀀스 다이어그램 경로 1 TUI 단건">
+  <defs><marker id="a-sq1" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#475569"/></marker></defs>
+  <text x="20" y="18" class="lbl-b" style="fill:#4f46e5">경로 ①: TUI 단건 (KillConfirm) — SIGTERM 1회, 폴링·자동 force 없음</text>
+  <!-- actors -->
+  <g>
+    <rect x="30" y="30" width="90" height="28" rx="5" class="fl-act"/><text x="75" y="49" text-anchor="middle" class="lbl-b" style="font-size:11px">User</text>
+    <rect x="180" y="30" width="110" height="28" rx="5" class="fl-screen"/><text x="235" y="49" text-anchor="middle" class="lbl-b" style="font-size:11px">App(ui.rs)</text>
+    <rect x="350" y="30" width="140" height="28" rx="5" class="fl-danger"/><text x="420" y="49" text-anchor="middle" class="lbl-b" style="font-size:11px;fill:#b91c1c">ProcessKiller</text>
+    <rect x="550" y="30" width="150" height="28" rx="5" class="fl-act"/><text x="625" y="49" text-anchor="middle" class="lbl-b" style="font-size:11px">OS(nix/taskkill)</text>
+    <rect x="730" y="30" width="80" height="28" rx="5" class="fl-act"/><text x="770" y="49" text-anchor="middle" class="lbl-b" style="font-size:11px">Process</text>
+  </g>
+  <!-- lifelines -->
+  <line x1="75" y1="58" x2="75" y2="270" class="life"/>
+  <line x1="235" y1="58" x2="235" y2="270" class="life"/>
+  <line x1="420" y1="58" x2="420" y2="270" class="life"/>
+  <line x1="625" y1="58" x2="625" y2="270" class="life"/>
+  <line x1="770" y1="58" x2="770" y2="270" class="life"/>
+  <!-- messages -->
+  <path d="M75,80 L233,80" class="edge" style="stroke:#475569" marker-end="url(#a-sq1)"/><text x="80" y="74" class="lbl-xs">① `x` → [DLG-KILL] 표시</text>
+  <path d="M75,104 L233,104" class="edge" style="stroke:#475569" marker-end="url(#a-sq1)"/><text x="80" y="98" class="lbl-xs">② `Enter`</text>
+  <path d="M235,128 L418,128" class="edge" style="stroke:#475569" marker-end="url(#a-sq1)"/><text x="240" y="122" class="lbl-xs">③ send_signal(pid,Term) · needs_rescan=true</text>
+  <path d="M420,152 L623,152" class="edge" style="stroke:#475569" marker-end="url(#a-sq1)"/><text x="425" y="146" class="lbl-xs">④ signal::kill(pid,SIGTERM)</text>
+  <path d="M625,176 L768,176" class="edge" style="stroke:#475569" marker-end="url(#a-sq1)"/><text x="630" y="170" class="lbl-xs">⑤ SIGTERM (정리 시도)</text>
+  <path d="M418,200 L237,200" class="edge-d" style="stroke:#475569" marker-end="url(#a-sq1)"/><text x="250" y="194" class="lbl-xs">⑥ KillResult::Success (폴링/추가 시그널 없음)</text>
+  <path d="M233,224 L77,224" class="edge-d" style="stroke:#475569" marker-end="url(#a-sq1)"/><text x="90" y="218" class="lbl-xs">⑦ 다음 스캔에서 목록서 사라짐</text>
+  <text x="20" y="252" class="lbl-xs" style="fill:#b91c1c">[권한거부] send_signal → EPERM → KillResult::PermissionDenied → 사용자에 표시</text>
+  <text x="20" y="266" class="lbl-xs" style="fill:#64748b">※ 강제(SIGKILL) 모달 ForceKillPrompt는 핸들러만 있고 트리거 경로 없음 → 미도달(40 M1)</text>
+</svg>
+<figcaption>그림 9a · 시퀀스 경로 ① TUI 단건 — User→App(ui.rs)→ProcessKiller→OS→Process. SIGTERM 1회, KillResult::Success 반환, 다음 스캔에서 제거. 추가 폴링·force 없음.</figcaption>
+</figure>
+
+<figure class="viz">
+<svg viewBox="0 0 820 290" role="img" aria-label="시퀀스 다이어그램 경로 2 CLI 단건">
+  <defs><marker id="a-sq2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#475569"/></marker></defs>
+  <text x="20" y="18" class="lbl-b" style="fill:#b45309">경로 ②: CLI 단건 (`ntop kill &lt;PID&gt;`) — 자동 graceful→force 에스컬레이션</text>
+  <g>
+    <rect x="30" y="30" width="90" height="28" rx="5" class="fl-act"/><text x="75" y="49" text-anchor="middle" class="lbl-b" style="font-size:11px">User</text>
+    <rect x="180" y="30" width="120" height="28" rx="5" class="fl-cli"/><text x="240" y="49" text-anchor="middle" class="lbl-b" style="font-size:11px;fill:#0f766e">App(main.rs)</text>
+    <rect x="350" y="30" width="140" height="28" rx="5" class="fl-danger"/><text x="420" y="49" text-anchor="middle" class="lbl-b" style="font-size:11px;fill:#b91c1c">ProcessKiller</text>
+    <rect x="550" y="30" width="150" height="28" rx="5" class="fl-act"/><text x="625" y="49" text-anchor="middle" class="lbl-b" style="font-size:11px">OS(nix/taskkill)</text>
+    <rect x="730" y="30" width="80" height="28" rx="5" class="fl-act"/><text x="770" y="49" text-anchor="middle" class="lbl-b" style="font-size:11px">Process</text>
+  </g>
+  <line x1="75" y1="58" x2="75" y2="280" class="life"/>
+  <line x1="240" y1="58" x2="240" y2="280" class="life"/>
+  <line x1="420" y1="58" x2="420" y2="280" class="life"/>
+  <line x1="625" y1="58" x2="625" y2="280" class="life"/>
+  <line x1="770" y1="58" x2="770" y2="280" class="life"/>
+  <path d="M75,80 L238,80" class="edge" style="stroke:#475569" marker-end="url(#a-sq2)"/><text x="80" y="74" class="lbl-xs">① `kill` → "[y/N]" 확인 → y</text>
+  <path d="M240,104 L418,104" class="edge" style="stroke:#475569" marker-end="url(#a-sq2)"/><text x="245" y="98" class="lbl-xs">② graceful_kill(pid,10s)</text>
+  <path d="M420,128 L623,128" class="edge" style="stroke:#475569" marker-end="url(#a-sq2)"/><text x="425" y="122" class="lbl-xs">③ signal::kill(pid,SIGTERM)</text>
+  <path d="M625,152 L768,152" class="edge" style="stroke:#475569" marker-end="url(#a-sq2)"/><text x="630" y="146" class="lbl-xs">④ SIGTERM (정리 시도)</text>
+  <path d="M420,176 L623,176" class="edge-d" style="stroke:#475569" marker-end="url(#a-sq2)"/><text x="425" y="170" class="lbl-xs">⑤ is_alive(pid)? (200ms 폴링 루프)</text>
+  <text x="100" y="200" class="lbl-xs" style="fill:#047857">[경우 A: timeout 내 사망 → Terminated] "terminated gracefully"</text>
+  <text x="100" y="216" class="lbl-xs" style="fill:#b91c1c">[경우 B: graceful_timeout 초과·생존 → TimedOut → ★자동 에스컬레이션(사용자 확인 없음)]</text>
+  <path d="M420,232 L623,232" class="edge" style="stroke:#b91c1c" marker-end="url(#a-sq2)"/><text x="425" y="226" class="lbl-xs" style="fill:#b91c1c">⑥ force_kill → signal::kill(SIGKILL)</text>
+  <path d="M625,256 L768,256" class="edge" style="stroke:#b91c1c" marker-end="url(#a-sq2)"/><text x="630" y="250" class="lbl-xs" style="fill:#b91c1c">⑦ SIGKILL (즉사)</text>
+  <text x="20" y="278" class="lbl-xs" style="fill:#64748b">[Windows] Term/Int→`taskkill /PID` · Kill→OpenProcess+TerminateProcess (도시에 §5)</text>
+</svg>
+<figcaption>그림 9b · 시퀀스 경로 ② CLI 단건 — graceful_kill: SIGTERM→200ms 폴링→경우 A(Terminated) 또는 경우 B(TimedOut→자동 SIGKILL, 사용자 확인 없음). Windows는 taskkill/TerminateProcess.</figcaption>
+</figure>
+
+<p><strong>이 세션이 안전한 이유(PRB-3·5 해소):</strong> ① <strong>확인 게이트</strong>가 오발사(PRB-3)를 막고, ② <strong>SIGTERM(graceful) 우선</strong> — 프로세스에 정리 시간을 줘 데이터 유실(PRB-5)을 막으며(TUI는 SIGTERM 1회만, CLI 단건은 추가로 200ms 폴링·timeout 대기), ③ <strong>CLI 단건은 timeout 후 자동 SIGKILL 승격</strong>으로 비대화형에서도 확실히 종료된다. TUI에서 강제 종료가 필요하면 사용자가 직접 다음 단계를 결정한다(자동 즉사 없음). 트리 종료(UF-4)는 자식부터 역순이라 고아가 안 남는다.</p>
+
+<details class="raw"><summary>원본 ASCII 시퀀스 보기</summary>
+<pre>
+ ── 경로 ①: TUI 단건 (KillConfirm) — 코드-진실: SIGTERM 1회, 폴링·자동 force 없음 ──
+ User      App(ui.rs)          ProcessKiller(killer.rs)     OS(nix kill / taskkill)   Process
+  │           │                        │                            │                   │
+  │─ `x` ────▶│ [DLG-KILL] 표시        │                            │                   │
+  │─ `Enter`─▶│ send_signal(pid,Term) ▶│ signal::kill(pid,SIGTERM) ▶│── SIGTERM ───────▶│ (정리 시도)
+  │           │ needs_rescan=true      │◀ KillResult::Success ──────│                   │
+  │◀ 다음 스캔에서 목록서 사라짐 ──────│  (폴링/추가 시그널 없음)    │              (종료됨)✗
+  │   [권한거부] send_signal → EPERM ─▶ KillResult::PermissionDenied ─▶ 사용자에 표시        │
+  │   ※ 강제(SIGKILL) 모달 ForceKillPrompt는 핸들러만 있고 트리거 경로 없음 → 미도달(40 M1)   │
+
+ ── 경로 ②: CLI 단건 (`ntop kill <PID>`) — 자동 graceful→force 에스컬레이션 ──
+ User      App(main.rs)        ProcessKiller(killer.rs)     OS(nix kill / taskkill)   Process
+  │─ `kill`─▶│ "[y/N]" 확인 ─▶ y     │ graceful_kill(pid,10s)     │                   │
+  │           │                      ─▶│ signal::kill(pid,SIGTERM) ▶│── SIGTERM ───────▶│ (정리 시도)
+  │           │ (200ms 폴링 루프)      │── is_alive(pid)? ─────────▶│── 존재확인 ──────▶│
+  │   [경우 A: timeout 내 사망 → Terminated] ─▶ "terminated gracefully"          (종료됨)✗
+  │   [경우 B: graceful_timeout 초과·생존 → TimedOut → ★자동 에스컬레이션(사용자 확인 없음)]   │
+  │           │                        │ force_kill(pid) ─▶ signal::kill(SIGKILL) ▶── SIGKILL ▶│ (즉사)✗
+  │   [Windows]  Term/Int→`taskkill /PID` · Kill→OpenProcess+TerminateProcess (도시에 §5)     │
+</pre>
+</details>
+
+<h2 id="s9">9. 플로우 × 화면 × 기능 × PRB 추적표 — L-2<a class="anchor" href="#s9">#</a></h2>
+<blockquote>모든 플로우 단계가 화면 ID(12)·기능 ID(10)·PRB(research-s2)로 역추적됨을 확인한다. 키의 정규 출처는 21-screen-spec.</blockquote>
+
+<h3 id="s9-1">9-1. 플로우 단계 추적표<a class="anchor" href="#s9-1">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>플로우</th><th>단계(요지)</th><th>화면 ID(12)</th><th>진입 키/명령</th><th>기능 ID(10)</th><th>PRB</th></tr></thead>
+<tbody>
+<tr><td><strong>UF-1</strong></td><td>기동</td><td>(CLI 진입 [A])</td><td><code>ntop</code></td><td>F20</td><td>8</td></tr>
+<tr><td>UF-1</td><td>스캔 2-pass + 포트</td><td>— (do_scan)</td><td>Tick</td><td>F1·F5·F10</td><td>1·2</td></tr>
+<tr><td>UF-1</td><td>빈/로딩</td><td><span class="chip">V-EMPTY</span></td><td>(자동)</td><td>F1</td><td>1</td></tr>
+<tr><td>UF-1</td><td>선택</td><td><span class="chip">V-LIST</span></td><td><code>↑↓/jk</code>·<code>Enter</code>·<code>Space</code></td><td>F2·F10·F12</td><td>1·4</td></tr>
+<tr><td>UF-1</td><td>점검 4탭</td><td><span class="chip">V-DETAIL</span>·TAB-INFO/LOG/NET/ENV</td><td><code>Tab</code>·<code>←→</code></td><td>F15·F1·F6·F16·F17·F18</td><td>1·2·6</td></tr>
+<tr><td>UF-1</td><td>종료</td><td>—</td><td><code>q</code>/<code>Ctrl+C</code></td><td>F20</td><td>8</td></tr>
+<tr><td><strong>UF-2</strong></td><td>필터</td><td><span class="chip">V-FILTER</span></td><td><code>/</code></td><td>F11</td><td>1·4</td></tr>
+<tr><td>UF-2</td><td>정렬</td><td><span class="chip">V-LIST</span></td><td><code>s</code>·<code>r</code></td><td>F12</td><td>1</td></tr>
+<tr><td>UF-2</td><td>Node-only</td><td><span class="chip">V-LIST</span>·<span class="chip">BAR-TOP</span></td><td><code>n</code></td><td>F13</td><td>4</td></tr>
+<tr><td><strong>UF-3</strong></td><td>확인</td><td><span class="chip p0">DLG-KILL</span></td><td><code>x</code></td><td>F7</td><td>3·5</td></tr>
+<tr><td>UF-3</td><td>SIGTERM 1회 직접</td><td>(needs_rescan)</td><td><code>Enter</code></td><td>F7</td><td>5</td></tr>
+<tr><td>CLI 단건(§7)</td><td>자동 graceful→force</td><td>(graceful_kill)</td><td>(timeout 초과 시 자동)</td><td>F7</td><td>5</td></tr>
+<tr><td><strong>UF-4</strong></td><td>트리 확인</td><td><span class="chip p0">DLG-KILLTREE</span></td><td><code>K</code></td><td>F8</td><td>5</td></tr>
+<tr><td>UF-4</td><td>역순 종료</td><td>(kill_tree)</td><td><code>Enter</code></td><td>F8</td><td>5</td></tr>
+<tr><td><strong>UF-5</strong></td><td>시그널 선택</td><td><span class="chip p1">DLG-SIGNAL</span></td><td><code>S</code></td><td>F9</td><td>5</td></tr>
+<tr><td><strong>UF-6</strong></td><td>JSON 추출</td><td><span class="chip ok">CLI-LIST</span></td><td><code>ntop list --json</code></td><td>F19</td><td>7</td></tr>
+<tr><td>UF-6</td><td>트리 종료</td><td><span class="chip ok">CLI-KILL</span></td><td><code>ntop kill --tree &lt;PID&gt;</code></td><td>F19·F8·F7</td><td>5·7</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="s9-2">9-2. 양방향 커버리지 확인<a class="anchor" href="#s9-2">#</a></h3>
+
+<figure class="viz">
+<svg viewBox="0 0 820 300" role="img" aria-label="PRB 1-8 플로우 커버리지 매트릭스">
+  <text x="20" y="20" class="lbl-b">PRB-1~8 → 커버 플로우 (모두 ✔)</text>
+  <g class="lbl-s">
+    <rect x="20" y="34" width="380" height="28" rx="5" class="fl-act"/><text x="30" y="52"><tspan class="lbl-b" style="font-size:11px">PRB-1</tspan> 식별 불가 → UF-1 · UF-2</text><text x="372" y="52" style="fill:#059669;font-weight:700">✔</text>
+    <rect x="20" y="66" width="380" height="28" rx="5" class="fl-act"/><text x="30" y="84"><tspan class="lbl-b" style="font-size:11px">PRB-2</tspan> 포트 역추적 → UF-1 (TAB-NET·PORT 컬럼)</text><text x="372" y="84" style="fill:#059669;font-weight:700">✔</text>
+    <rect x="20" y="98" width="380" height="28" rx="5" class="fl-danger"/><text x="30" y="116"><tspan class="lbl-b" style="font-size:11px;fill:#b91c1c">PRB-3</tspan> 오kill → UF-3 (확인 게이트)</text><text x="372" y="116" style="fill:#059669;font-weight:700">✔</text>
+    <rect x="20" y="130" width="380" height="28" rx="5" class="fl-act"/><text x="30" y="148"><tspan class="lbl-b" style="font-size:11px">PRB-4</tspan> 다중런타임 → UF-1 · UF-2 (Node-only)</text><text x="372" y="148" style="fill:#059669;font-weight:700">✔</text>
+    <rect x="420" y="34" width="380" height="28" rx="5" class="fl-danger"/><text x="430" y="52"><tspan class="lbl-b" style="font-size:11px;fill:#b91c1c">PRB-5</tspan> 거친 종료 → UF-3·4·5·6</text><text x="772" y="52" style="fill:#059669;font-weight:700">✔</text>
+    <rect x="420" y="66" width="380" height="28" rx="5" class="fl-act"/><text x="430" y="84"><tspan class="lbl-b" style="font-size:11px">PRB-6</tspan> 메모리/Env → UF-1 (TAB-INFO/ENV)</text><text x="772" y="84" style="fill:#059669;font-weight:700">✔</text>
+    <rect x="420" y="98" width="380" height="28" rx="5" class="fl-cli"/><text x="430" y="116"><tspan class="lbl-b" style="font-size:11px;fill:#0f766e">PRB-7</tspan> 헤드리스 → UF-6</text><text x="772" y="116" style="fill:#059669;font-weight:700">✔</text>
+    <rect x="420" y="130" width="380" height="28" rx="5" class="fl-act"/><text x="430" y="148"><tspan class="lbl-b" style="font-size:11px">PRB-8</tspan> GUI 왕복 → UF-1 (단일 메인 뷰)</text><text x="772" y="148" style="fill:#059669;font-weight:700">✔</text>
+  </g>
+  <rect x="20" y="174" width="780" height="50" rx="6" class="fl-ok"/>
+  <text x="30" y="194" class="lbl-b" style="fill:#047857">주요 기능 커버: F1·F2·F5·F6·F7·F8·F9·F10·F11·F12·F13·F15·F16·F17·F18·F19·F20 등장</text>
+  <text x="30" y="213" class="lbl-s">(F3 fs미독·F4 멀티런타임·F14 다중선택·F21 설정은 플로우의 전제/단계로 내재 — 정규 출처 10-prd)</text>
+  <text x="20" y="252" class="lbl-b">⇒ 고아 단계·미링크 플로우 없음.</text>
+</svg>
+<figcaption>그림 10 · 양방향 커버리지 — PRB-1~8 전부 1개 이상 플로우로 커버, 주요 기능 F1~F20 등장. 고아 단계 없음.</figcaption>
+</figure>
+
+<details class="raw"><summary>원본 ASCII 커버리지 보기</summary>
+<pre>
+ ① 모든 플로우 단계 → 화면·기능·PRB 매핑 있음 (위 §9-1 전 행에 값) ✔
+ ② PRB-1~8 플로우 커버:
+    PRB-1 식별 불가   → UF-1·UF-2                  ✔
+    PRB-2 포트 역추적 → UF-1(TAB-NET·PORT 컬럼)     ✔
+    PRB-3 오kill      → UF-3(확인 게이트)            ✔
+    PRB-4 다중런타임  → UF-1·UF-2(Node-only)        ✔
+    PRB-5 거친 종료   → UF-3·UF-4·UF-5·UF-6         ✔
+    PRB-6 메모리/Env  → UF-1(TAB-INFO/ENV)          ✔
+    PRB-7 헤드리스    → UF-6                          ✔
+    PRB-8 GUI 왕복    → UF-1(단일 메인 뷰)            ✔
+ ③ 주요 기능 커버: F1·F2·F5·F6·F7·F8·F9·F10·F11·F12·F13·F15·F16·F17·F18·F19·F20 등장
+    (F3 fs미독·F4 멀티런타임·F14 다중선택·F21 설정은 플로우의 전제/단계로 내재 — 정규 출처 10-prd)
+ ⇒ 고아 단계·미링크 플로우 없음.
+</pre>
+</details>
+
+<h2 id="verify">자체 검증 (Self-verification)<a class="anchor" href="#verify">#</a></h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>#</th><th>체크</th><th>결과</th><th>어디서 충족</th></tr></thead>
+<tbody>
+<tr><td><strong>L-1</strong></td><td>핵심 플로우 6종(F1~F6) 플로우차트</td><td><span class="chip ok">PASS</span> — §2~§7 UF-1~UF-6 ASCII 플로우차트(분기 <code>◇</code>)</td><td>§2~§7</td></tr>
+<tr><td><strong>L-2</strong></td><td>각 단계 → 화면 ID(12)+기능 ID(10)+PRB 링크</td><td><span class="chip ok">PASS</span> — 단계 라벨 + §9-1 추적표 + §9-2 양방향 커버리지</td><td>§2~§7·§9</td></tr>
+<tr><td><strong>L-3</strong></td><td>핵심 세션 상태 다이어그램(graceful→force)</td><td><span class="chip ok">PASS</span> — §8-1 상태기계(SIGTERM→200ms 폴링→10s→Terminated/TimedOut/EPERM/AlreadyDead→SIGKILL)</td><td>§8-1</td></tr>
+<tr><td><strong>L-4</strong></td><td>핵심 세션 시퀀스 다이어그램</td><td><span class="chip ok">PASS</span> — §8-2 시퀀스(User↔App↔Killer↔OS↔Process), GracefulResult 분기·TUI/CLI 차이</td><td>§8-2</td></tr>
+<tr><td><strong>L-5</strong></td><td>분기 명시</td><td><span class="chip ok">PASS</span> — 필터 Enter/Esc(§3)·graceful 5분기(CLI 단건 §4·§8-1)·DLG-FORCE(미도달 핸들러) Enter/Esc·CLI 단건 자동 force(§7)</td><td>§3·§4·§7·§8</td></tr>
+<tr><td><strong>L-6</strong></td><td>사실 정정(세로 레이아웃·FRAMEWORK 컬럼 없음)</td><td><span class="chip ok">PASS</span> — §0 표기 규약 + UF-1 단계(프레임워크는 TAB-INFO에서)</td><td>§0·§2</td></tr>
+<tr><td><strong>L-7</strong></td><td>시각화(G-g, 외부 렌더러 0)</td><td><span class="chip ok">PASS</span> — §1~§9 전부 순수 ASCII(플로우차트 6·상태기계·시퀀스·가치 루프·커버리지), Mermaid 미사용</td><td>전체</td></tr>
+<tr><td><strong>L-8</strong></td><td>단일 출처 준수(화면=12·기능=10·키=21·문제=research-s2·Config=31)</td><td><span class="chip ok">PASS</span> — 본문 참조 표기, 플로우만 소유·나머지 재정의 0</td><td>전체</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>추가 원칙 점검:</strong></p>
+<ul>
+<li><strong>창작 금지(spec §7):</strong> 결제·정산·DB·REST·회원 플로우 0. 없는 화면/명령 지어내지 않음 — 실제 키·CLI·killer 로직만(도시에 §4·§5·§6·§7).</li>
+<li><strong>사실 역추적성:</strong> 스캔 2-pass(do_scan)·graceful 폴링 200ms·graceful_timeout 10s·kill_tree 역순·GracefulResult 5분기·TUI vs CLI 에스컬레이션 차이 모두 도시에 §4·§5·§7과 일치. 코드: <code>event.rs</code>(Tick), <code>killer.rs</code>(graceful_kill/kill_tree/force_kill), <code>ui.rs</code>(DLG 분기).</li>
+<li><strong>플로우 ID 충돌 회피:</strong> 플로우를 <code>UF-1~UF-6</code>로 표기해 기능 ID <code>F1~F21</code>(10-prd)과 혼동 차단 — research-s3 F1~F6에 1:1 대응(§1-1).</li>
+<li><strong>쉬운 설명(probe):</strong> 첫 등장 용어(유저 플로우·2-pass 스캔·graceful·에스컬레이션·폴링·트리 종료·헤드리스·상태/시퀀스 다이어그램) 풀이 블록 제공.</li>
+<li><strong>C1 일부(플로우↔문제 일관):</strong> 모든 플로우 단계에 PRB 링크, §9-2에서 PRB-1~8 전부 커버 확인.</li>
+</ul>
+
+<p><strong>알려진 한계(후속 보완):</strong></p>
+<ul>
+<li><strong>키 바인딩 정규 출처는 <code>21-screen-spec</code></strong>(현재 <code>research-s3</code> §7). 본 문서의 키는 플로우 단계 표기용 인용이며 정규 키표를 재정의하지 않는다.</li>
+<li><strong>kill 처리 로직 정규 출처는 <code>30-functional-spec</code></strong>, <code>GracefulResult</code>/<code>KillSignal</code> enum 정의·Config 값(<code>graceful_timeout=10</code>·폴링 200ms)은 <code>31-erd</code> — 본 §8은 의미만 인용.</li>
+<li>CLI 출력 스키마(JSON 필드·CSV 9컬럼·table 컬럼) 상세는 <code>32-api-spec</code>이 단일 출처 — UF-6은 요지만 인용.</li>
+</ul>
+
+</main>
+</div>
+
+<script>
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(a){a.classList.remove('active');});
+        var a = map[e.target.id];
+        if(a) a.classList.add('active');
+      }
+    });
+  }, {rootMargin:'-64px 0px -70% 0px', threshold:0});
+  document.querySelectorAll('main h2[id], main h3[id]').forEach(function(h){io.observe(h);});
+})();
+</script>
+</body>
+</html>

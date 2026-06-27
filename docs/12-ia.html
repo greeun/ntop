@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12 · 정보구조(IA) — TUI 레이아웃 계층 + CLI 명령 트리 (ntop)</title>
+<style>
+/* ntop 기획 패키지 — 공통 디자인 시스템 (자체완결: 각 NN-name.html <style>에 인라인 복제) */
+/* 외부 의존 0 — CDN/웹폰트/Mermaid 금지. 시스템 폰트만. */
+:root{
+  --accent:#4f46e5;        /* indigo */
+  --accent2:#0d9488;       /* teal */
+  --accent-soft:#eef2ff;
+  --bg:#ffffff;
+  --fg:#1e293b;
+  --muted:#64748b;
+  --line:#e2e8f0;
+  --code-bg:#f1f5f9;
+  --warn:#d97706; --warn-bg:#fffbeb;
+  --bad:#dc2626;  --bad-bg:#fef2f2;
+  --ok:#059669;   --ok-bg:#ecfdf5;
+  --t1:#dc2626; --t2:#d97706; --t3:#ca8a04;
+  --maxw:860px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;color:var(--fg);background:var(--bg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  line-height:1.7;font-size:16px;
+}
+code,pre,.mono{font-family:"SF Mono",SFMono-Regular,ui-monospace,Menlo,Consolas,"D2Coding",monospace}
+
+/* ── 상단바 ── */
+.topbar{
+  position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  padding:10px 18px;background:#0f172a;color:#f8fafc;font-weight:600;font-size:15px;
+  border-bottom:3px solid var(--accent);
+}
+.topbar .doc-no{color:#a5b4fc;font-variant-numeric:tabular-nums}
+.topbar nav{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.topbar nav a,.topbar nav button{
+  color:#e2e8f0;background:#1e293b;border:1px solid #334155;border-radius:6px;
+  padding:4px 10px;font-size:13px;text-decoration:none;cursor:pointer;font-weight:500;
+}
+.topbar nav a:hover,.topbar nav button:hover{background:var(--accent);border-color:var(--accent)}
+
+/* ── 티어 배지 ── */
+.tier{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:700;color:#fff}
+.tier.t1{background:var(--t1)} .tier.t2{background:var(--t2)} .tier.t3{background:var(--t3)}
+
+/* ── 레이아웃: TOC + 본문 ── */
+.layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:0;max-width:1200px;margin:0 auto}
+.toc{position:sticky;top:58px;align-self:start;height:calc(100vh - 58px);overflow:auto;padding:18px 12px;border-right:1px solid var(--line);font-size:13.5px}
+.toc h4{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.toc a{display:block;padding:3px 8px;color:var(--muted);text-decoration:none;border-radius:5px;border-left:2px solid transparent}
+.toc a:hover{background:var(--accent-soft);color:var(--accent)}
+.toc a.active{color:var(--accent);background:var(--accent-soft);border-left-color:var(--accent);font-weight:600}
+.toc a.lv3{padding-left:18px;font-size:12.5px}
+main{padding:26px 34px;max-width:var(--maxw)}
+main h1{font-size:26px;line-height:1.3;margin:0 0 6px}
+main h2{font-size:21px;margin:34px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--line);scroll-margin-top:64px}
+main h3{font-size:17px;margin:24px 0 10px;color:#0f172a;scroll-margin-top:64px}
+main h4{font-size:15px;margin:18px 0 8px;color:var(--muted)}
+main p{margin:10px 0}
+main a{color:var(--accent)}
+.anchor{margin-left:8px;color:var(--line);text-decoration:none;font-weight:400;font-size:.8em}
+main h2:hover .anchor,main h3:hover .anchor{color:var(--accent)}
+
+/* ── 표 ── */
+.table-wrap{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:7px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{background:#f8fafc;font-weight:700;position:sticky;top:0;border-bottom:2px solid var(--line)}
+tbody tr:nth-child(even){background:#fbfcfe}
+tbody tr:hover{background:var(--accent-soft)}
+
+/* ── 코드·칩 ── */
+:not(pre)>code{background:var(--code-bg);padding:1px 6px;border-radius:5px;font-size:.88em;color:#be185d}
+pre{background:#0f172a;color:#e2e8f0;padding:14px 16px;border-radius:8px;overflow-x:auto;font-size:13px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+.chip{display:inline-block;background:var(--accent-soft);color:var(--accent);border:1px solid #c7d2fe;border-radius:5px;padding:0 6px;font-size:.85em;font-weight:600}
+.chip.p0{background:var(--bad-bg);color:var(--bad);border-color:#fecaca}
+.chip.p1{background:var(--warn-bg);color:var(--warn);border-color:#fde68a}
+.chip.ok{background:var(--ok-bg);color:var(--ok);border-color:#a7f3d0}
+
+/* ── 콜아웃 ── */
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+.callout.warn{border-color:var(--warn);background:var(--warn-bg)}
+.callout.bad{border-color:var(--bad);background:var(--bad-bg)}
+.callout.ok{border-color:var(--ok);background:var(--ok-bg)}
+blockquote{border-left:4px solid var(--line);margin:14px 0;padding:4px 16px;color:var(--muted)}
+
+/* ── 인포그래픽 figure ── */
+figure.viz{margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:10px;background:#fcfdff;text-align:center}
+figure.viz svg{max-width:100%;height:auto;display:block;margin:0 auto}
+figure.viz figcaption{margin-top:10px;font-size:13px;color:var(--muted);text-align:center}
+.viz-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+details.raw{margin-top:8px;font-size:13px}
+details.raw summary{cursor:pointer;color:var(--muted);font-size:12.5px}
+details.raw pre{margin-top:6px}
+
+/* SVG 공통 텍스트 */
+svg text{font-family:-apple-system,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+.svg-node{fill:#fff;stroke:var(--accent);stroke-width:1.5}
+.svg-edge{stroke:var(--muted);stroke-width:1.5;fill:none}
+.svg-label{font-size:12px;fill:var(--fg)}
+.svg-accent{fill:var(--accent)} .svg-accent2{fill:var(--accent2)}
+
+/* 화면 mockup 프레임(20/21용) */
+.screen{border:2px solid #334155;border-radius:8px;background:#0f172a;color:#cbd5e1;font-family:"SF Mono",ui-monospace,monospace;font-size:12px;padding:0;overflow:hidden;text-align:left;margin:0 auto;max-width:560px}
+.screen .bar{background:#1e293b;color:#a5b4fc;padding:4px 8px;font-size:11px;border-bottom:1px solid #334155}
+.screen .body{padding:8px 10px;white-space:pre;overflow-x:auto;line-height:1.4}
+
+/* ── print ── */
+@media print{
+  .topbar,.toc,.anchor,details.raw summary{display:none!important}
+  .layout{grid-template-columns:1fr;max-width:none}
+  main{max-width:none;padding:0}
+  details.raw{display:none}
+  *{break-inside:avoid}
+  figure.viz{border:1px solid #ccc}
+}
+/* ── 반응형 ── */
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}
+  main{padding:18px}
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/* 12-ia 페이지 전용 (SVG 라벨·역할별 색) */
+svg .lbl{font-size:12px;fill:#1e293b}
+svg .lbl-b{font-size:12px;font-weight:700;fill:#0f172a}
+svg .lbl-s{font-size:10.5px;fill:#475569}
+svg .lbl-w{font-size:12px;fill:#fff;font-weight:600}
+svg .lbl-wb{font-size:12.5px;fill:#fff;font-weight:700}
+svg .lbl-ws{font-size:10.5px;fill:#e2e8f0}
+svg .edge{stroke:#94a3b8;stroke-width:1.4;fill:none}
+svg .edge-d{stroke:#94a3b8;stroke-width:1.4;fill:none;stroke-dasharray:5 3}
+svg .arrow{fill:#94a3b8}
+/* 역할별 색 (§2 범례 · status_bar.rs Color::* 근거) */
+.r-chrome{fill:#475569;stroke:#334155;stroke-width:1.4}
+.r-view{fill:#eef2ff;stroke:#6366f1;stroke-width:1.6}
+.r-panel{fill:#e0e7ff;stroke:#4f46e5;stroke-width:1.8}
+.r-tab{fill:#fef9c3;stroke:#ca8a04;stroke-width:1.4}
+.r-tabA{fill:#ca8a04;stroke:#a16207;stroke-width:1.4}
+.r-mode{fill:#fffbeb;stroke:#d97706;stroke-width:1.6}
+.r-modal{fill:#fef9c3;stroke:#ca8a04;stroke-width:1.6}
+.r-danger{fill:#fef2f2;stroke:#dc2626;stroke-width:1.8}
+.r-empty{fill:#ecfeff;stroke:#0891b2;stroke-width:1.6}
+.r-cli{fill:#f0fdfa;stroke:#0d9488;stroke-width:1.6}
+.r-root{fill:#0f172a;stroke:#0f172a}
+.legend-desc{font-size:11.5px;fill:#475569}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <span class="doc-no">12</span> <span class="tier t3">T3</span> · 정보구조(IA) — TUI 레이아웃 계층 + CLI 명령 트리
+  <nav>
+    <a href="index.html">← 목록</a>
+    <a href="11-user-stories.html">← 이전</a>
+    <a href="13-user-flows.html">다음 →</a>
+    <button onclick="window.print()">🖨 인쇄</button>
+  </nav>
+</header>
+
+<div class="layout">
+<nav class="toc">
+  <h4>목차</h4>
+  <a href="#sprint-contract">Sprint Contract</a>
+  <a href="#s0">0. 사실 정정 (코드-진실)</a>
+  <a href="#s1">1. 이 문서가 답하는 것</a>
+  <a href="#s2">2. 색·역할 범례</a>
+  <a href="#s3">3. TUI 레이아웃 계층</a>
+  <a href="#s4">4. IA 트리 (TUI+CLI)</a>
+  <a href="#s5">5. CLI 명령 트리</a>
+  <a href="#s6">6. 화면 ID + 노출 경로</a>
+  <a href="#s6-1" class="lv3">6-1. 화면 ID · 노출 경로 표</a>
+  <a href="#s6-2" class="lv3">6-2. 노출 경로 다이어그램</a>
+  <a href="#s7">7. IA 특성 분석</a>
+  <a href="#verify">자체 검증</a>
+</nav>
+
+<main>
+<h1>12 · 정보구조(IA) — TUI 레이아웃 계층 + CLI 명령 트리 (ntop)</h1>
+
+<div class="callout">
+<p>이 문서는 ntop <strong>인터페이스 정보구조(IA)의 단일 출처</strong>다. ntop의 모든 화면(=TUI 뷰/패널/탭/다이얼로그 + CLI 명령 출력)이 <strong>어떻게 묶이고 어디서 도달되는지</strong>를 화면 ID와 함께 트리로 정리한다.</p>
+<p><strong>ntop은 터미널 도구다.</strong> 여기서 "화면(screen)"은 웹/GUI 페이지가 아니라 <strong>TUI 뷰·패널·탭·모달 다이얼로그 + CLI 서브커맨드 출력</strong>을 뜻한다. 따라서 <strong>ASCII 레이아웃이 곧 실제 충실도</strong>다(spec §4-0).</p>
+<p><strong>참조(재정의 0):</strong> 기능 ID(<span class="chip">F1</span>~<span class="chip">F21</span>)·우선순위는 <strong><code>10-prd</code></strong>, 문제(<span class="chip p1">PRB-1</span>~<span class="chip p1">8</span>)는 <strong><code>research-s2</code>(→03 §2)</strong>, 플로우는 <strong><code>13-user-flows</code></strong>, <strong>키 바인딩의 정규 출처는 <code>21-screen-spec</code></strong>(현재는 <code>research-s3</code> §7), Config 기본값은 <strong><code>31-erd</code></strong> 가 단일 출처다. 본 문서는 화면 IA를 소유하고 나머지는 <strong>참조만</strong> 한다(spec §4-3). 화면 ID(<span class="chip">V-</span>/<span class="chip">TAB-</span>/<span class="chip">DLG-</span>/<span class="chip">BAR-</span>/<span class="chip">CLI-</span>)는 <code>research-s3</code>를 정규로 승계한다.</p>
+<p><strong>전제:</strong> ntop은 <strong>이미 v0.2.0까지 구현된 MIT 오픈소스 도구</strong>다(codebase-facts §0). 본 IA는 신규 화면 설계가 아니라 <strong>이미 구현된 TUI/CLI를 역설계</strong>해 정리한 것이다(창작 0). 모든 화면/색/진입은 codebase-facts(이하 "도시에") §6·§7 <strong>또는 실제 소스코드</strong>(<code>src/tui/**</code>, <code>src/cli.rs</code>, <code>src/main.rs</code>)에 역추적된다.</p>
+</div>
+
+<div class="callout">
+<p><strong>용어 풀이(첫 등장):</strong> <strong>IA</strong>(Information Architecture, 정보구조) = 화면·기능이 어떻게 묶이고 이동하는지의 뼈대 / <strong>TUI</strong>(Text User Interface) = 터미널 안에서 키보드로 조작하는 전체화면 텍스트 UI / <strong>CLI</strong>(Command-Line Interface) = 명령 한 줄로 실행해 결과를 출력하는 방식 / <strong>패널(panel)</strong> = 화면을 나눈 영역 / <strong>탭(tab)</strong> = 한 패널 안에서 전환되는 하위 화면 / <strong>모달 다이얼로그(modal dialog)</strong> = 떠서 다른 입력을 막고 결정을 받는 작은 창 / <strong>포커스(focus)</strong> = 지금 키 입력을 받는 패널 / <strong>크롬(chrome)</strong> = 콘텐츠가 아니라 항상 떠 있는 테두리 막대(상단/하단 바) / <strong>플래그(flag)</strong> = 명령 뒤에 붙이는 <code>--옵션</code>.</p>
+</div>
+
+<h2 id="sprint-contract">Sprint Contract (self-proposed checks)<a class="anchor" href="#sprint-contract">#</a></h2>
+<p>이 문서(g2의 <code>12-ia</code>)가 만족시킬 <strong>관찰 가능한 체크</strong>(playbook §S4-g2 관찰 바 "12=인터페이스 IA 트리+CLI 명령 트리" + spec §5(12행)·§8에서 도출).</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>#</th><th>체크</th><th>어떻게 충족하나</th><th>본문 위치</th></tr></thead>
+<tbody>
+<tr><td><strong>I-1</strong></td><td><strong>TUI 레이아웃 계층</strong> — 상단바/메인[목록 위 55%·상세 아래 45%(탭 4)]/하단바 + 다이얼로그 5종 + 필터 모드</td><td>§3 세로 레이아웃 다이어그램(역할별 색)</td><td>§3</td></tr>
+<tr><td><strong>I-2</strong></td><td><strong>IA 트리 다이어그램</strong> — TUI + CLI 통합, 역할/영역별 색 표기</td><td>§4 통합 IA 트리(화면 ID·진입키·기능 ID·PRB 부기)</td><td>§4</td></tr>
+<tr><td><strong>I-3</strong></td><td><strong>CLI 명령 트리</strong> — <code>ntop</code>→TUI + <code>list</code>/<code>kill</code>/<code>info</code>/<code>log</code>/<code>config</code> + 플래그</td><td>§5 CLI 명령 트리(플래그·필수성·출력)</td><td>§5</td></tr>
+<tr><td><strong>I-4</strong></td><td><strong>화면 ID 배정 + 노출 경로</strong> — 어느 키/모드에서 도달하는지</td><td>§6 화면 ID 표(ID·종류·역할/색·진입 키/모드·부모·기능 ID·PRB)</td><td>§6</td></tr>
+<tr><td><strong>I-5</strong></td><td><strong>색·역할 범례</strong> — 코드 <code>Color::*</code> 실측 근거</td><td>§2 범례(크롬/모드/패널/탭/모달/빈로딩 + 색 의미)</td><td>§2</td></tr>
+<tr><td><strong>I-6</strong></td><td><strong>사실 정정 반영(코드-진실)</strong> — 세로(상/하) 레이아웃 · TUI 목록에 FRAMEWORK 컬럼 없음</td><td>§0 정정 박스 + §3·§4·§6 일관 반영</td><td>§0·§3·§4·§6</td></tr>
+<tr><td><strong>I-7</strong></td><td><strong>시각화(G-g)</strong> — 모든 구조를 ASCII 트리/다이어그램으로(외부 렌더러 0)</td><td>§2~§7 전부 ASCII</td><td>전체</td></tr>
+<tr><td><strong>I-8</strong></td><td><strong>단일 출처 준수</strong> — 기능=10·문제=research-s2·키=21(research-s3)·플로우=13 참조, 재정의 0</td><td>본문 참조 표기</td><td>전체</td></tr>
+</tbody>
+</table>
+</div>
+<blockquote>게이트 공급: <strong>G-g</strong>(IA 트리·레이아웃 다이어그램 적합), 교차 추적성(C3, 화면↔기능↔문제 링크).</blockquote>
+
+<h2 id="s0">0. 사실 정정 (코드-진실) — 반드시 준수<a class="anchor" href="#s0">#</a></h2>
+<blockquote>일부 선행 표현이 "좌/우 분할" 또는 "목록 NAME/FRAMEWORK 컬럼"으로 적었으나 <strong>실제 코드와 불일치</strong>다. 본 IA는 아래 <strong>코드-진실</strong>(<code>src/tui/ui.rs</code> L37–44, <code>process_list.rs</code> + 도시에 §6 정정값)을 정규로 쓴다.</blockquote>
+
+<div class="callout warn">
+<p><strong>① 레이아웃 = 세로(상/하) 분할</strong> — 좌/우 아님. <code>ui.rs</code> L37–44 <code>Layout::vertical([55%, 45%])</code>:</p>
+<ul style="margin:6px 0">
+<li><span class="chip">BAR-TOP</span> 상단 상태바(1줄, 크롬)</li>
+<li><span class="chip">V-LIST</span> 프로세스 목록 <strong>위 55%</strong>(패널1)</li>
+<li><span class="chip">V-DETAIL</span> 상세 패널 <strong>아래 45%</strong>(패널2) — 탭: Info · Log · Net · Env</li>
+<li><span class="chip">BAR-BOTTOM</span> 하단 키힌트(1줄, 크롬)</li>
+</ul>
+<p><strong>② TUI 목록에는 별도 FRAMEWORK 컬럼이 없다.</strong> 목록 컬럼(코드 권위, <code>process_list.rs</code>): <code>[✓/health] PID·NAME·PORT·THR·CPU·MEM·USER·STS·UPTIME</code> — FRAMEWORK 없음. 프레임워크 정체는 ⓐ 상세 Info 탭(<span class="chip">TAB-INFO</span>), ⓑ CLI <code>ntop list</code> 테이블 FRAMEWORK 컬럼에서만 별도 열로 노출.</p>
+</div>
+
+<p>본 문서의 모든 레이아웃·노출 경로는 이 코드-진실을 따른다. (도시에 §6의 "좌/우" 표기는 구식 — <code>research-s3</code> §0·§10에서 메인테이너 정정 권고로 회부됨.)</p>
+
+<div class="callout">
+<p><strong>정정(NAME 인라인 배지):</strong> 위 ②의 "프레임워크는 Info 탭/CLI 테이블에서만"은 <strong>별도 FRAMEWORK 컬럼</strong>에 한정된 말이다. 실제 목록 <strong>NAME 컬럼은 인라인 배지로 프레임워크를 함께 노출</strong>한다(<code>next-server (Next.js)</code> / <code>uvicorn [Python]</code>, <code>process_list.rs</code> L121·L127). 즉 목록에 별도 FRAMEWORK 컬럼이 없을 뿐, 프레임워크명 자체는 NAME에서도 보인다. (로드맵 <code>40</code> M2)</p>
+</div>
+
+<details class="raw"><summary>원본 ASCII 정정 박스 보기</summary>
+<pre>
+ ① 레이아웃 = 세로(상/하) 분할             ② TUI 목록에는 FRAMEWORK 컬럼이 없다
+ ┌─────────────────────────────────┐       목록 컬럼(코드 권위, process_list.rs):
+ │ BAR-TOP   상단 상태바 (1줄)       │ [크롬]   [✓/health] PID·NAME·PORT·THR·CPU·MEM·USER·STS·UPTIME
+ ├─────────────────────────────────┤         └ FRAMEWORK 없음 ─┐
+ │ V-LIST    프로세스 목록 (위 55%)  │ [패널1]                    │ 프레임워크 정체는 여기서만 노출:
+ ├─────────────────────────────────┤                            ├─ 상세 Info 탭(TAB-INFO)
+ │ V-DETAIL  상세 패널 (아래 45%)    │ [패널2]                    └─ CLI `ntop list` 테이블 FRAMEWORK 컬럼
+ │   └ 탭: Info · Log · Net · Env    │ [탭]
+ ├─────────────────────────────────┤
+ │ BAR-BOTTOM 하단 키힌트 (1줄)      │ [크롬]   (ui.rs L37–44 Layout::vertical([55%,45%]) — 좌/우 아님)
+ └─────────────────────────────────┘
+</pre>
+</details>
+
+<h2 id="s1">1. 이 문서가 답하는 것 (Scope)<a class="anchor" href="#s1">#</a></h2>
+<p>ntop의 인터페이스는 <strong>두 진입점</strong>으로 갈린다 — 서브커맨드 <strong>없이</strong> <code>ntop</code>이면 <strong>TUI 기동</strong>(<code>run_tui</code>), 서브커맨드가 <strong>있으면</strong> <strong>CLI 일회성 출력</strong>(<code>scan_blocking</code>). 둘 다 <strong>동일 코어</strong>(<code>ProcessScanner</code> + <code>NetworkInspector</code>)를 공유한다(도시에 §7). 본 문서는:</p>
+<ul>
+<li><strong>TUI 레이아웃 계층</strong>(§3)과 <strong>두 진입점을 합친 IA 트리</strong>(§4)를 그린다.</li>
+<li><strong>CLI 명령 트리</strong>(§5)를 플래그·출력까지 정리한다.</li>
+<li><strong>모든 화면에 ID를 배정</strong>하고 <strong>노출 경로(어느 키/모드/명령에서 도달)</strong> 를 표로 확정한다(§6).</li>
+<li>IA의 <strong>구조적 특성</strong>(평평함·얕은 깊이)이 문제(PRB)를 어떻게 구조적으로 줄이는지 분석한다(§7).</li>
+</ul>
+<blockquote><strong>추적 사슬에서의 위치(spec §4-2):</strong> 문제(research-s2) → 기능 ID(10) → <strong>화면·CLI(12·13)</strong> → 데이터(31) → 계약/정책(32·33). 본 문서가 "화면 IA" 마디를 소유한다.</blockquote>
+
+<h2 id="s2">2. 색·역할 범례 (코드 근거) — I-5<a class="anchor" href="#s2">#</a></h2>
+<blockquote>색·역할 표기는 <code>src/tui/widgets/status_bar.rs</code>·<code>empty_state.rs</code>의 실제 <code>Color::*</code> 사용에 근거한다(research-s3 §2-1 승계). 터미널이라 "색"은 영역 구분과 위험 신호의 핵심 시각 언어다.</blockquote>
+
+<figure class="viz">
+<svg viewBox="0 0 780 320" role="img" aria-label="색·역할 범례">
+  <text x="20" y="22" class="lbl-b">역할 표기 (영역 구분)</text>
+  <text x="430" y="22" class="lbl-b">색 의미 (status_bar.rs 임계값)</text>
+  <line x1="410" y1="10" x2="410" y2="300" stroke="#e2e8f0" stroke-width="1"/>
+
+  <!-- 역할 행 -->
+  <g>
+    <rect x="20" y="38" width="118" height="26" rx="6" class="r-chrome"/><text x="79" y="55" text-anchor="middle" class="lbl-w">크롬</text>
+    <text x="150" y="55" class="legend-desc">BAR-TOP · BAR-BOTTOM (상시 막대)</text>
+
+    <rect x="20" y="72" width="118" height="26" rx="6" class="r-panel"/><text x="79" y="89" text-anchor="middle" class="lbl" style="font-weight:700;fill:#3730a3">패널</text>
+    <text x="150" y="89" class="legend-desc">V-LIST · V-DETAIL (활성 테두리 강조)</text>
+
+    <rect x="20" y="106" width="118" height="26" rx="6" class="r-tab"/><text x="79" y="123" text-anchor="middle" class="lbl" style="font-weight:700;fill:#854d0e">탭</text>
+    <text x="150" y="123" class="legend-desc">Info·Log·Net·Env (활성 탭 Yellow)</text>
+
+    <rect x="20" y="140" width="118" height="26" rx="6" class="r-mode"/><text x="79" y="157" text-anchor="middle" class="lbl" style="font-weight:700;fill:#b45309">모드</text>
+    <text x="150" y="157" class="legend-desc">필터 (filter_text 커서 █, Yellow)</text>
+
+    <rect x="20" y="174" width="118" height="26" rx="6" class="r-danger"/><text x="79" y="191" text-anchor="middle" class="lbl" style="font-weight:700;fill:#b91c1c">모달</text>
+    <text x="150" y="191" class="legend-desc">다이얼로그 5종 (위험 Red · 선택 Yellow)</text>
+
+    <rect x="20" y="208" width="118" height="26" rx="6" class="r-empty"/><text x="79" y="225" text-anchor="middle" class="lbl" style="font-weight:700;fill:#0e7490">빈/로딩</text>
+    <text x="150" y="225" class="legend-desc">프로세스 0건 + 스피너 (Cyan)</text>
+
+    <rect x="20" y="242" width="118" height="26" rx="6" class="r-cli"/><text x="79" y="259" text-anchor="middle" class="lbl" style="font-weight:700;fill:#0f766e">CLI</text>
+    <text x="150" y="259" class="legend-desc">서브커맨드 일회성 출력 (터미널 기본)</text>
+  </g>
+
+  <!-- 색 의미 행 -->
+  <g>
+    <rect x="430" y="42" width="20" height="20" rx="4" fill="#06b6d4"/><text x="460" y="57" class="lbl">Cyan = 브랜드 / 스피너</text>
+    <rect x="430" y="82" width="20" height="20" rx="4" fill="#059669"/><text x="460" y="97" class="lbl">Green = 정상 (CPU &lt; 50)</text>
+    <rect x="430" y="122" width="20" height="20" rx="4" fill="#eab308"/><text x="460" y="137" class="lbl">Yellow = 강조·주의</text>
+    <text x="460" y="153" class="lbl-s">(CPU &gt; 50 · 키힌트 · Node-only · 활성 탭)</text>
+    <rect x="430" y="172" width="20" height="20" rx="4" fill="#dc2626"/><text x="460" y="187" class="lbl">Red = 위험</text>
+    <text x="460" y="203" class="lbl-s">(CPU &gt; 80 · 파괴적 kill)</text>
+    <rect x="430" y="222" width="20" height="20" rx="4" fill="#475569"/><text x="460" y="237" class="lbl">DarkGray = 크롬 배경 / 비활성</text>
+  </g>
+</svg>
+<figcaption>그림 2 · 색·역할 범례 — 영역 구분(역할) + 위험 신호(색 의미). 근거: <code>status_bar.rs</code> · <code>empty_state.rs</code> 의 <code>Color::*</code> 실측.</figcaption>
+</figure>
+
+<blockquote>아래 트리(§3·§4)는 각 노드에 <code>[역할]</code> 태그로 색을 표기한다(터미널 md라 실색 대신 역할 태그 사용 — HTML(<code>12-ia.html</code>)에서 인라인 SVG로 실색 렌더).</blockquote>
+
+<details class="raw"><summary>원본 ASCII 범례 보기</summary>
+<pre>
+ 역할 표기                                      │ 색 (코드 근거)
+ ───────────────────────────────────────────────┼──────────────────────────────────────────
+ [크롬]   상시 노출 막대(BAR-TOP / BAR-BOTTOM)   │ 배경 DarkGray · 글자 White   (status_bar.rs)
+ [패널]   포커스 가능 영역(V-LIST / V-DETAIL)    │ 활성 테두리 강조
+ [탭]     상세 패널 하위 화면(Info/Log/Net/Env)  │ 활성 탭 Yellow 강조           (detail_panel.rs)
+ [모드]   키 해석을 바꾸는 상태(필터)            │ 강조 Yellow (filter_text 커서 █)
+ [모달]   입력 막는 확인창(다이얼로그 5종)       │ 위험=Red(kill) · 선택=Yellow
+ [빈/로딩] 프로세스 0건 안내 + 스피너            │ 스피너 Cyan                   (empty_state.rs)
+ [CLI]    서브커맨드 일회성 출력                 │ 터미널 기본(파이프 친화)
+ ───────────────────────────────────────────────┴──────────────────────────────────────────
+ 색 의미(status_bar.rs 임계값 실측):
+   Cyan  = 브랜드/스피너            Green = 정상 (CPU &lt; 50)
+   Yellow= 강조/주의 (CPU &gt; 50 · 키힌트 · Node-only · 활성 탭)
+   Red   = 위험 (CPU &gt; 80 · 파괴적 kill)      DarkGray = 크롬 배경 / 비활성
+</pre>
+</details>
+
+<h2 id="s3">3. TUI 레이아웃 계층 (★ 세로 분할) — I-1<a class="anchor" href="#s3">#</a></h2>
+<blockquote>ntop TUI는 <strong>세로 3단</strong>이다: 상단바(1줄) / 메인 콘텐츠(가변) / 하단바(1줄). 메인 콘텐츠는 다시 <strong>세로(상/하)로 55%/45% 분할</strong>된다(<code>ui.rs</code> L37–44 <code>Layout::vertical</code>). 프로세스가 0건이면 메인 전체가 빈/로딩 위젯(<span class="chip">V-EMPTY</span>)으로 대체된다. 필터 모드·다이얼로그는 이 위에 겹친다.</blockquote>
+
+<figure class="viz">
+<svg viewBox="0 0 820 600" role="img" aria-label="TUI 세로 레이아웃 계층">
+  <!-- 외곽 -->
+  <rect x="22" y="14" width="776" height="500" rx="8" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
+
+  <!-- BAR-TOP -->
+  <rect x="34" y="24" width="752" height="48" rx="5" class="r-chrome"/>
+  <text x="44" y="42" class="lbl-wb">BAR-TOP</text><text x="120" y="42" class="lbl-ws">[크롬 · DarkGray/White] · status_bar.rs::render_top_bar (1줄 고정)</text>
+  <text x="44" y="60" class="lbl-ws">ntop v0.2.0 | CPU:x% | MEM:used/totalMB | Servers/Nodes:n [Node-only] | Refresh:Ns | [H]elp</text>
+  <text x="640" y="42" class="lbl-ws" style="fill:#fde68a">F18 / PRB-6</text>
+
+  <!-- main content label -->
+  <text x="34" y="92" class="lbl-s">main_content (가변 높이 ≥5) — 둘 중 하나로 렌더 (ui.rs L19)</text>
+
+  <!-- (A) V-EMPTY 작은 인셋 -->
+  <rect x="34" y="100" width="280" height="46" rx="5" class="r-empty"/>
+  <text x="44" y="118" class="lbl-b" style="fill:#0e7490">(A) flat_list 비었음 → V-EMPTY</text>
+  <text x="44" y="136" class="lbl-s">⠹ Scanning… / No server processes found  (F1 / PRB-1)</text>
+
+  <!-- (B) 세로 분할 -->
+  <text x="330" y="120" class="lbl-s">(B) flat_list 있음 → Layout::vertical([55%, 45%])</text>
+
+  <!-- V-LIST 55% -->
+  <rect x="34" y="152" width="752" height="170" rx="5" class="r-panel"/>
+  <text x="44" y="172" class="lbl-b">V-LIST</text><text x="100" y="172" class="lbl-s">[패널 · 포커스1] 프로세스 목록(트리) · 위 55% · process_list.rs</text>
+  <text x="700" y="172" class="lbl-s" style="fill:#b45309">F2·F5·F10·F12</text>
+  <rect x="46" y="182" width="728" height="24" rx="4" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="54" y="199" class="lbl-s" style="fill:#0f172a">[✓] PID · NAME · PORT · THR · CPU · MEM · USER · STS · UPTIME</text>
+  <text x="560" y="199" class="lbl-s" style="fill:#b91c1c">← FRAMEWORK 컬럼 없음</text>
+  <text x="54" y="226" class="lbl-s">▾ next-server (Next.js)   3000   …   (NAME 셀에 프레임워크 인라인 배지)</text>
+  <text x="54" y="248" class="lbl-s">▸ uvicorn [Python]        8000   …</text>
+  <text x="54" y="272" class="lbl-s">정렬자 ^/v · 트리 ▾/▸ · Space 체크 □ · ↑↓/jk 이동</text>
+  <text x="44" y="306" class="lbl-s" style="fill:#3730a3">PRB-1 식별 · PRB-2 포트 · PRB-4 멀티런타임</text>
+
+  <!-- V-DETAIL 45% -->
+  <rect x="34" y="330" width="752" height="148" rx="5" class="r-panel"/>
+  <text x="44" y="350" class="lbl-b">V-DETAIL</text><text x="118" y="350" class="lbl-s">[패널 · 포커스2] 상세 " Details " · 아래 45% · detail_panel.rs</text>
+  <text x="720" y="350" class="lbl-s" style="fill:#b45309">F15</text>
+  <!-- 탭바 -->
+  <rect x="46" y="358" width="84" height="24" rx="4" class="r-tabA"/><text x="88" y="375" text-anchor="middle" class="lbl-w">Info</text>
+  <rect x="134" y="358" width="84" height="24" rx="4" class="r-tab"/><text x="176" y="375" text-anchor="middle" class="lbl" style="fill:#854d0e">Log</text>
+  <rect x="222" y="358" width="84" height="24" rx="4" class="r-tab"/><text x="264" y="375" text-anchor="middle" class="lbl" style="fill:#854d0e">Net</text>
+  <rect x="310" y="358" width="84" height="24" rx="4" class="r-tab"/><text x="352" y="375" text-anchor="middle" class="lbl" style="fill:#854d0e">Env</text>
+  <text x="406" y="375" class="lbl-s">(Tab/←→ 순환 · 활성 탭 Yellow)</text>
+  <!-- 탭 설명 -->
+  <text x="54" y="404" class="lbl-s"><tspan class="lbl-b" style="font-size:11px">TAB-INFO</tspan>  PID/Framework/Port/CPU/Mem/Uptime  (F1·F18 / PRB-1·6)</text>
+  <text x="54" y="424" class="lbl-s"><tspan class="lbl-b" style="font-size:11px">TAB-LOG</tspan>   감지 로그파일 실시간 tail  (F16)</text>
+  <text x="54" y="444" class="lbl-s"><tspan class="lbl-b" style="font-size:11px">TAB-NET</tspan>   LISTEN 포트 + 활성 TCP 연결  (F6 / PRB-2)</text>
+  <text x="54" y="464" class="lbl-s"><tspan class="lbl-b" style="font-size:11px">TAB-ENV</tspan>   환경변수(민감값 마스킹)  (F17 / PRB-6)</text>
+
+  <!-- BAR-BOTTOM -->
+  <rect x="34" y="484" width="752" height="22" rx="4" class="r-chrome"/>
+  <text x="44" y="499" class="lbl-ws"><tspan style="font-weight:700">BAR-BOTTOM</tspan> [크롬] 컨텍스트 의존 키힌트 (리스트/상세/필터/모달별) · render_bottom_bar</text>
+
+  <!-- 오버레이 -->
+  <rect x="34" y="528" width="752" height="58" rx="6" fill="#fffbeb" stroke="#d97706" stroke-dasharray="6 4"/>
+  <text x="44" y="548" class="lbl-b" style="fill:#b45309">▲ 위에 겹치는 오버레이 (한 번에 하나)</text>
+  <text x="44" y="568" class="lbl-s"><tspan class="lbl-b" style="font-size:11px;fill:#b45309">V-FILTER</tspan> [모드] 필터 입력(/) → 하단바 " /{텍스트}█"  (F11 / PRB-1·4)</text>
+  <text x="44" y="582" class="lbl-s"><tspan class="lbl-b" style="font-size:11px;fill:#b91c1c">DLG-*</tspan> [모달] KillConfirm · KillTreeConfirm · SignalPicker · ForceKillPrompt · Help  (F7·F8·F9)</text>
+</svg>
+<figcaption>그림 3 · TUI 세로 3단 레이아웃 — 상단바 / 메인(V-LIST 55% · V-DETAIL 45%·탭4) / 하단바 + 오버레이. <code>ui.rs</code> L37–44 <code>Layout::vertical([55%, 45%])</code> 근거(좌/우 아님).</figcaption>
+</figure>
+
+<p><strong>계층이 말하는 것:</strong> 깊이 2~3단으로 끝난다. 상단바·하단바는 <strong>콘텐츠가 아닌 크롬</strong>이라 상시 떠 있고, 실제 작업은 V-LIST(식별)→V-DETAIL 4탭(점검)에서 끝난다. <strong>위험한 동작만 모달 한 겹</strong>(DLG-*)으로 감싼다. 별도 라우팅·페이지 전환이 없어 <span class="chip p1">PRB-8</span>(GUI↔터미널 왕복)을 구조적으로 제거한다(<span class="chip">F20</span>).</p>
+
+<details class="raw"><summary>원본 ASCII 레이아웃 보기</summary>
+<pre>
+ ┌══════════════════════════════════════════════════════════════════════════┐
+ │ BAR-TOP  [크롬 · DarkGray/White]                              (1줄 고정)   │  ← status_bar.rs::render_top_bar
+ │   ntop v0.2.0 | CPU:x% | MEM:used/totalMB | Servers/Nodes:n [Node-only]    │     F1·F18 / PRB-6 맥락
+ │   | Refresh:Ns | [H]elp                                                    │
+ ├══════════════════════════════════════════════════════════════════════════┤
+ │                                                                            │
+ │   main_content (가변 높이 ≥5)  ─ 둘 중 하나로 렌더 (ui.rs L19) ─           │
+ │                                                                            │
+ │   ┌── (A) flat_list 비었음 → V-EMPTY [빈/로딩 · 스피너 Cyan] ──────────┐  │  ← empty_state.rs
+ │   │      ⠹ Scanning for server processes...                            │  │     F1 대기 / PRB-1
+ │   │      No server processes found. Waiting...                         │  │
+ │   └──────────────────────────────────────────────────────────────────┘  │
+ │                                                                            │
+ │   ┌── (B) flat_list 있음 → 세로 분할 Layout::vertical([55%,45%]) ───────┐  │  ← ui.rs L37–44
+ │   │  ┌────────────────────────────────────────────────────────────┐  │  │
+ │   │  │ V-LIST  [패널·포커스1]   프로세스 목록(트리)  (위 55%)        │  │  │  ← process_list.rs
+ │   │  │   컬럼: [✓]PID·NAME·PORT·THR·CPU·MEM·USER·STS·UPTIME          │  │  │     F2·F5·F10·F12 / PRB-1·2·4
+ │   │  │   (정렬자 ^/v · 트리 ▾/▸ · Space 체크 □)                      │  │  │
+ │   │  ├────────────────────────────────────────────────────────────┤  │  │
+ │   │  │ V-DETAIL [패널·포커스2]  상세 패널 " Details " (아래 45%)     │  │  │  ← detail_panel.rs
+ │   │  │   ┌ 탭바 [탭·활성 Yellow] ───────────────────────────────┐  │  │  │     F15 / PRB-1·6
+ │   │  │   │ [Info] · Log · Net · Env   (Tab/←→ 순환)             │  │  │  │
+ │   │  │   └─────────────────────────────────────────────────────┘  │  │  │
+ │   │  │   TAB-INFO  PID/Framework/Port/CPU/Mem/Uptime  (info_tab)   │  │  │     F1·F18 / PRB-1·6
+ │   │  │   TAB-LOG   감지 로그파일 실시간 tail          (log_tab)    │  │  │     F16
+ │   │  │   TAB-NET   LISTEN 포트 + 활성 TCP 연결        (net_tab)    │  │  │     F6 / PRB-2
+ │   │  │   TAB-ENV   환경변수(민감값 마스킹)            (env_tab)    │  │  │     F17 / PRB-6
+ │   │  └────────────────────────────────────────────────────────────┘  │  │
+ │   └──────────────────────────────────────────────────────────────────┘  │
+ │                                                                            │
+ ├══════════════════════════════════════════════════════════════════════════┤
+ │ BAR-BOTTOM [크롬 · DarkGray/White]  컨텍스트 의존 키힌트      (1줄 고정)    │  ← status_bar.rs::render_bottom_bar
+ │   (리스트 포커스 / 상세 포커스 / 필터 활성 / 다이얼로그별로 다른 힌트)     │     전반(발견성)
+ └══════════════════════════════════════════════════════════════════════════┘
+
+   ── 위에 겹치는 오버레이(한 번에 하나) ──────────────────────────────────────
+   V-FILTER [모드 · Yellow]  필터 입력 → 하단바에 " /{텍스트}█" 표시 (`/` 진입)   F11 / PRB-1·4
+   DLG-* [모달]  KillConfirm·KillTreeConfirm·SignalPicker·ForceKillPrompt·Help    F7·F8·F9
+                 (메인 위에 떠서 다른 입력 차단 — DialogKind 한 번에 하나)
+</pre>
+</details>
+
+<h2 id="s4">4. IA 트리 (TUI + CLI 통합) — I-2<a class="anchor" href="#s4">#</a></h2>
+<blockquote>두 진입점(TUI/CLI)을 합친 전체 IA 트리. 각 노드에 <code>[역할]</code> 색 태그 + 화면 ID + 진입 키 + 연결 기능 ID(10-prd) + PRB(research-s2)를 부기한다. 분기 진입점은 <code>src/main.rs</code>의 clap 파싱.</blockquote>
+
+<figure class="viz">
+<svg viewBox="0 0 1080 470" role="img" aria-label="TUI+CLI 통합 IA 트리">
+  <!-- root -->
+  <rect x="460" y="12" width="160" height="34" rx="6" class="r-root"/>
+  <text x="540" y="34" text-anchor="middle" class="lbl-wb">ntop (main.rs clap)</text>
+
+  <!-- edges to A / B -->
+  <path d="M510,46 L300,72" class="edge"/>
+  <path d="M570,46 L810,72" class="edge"/>
+
+  <!-- [A] TUI -->
+  <rect x="200" y="72" width="200" height="34" rx="6" class="r-view"/>
+  <text x="300" y="93" text-anchor="middle" class="lbl-b">[A] TUI 기동 (run_tui)</text>
+
+  <!-- [B] CLI -->
+  <rect x="700" y="72" width="220" height="34" rx="6" class="r-cli"/>
+  <text x="810" y="93" text-anchor="middle" class="lbl-b" style="fill:#0f766e">[B] CLI 일회성 (scan_blocking)</text>
+
+  <!-- A children edges -->
+  <path d="M260,106 L120,132" class="edge"/>
+  <path d="M300,106 L300,128" class="edge"/>
+  <path d="M340,106 L470,132" class="edge"/>
+  <path d="M250,106 L120,182" class="edge-d"/>
+  <path d="M360,106 L600,300" class="edge-d"/>
+
+  <!-- BAR-TOP -->
+  <rect x="40" y="120" width="130" height="28" rx="5" class="r-chrome"/>
+  <text x="105" y="138" text-anchor="middle" class="lbl-w" style="font-size:11px">BAR-TOP [크롬]</text>
+  <!-- V-MAIN -->
+  <rect x="230" y="128" width="150" height="30" rx="5" class="r-view"/>
+  <text x="305" y="147" text-anchor="middle" class="lbl-b">V-MAIN [합성뷰]</text>
+  <!-- BAR-BOTTOM -->
+  <rect x="430" y="120" width="150" height="28" rx="5" class="r-chrome"/>
+  <text x="505" y="138" text-anchor="middle" class="lbl-w" style="font-size:11px">BAR-BOTTOM [크롬]</text>
+  <!-- V-FILTER (overlay) -->
+  <rect x="40" y="170" width="150" height="28" rx="5" class="r-mode"/>
+  <text x="115" y="188" text-anchor="middle" class="lbl" style="font-size:11px;fill:#b45309;font-weight:700">V-FILTER [모드] /</text>
+
+  <!-- V-MAIN children -->
+  <path d="M260,158 L235,182" class="edge"/>
+  <path d="M305,158 L305,182" class="edge"/>
+  <path d="M350,158 L470,182" class="edge"/>
+  <rect x="170" y="182" width="120" height="28" rx="5" class="r-empty"/>
+  <text x="230" y="200" text-anchor="middle" class="lbl" style="font-size:11px;fill:#0e7490;font-weight:700">V-EMPTY [빈/로딩]</text>
+  <rect x="300" y="222" width="120" height="28" rx="5" class="r-panel"/>
+  <text x="360" y="240" text-anchor="middle" class="lbl-b">V-LIST [패널·F1]</text>
+  <rect x="450" y="182" width="130" height="28" rx="5" class="r-panel"/>
+  <text x="515" y="200" text-anchor="middle" class="lbl-b">V-DETAIL [패널·F2]</text>
+
+  <!-- correction edges V-MAIN->LIST -->
+  <path d="M305,158 L360,222" class="edge"/>
+
+  <!-- V-DETAIL tabs -->
+  <path d="M470,210 L420,245" class="edge"/>
+  <path d="M500,210 L500,245" class="edge"/>
+  <path d="M530,210 L585,245" class="edge"/>
+  <path d="M560,210 L740,245" class="edge"/>
+  <rect x="370" y="245" width="96" height="26" rx="5" class="r-tabA"/><text x="418" y="262" text-anchor="middle" class="lbl-w" style="font-size:11px">TAB-INFO</text>
+  <rect x="470" y="245" width="96" height="26" rx="5" class="r-tab"/><text x="518" y="262" text-anchor="middle" class="lbl" style="font-size:11px;fill:#854d0e">TAB-LOG</text>
+  <rect x="570" y="245" width="96" height="26" rx="5" class="r-tab"/><text x="618" y="262" text-anchor="middle" class="lbl" style="font-size:11px;fill:#854d0e">TAB-NET</text>
+  <rect x="688" y="245" width="96" height="26" rx="5" class="r-tab"/><text x="736" y="262" text-anchor="middle" class="lbl" style="font-size:11px;fill:#854d0e">TAB-ENV</text>
+
+  <!-- 모달 cluster -->
+  <rect x="40" y="300" width="540" height="120" rx="8" fill="#fffbf5" stroke="#dc2626" stroke-dasharray="6 4"/>
+  <text x="52" y="320" class="lbl-b" style="fill:#b91c1c">모달 다이얼로그 (DialogKind · 메인 위 오버레이 · 한 번에 하나)</text>
+  <rect x="52" y="332" width="160" height="28" rx="5" class="r-danger"/><text x="132" y="350" text-anchor="middle" class="lbl" style="font-size:11px;fill:#b91c1c;font-weight:700">DLG-KILL · x</text>
+  <rect x="222" y="332" width="160" height="28" rx="5" class="r-danger"/><text x="302" y="350" text-anchor="middle" class="lbl" style="font-size:11px;fill:#b91c1c;font-weight:700">DLG-KILLTREE · K</text>
+  <rect x="392" y="332" width="160" height="28" rx="5" class="r-modal"/><text x="472" y="350" text-anchor="middle" class="lbl" style="font-size:11px;fill:#854d0e;font-weight:700">DLG-SIGNAL · S</text>
+  <rect x="52" y="370" width="240" height="28" rx="5" class="r-danger"/><text x="172" y="388" text-anchor="middle" class="lbl" style="font-size:11px;fill:#b91c1c;font-weight:700">DLG-FORCE · graceful timeout 후</text>
+  <rect x="302" y="370" width="160" height="28" rx="5" class="r-modal"/><text x="382" y="388" text-anchor="middle" class="lbl" style="font-size:11px;fill:#854d0e;font-weight:700">DLG-HELP · H</text>
+  <text x="52" y="414" class="lbl-s">F7 · F8 · F9 / PRB-3·5 · 발견성</text>
+
+  <!-- B children (CLI 5명령) -->
+  <path d="M780,106 L700,134" class="edge"/>
+  <path d="M790,106 L700,168" class="edge"/>
+  <path d="M810,106 L700,202" class="edge"/>
+  <path d="M830,106 L700,236" class="edge"/>
+  <path d="M850,106 L700,270" class="edge"/>
+  <rect x="700" y="120" width="340" height="26" rx="5" class="r-cli"/><text x="710" y="137" class="lbl" style="font-size:11px;fill:#0f766e"><tspan class="lbl-b" style="font-size:11px;fill:#0f766e">CLI-LIST</tspan>  list [--json] [--format] · F19/PRB-1·7</text>
+  <rect x="700" y="154" width="340" height="26" rx="5" class="r-cli"/><text x="710" y="171" class="lbl" style="font-size:11px;fill:#0f766e"><tspan class="lbl-b" style="font-size:11px;fill:#0f766e">CLI-KILL</tspan>  kill &lt;PID&gt; [--tree…] · F19·F7·F8</text>
+  <rect x="700" y="188" width="340" height="26" rx="5" class="r-cli"/><text x="710" y="205" class="lbl" style="font-size:11px;fill:#0f766e"><tspan class="lbl-b" style="font-size:11px;fill:#0f766e">CLI-INFO</tspan>  info &lt;PID&gt; · F19/PRB-1·6</text>
+  <rect x="700" y="222" width="340" height="26" rx="5" class="r-cli"/><text x="710" y="239" class="lbl" style="font-size:11px;fill:#0f766e"><tspan class="lbl-b" style="font-size:11px;fill:#0f766e">CLI-LOG</tspan>  log &lt;PID&gt; · F19·F16</text>
+  <rect x="700" y="256" width="340" height="26" rx="5" class="r-cli"/><text x="710" y="273" class="lbl" style="font-size:11px;fill:#0f766e"><tspan class="lbl-b" style="font-size:11px;fill:#0f766e">CLI-CONFIG</tspan>  config · F19·F21</text>
+</svg>
+<figcaption>그림 4 · TUI+CLI 통합 IA 트리 — [A] TUI(V-MAIN→V-EMPTY/V-LIST/V-DETAIL→탭4 + 오버레이 모달5) · [B] CLI 평면 5명령. 점선 = 오버레이(겹침). 역할별 색은 §2 범례.</figcaption>
+</figure>
+
+<p><strong>IA가 말하는 것:</strong> 깊이 2~3단의 <strong>얕은 트리</strong>다. TUI는 메인 한 화면(V-MAIN)에 정보를 모으고 파괴적 동작만 모달 한 겹으로 감싼다. CLI는 TUI와 동일 코어를 재사용하는 <strong>평면 5개 명령</strong>이다. 별도 라우팅·페이지 전환·설정 마법사·로그인이 없다(§7).</p>
+
+<details class="raw"><summary>원본 ASCII IA 트리 보기</summary>
+<pre>
+ntop  (바이너리 진입점 · src/main.rs clap 파싱)
+│
+├─[A] 서브커맨드 없음 ─▶ TUI 기동 (run_tui)  ······················ 화면 ID 접두 V-/TAB-/DLG-/BAR-
+│   │   (터미널 셋업: raw_mode → AlternateScreen → 이벤트 루프 → 해제 시 복원)   F20 / PRB-8
+│   │
+│   ├─ BAR-TOP        [크롬]   상단 상태바(시스템 CPU/MEM·서버 수·refresh·[H]elp)   F18 / PRB-6
+│   │
+│   ├─ V-MAIN         [합성뷰] 상단바+메인+하단바 조합 화면 (ui.rs::render)         F20 / PRB-1·2·6·8
+│   │   │
+│   │   ├─ V-EMPTY    [빈/로딩] flat_list 비면 메인 전체 대체 — 스피너+"Scanning…"  F1 / PRB-1
+│   │   │
+│   │   └─ (서버 있음) 세로 분할 55/45 (ui.rs L37–44)  ── ※§0 코드-진실(상/하)
+│   │       │
+│   │       ├─ V-LIST   [패널·포커스1] 분류 서버 트리 목록 (위 55%)               F2·F5·F10·F12 / PRB-1·2·4
+│   │       │     └ 진입: 기본 포커스 · 이동 ↑↓/jk · Enter 토글 · →/l 확장 ·
+│   │       │       ←/h 축소 · Space 다중선택 · Tab→V-DETAIL
+│   │       │       (컬럼: [✓]PID·NAME·PORT·THR·CPU·MEM·USER·STS·UPTIME ─ FRAMEWORK 없음)
+│   │       │
+│   │       └─ V-DETAIL [패널·포커스2] 상세 패널(4탭 컨테이너) (아래 45%)          F15 / PRB-1·6
+│   │             └ 진입: Tab(리스트→상세) · 탭 순환 Tab/←→ · Esc→V-LIST
+│   │             ├─ TAB-INFO  [탭] PID/Framework/Port/CPU/Mem/Uptime  (상세 기본 탭)  F1·F18 / PRB-1·6
+│   │             ├─ TAB-LOG   [탭] 감지 로그파일 실시간 tail                          F16
+│   │             ├─ TAB-NET   [탭] LISTEN 포트 + 활성 TCP 연결                         F6 / PRB-2
+│   │             └─ TAB-ENV   [탭] 환경변수(민감값 마스킹)                            F17 / PRB-6
+│   │
+│   ├─ BAR-BOTTOM     [크롬]   하단 키힌트(컨텍스트 의존: 리스트/상세/필터/모달)    전반(발견성)
+│   │
+│   ├─ V-FILTER       [모드]   부분일치 필터 입력(입력마다 rebuild_view 실시간)     F11 / PRB-1·4
+│   │     └ 진입: `/` · 종료: Enter(유지)/Esc(비움) · 하단바에 " /{텍스트}█"
+│   │
+│   └─ 모달 다이얼로그 (DialogKind · 메인 위 오버레이 · 한 번에 하나)
+│         ├─ DLG-KILL      [모달·위험] KillConfirm     ← `x`     → SIGTERM 확인       F7 / PRB-3·5
+│         ├─ DLG-KILLTREE  [모달·위험] KillTreeConfirm ← `K`     → 트리 종료 확인      F8 / PRB-5
+│         ├─ DLG-SIGNAL    [모달]      SignalPicker    ← `S`     → 임의 시그널 선택    F9 / PRB-5
+│         ├─ DLG-FORCE     [모달·위험] ForceKillPrompt ← graceful timeout 후 자동 표시 F7 / PRB-5
+│         └─ DLG-HELP      [모달]      Help            ← `H`     → 키 도움말(스크롤)   (발견성)
+│
+└─[B] 서브커맨드 있음 ─▶ CLI 일회성 (scan_blocking) ················ 화면 ID 접두 CLI-
+    ├─ CLI-LIST    `ntop list [--json] [--format &lt;table|csv|json&gt;]`   분류 서버 목록   F19 / PRB-1·7
+    ├─ CLI-KILL    `ntop kill &lt;PID&gt; [--tree] [--signal &lt;SIG&gt;] [--all] [--no-confirm]`  F19·F7·F8 / PRB-5·7
+    ├─ CLI-INFO    `ntop info &lt;PID&gt;`        단일 프로세스 상세(메트릭/포트/health/env/net) F19 / PRB-1·6
+    ├─ CLI-LOG     `ntop log &lt;PID&gt;`         cwd 로그 자동 감지 → 200ms 폴링 스트림        F19·F16
+    └─ CLI-CONFIG  `ntop config`            설정 파일 경로 + [general][display][filter] 출력 F19·F21
+</pre>
+</details>
+
+<h2 id="s5">5. CLI 명령 트리 (플래그·필수성·출력) — I-3<a class="anchor" href="#s5">#</a></h2>
+<blockquote><code>ntop</code>(서브커맨드 없음)은 TUI를 기동하고, 5개 서브커맨드는 일회성 출력을 낸다(도시에 §7, <code>cli.rs</code> clap derive). <strong>CLI 출력 스키마(table 컬럼·JSON 필드·CSV 컬럼)의 정규 출처는 <code>32-api-spec</code></strong>이며 본 트리는 요지만 표기한다.</blockquote>
+
+<figure class="viz">
+<svg viewBox="0 0 840 430" role="img" aria-label="CLI 명령 트리">
+  <!-- root -->
+  <rect x="20" y="16" width="110" height="30" rx="6" class="r-root"/>
+  <text x="75" y="36" text-anchor="middle" class="lbl-wb">ntop</text>
+  <!-- trunk -->
+  <path d="M40,46 L40,398" class="edge"/>
+
+  <!-- (없음) -->
+  <path d="M40,75 L70,75" class="edge"/>
+  <rect x="70" y="61" width="290" height="28" rx="5" class="r-view"/>
+  <text x="80" y="79" class="lbl" style="font-size:11px">(서브커맨드 없음) ─▶ TUI 기동 (run_tui) = [A]</text>
+
+  <!-- list -->
+  <path d="M40,120 L70,120" class="edge"/>
+  <rect x="70" y="106" width="150" height="28" rx="5" class="r-cli"/>
+  <text x="80" y="124" class="lbl" style="font-size:11px;fill:#0f766e"><tspan class="lbl-b" style="font-size:11.5px;fill:#0f766e">list</tspan>  → CLI-LIST  F19</text>
+  <rect x="236" y="100" width="180" height="22" rx="4" fill="#f1f5f9" stroke="#cbd5e1"/><text x="244" y="115" class="lbl-s">--json  (= --format json 단축)</text>
+  <rect x="236" y="126" width="290" height="22" rx="4" fill="#f1f5f9" stroke="#cbd5e1"/><text x="244" y="141" class="lbl-s">--format &lt;table|csv|json&gt;  기본 table</text>
+  <text x="540" y="115" class="lbl-s">table: PID·NAME·FRAMEWORK·PORT·CPU·MEM·UPTIME</text>
+  <text x="540" y="133" class="lbl-s">json: 전 필드+depth · csv: 9컬럼(+PPID·STATUS)</text>
+
+  <!-- kill -->
+  <path d="M40,185 L70,185" class="edge"/>
+  <rect x="70" y="171" width="180" height="28" rx="5" class="r-cli"/>
+  <text x="80" y="189" class="lbl" style="font-size:11px;fill:#0f766e"><tspan class="lbl-b" style="font-size:11.5px;fill:#0f766e">kill &lt;PID&gt;</tspan>  → CLI-KILL</text>
+  <rect x="266" y="165" width="120" height="22" rx="4" class="r-danger"/><text x="274" y="180" class="lbl-s" style="fill:#b91c1c">--tree (부모+자식)</text>
+  <rect x="396" y="165" width="170" height="22" rx="4" class="r-modal"/><text x="404" y="180" class="lbl-s" style="fill:#854d0e">--signal &lt;SIG&gt; (기본 SIGTERM)</text>
+  <rect x="266" y="191" width="120" height="22" rx="4" fill="#f1f5f9" stroke="#cbd5e1"/><text x="274" y="206" class="lbl-s">--all (일괄, PID 생략)</text>
+  <rect x="396" y="191" width="170" height="22" rx="4" fill="#f1f5f9" stroke="#cbd5e1"/><text x="404" y="206" class="lbl-s">--no-confirm (확인 생략)</text>
+  <text x="266" y="230" class="lbl-s" style="fill:#b45309">graceful flow: SIGTERM → graceful_timeout 초과 시 자동 SIGKILL 에스컬레이션</text>
+
+  <!-- info -->
+  <path d="M40,260 L70,260" class="edge"/>
+  <rect x="70" y="246" width="180" height="28" rx="5" class="r-cli"/>
+  <text x="80" y="264" class="lbl" style="font-size:11px;fill:#0f766e"><tspan class="lbl-b" style="font-size:11.5px;fill:#0f766e">info &lt;PID&gt;</tspan>  → CLI-INFO</text>
+  <text x="266" y="264" class="lbl-s">PID/PPID/name/runtime/framework/version/ports(LISTEN)/CPU/mem/threads/uptime/user/status/health/cwd/cmd/FDs/env/net</text>
+
+  <!-- log -->
+  <path d="M40,305 L70,305" class="edge"/>
+  <rect x="70" y="291" width="180" height="28" rx="5" class="r-cli"/>
+  <text x="80" y="309" class="lbl" style="font-size:11px;fill:#0f766e"><tspan class="lbl-b" style="font-size:11.5px;fill:#0f766e">log &lt;PID&gt;</tspan>  → CLI-LOG</text>
+  <text x="266" y="309" class="lbl-s">cwd 로그소스 자동 감지 → 200ms 폴링 → 프로세스 사망 시 종료</text>
+
+  <!-- config -->
+  <path d="M40,350 L70,350" class="edge"/>
+  <rect x="70" y="336" width="180" height="28" rx="5" class="r-cli"/>
+  <text x="80" y="354" class="lbl" style="font-size:11px;fill:#0f766e"><tspan class="lbl-b" style="font-size:11.5px;fill:#0f766e">config</tspan>  → CLI-CONFIG</text>
+  <text x="266" y="354" class="lbl-s">설정 파일 경로(~/.config/ntop/config.toml) + [general][display][filter] 값</text>
+</svg>
+<figcaption>그림 5 · CLI 명령 트리 — 평면 5명령(+플래그·필수성·출력 요지). <code>&lt;PID&gt;</code>는 <code>--all</code> 없으면 필수. 출력 스키마 정본은 <code>32-api-spec</code>.</figcaption>
+</figure>
+
+<p><strong>CLI 설계 요지:</strong> 평면 5명령 + 단순 플래그. <code>--json</code>/<code>--format csv</code>가 <strong>헤드리스 자동화</strong>(<span class="chip p1">PRB-7</span>)의 연결점이고, <code>kill</code>의 <code>--tree</code>/<code>--all</code>/<code>--no-confirm</code>이 스크립트 일괄 종료를 가능케 한다. TUI와 같은 코어라 동작 의미가 일치한다(예: graceful→force 에스컬레이션은 둘 다 적용, 트리거 방식만 다름 — §13 참조).</p>
+
+<details class="raw"><summary>원본 ASCII CLI 트리 보기</summary>
+<pre>
+ntop
+│
+├─ (서브커맨드 없음)              ─▶  TUI 기동 (run_tui)              [A] 위 IA 트리
+│
+├─ list                          ─▶  CLI-LIST   분류된 서버 목록                F19 / PRB-1·7
+│    ├─ --json                        (= --format json 단축)
+│    └─ --format &lt;table|csv|json&gt;     기본 table
+│         · table : PID · NAME · FRAMEWORK · PORT · CPU · MEM · UPTIME
+│         · json  : 모든 필드 + depth
+│         · csv   : PID · PPID · NAME · FRAMEWORK · PORTS · CPU · MEMORY · UPTIME · STATUS (9컬럼)
+│
+├─ kill &lt;PID&gt;                    ─▶  CLI-KILL    종료 (PID는 --all 없으면 필수)  F19·F7·F8 / PRB-5·7
+│    ├─ --tree                        부모+자식 트리 전체(재귀 수집 → 확인 → 각각)   F8
+│    ├─ --signal &lt;SIG&gt;                전송 시그널 지정(기본 SIGTERM, 대소문자 무시)   F9
+│    ├─ --all                         모든 서버 프로세스 일괄(PID 생략 가능)
+│    └─ --no-confirm                  확인 프롬프트 생략
+│         · graceful flow: SIGTERM → graceful_timeout(31 정규값) 초과 시 자동 SIGKILL 에스컬레이션
+│
+├─ info &lt;PID&gt;                    ─▶  CLI-INFO    단일 프로세스 상세              F19 / PRB-1·6
+│         · PID/PPID/name/runtime/framework/version/ports(LISTEN)/CPU/memory/
+│           threads/uptime/user/status/health/cwd/command/open FDs/env/network
+│
+├─ log &lt;PID&gt;                     ─▶  CLI-LOG     로그 스트림                     F19·F16
+│         · cwd 로그소스 자동 감지 → 200ms 폴링 → 프로세스 사망 시 종료
+│
+└─ config                        ─▶  CLI-CONFIG  설정 출력                       F19·F21
+          · 설정 파일 경로(~/.config/ntop/config.toml) + [general][display][filter] 값
+</pre>
+</details>
+
+<h2 id="s6">6. 화면 ID 배정 + 노출 경로 — I-4<a class="anchor" href="#s6">#</a></h2>
+<blockquote>모든 화면에 ID를 배정하고 <strong>노출 경로</strong>(어느 키/모드/명령에서 도달)와 부모·연결 기능·PRB를 확정한다. 이 표가 후속 <code>21-screen-spec</code>의 화면 목록 정규 출처가 된다(키 바인딩 자체의 정규 출처는 21). 화면 ID는 <code>research-s3</code> §5를 승계한다.</blockquote>
+
+<h3 id="s6-1">6-1. 화면 ID · 노출 경로 표<a class="anchor" href="#s6-1">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>화면 ID</th><th>종류[색]</th><th>역할(한 줄)</th><th>부모</th><th>노출 경로(진입 키/모드/명령)</th><th>위젯/코드</th><th>기능 ID</th><th>PRB</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">BAR-TOP</span></td><td>크롬</td><td>시스템 CPU/MEM·서버 수·refresh·[H]elp 상시</td><td>V-MAIN</td><td>상시(TUI 기동 시)</td><td><code>status_bar.rs::render_top_bar</code></td><td><span class="chip">F18</span></td><td>6</td></tr>
+<tr><td><span class="chip">BAR-BOTTOM</span></td><td>크롬</td><td>그 순간 쓸 수 있는 키힌트(컨텍스트 의존)</td><td>V-MAIN</td><td>상시</td><td><code>status_bar.rs::render_bottom_bar</code></td><td>—</td><td>전반</td></tr>
+<tr><td><span class="chip">V-MAIN</span></td><td>합성뷰</td><td>상단바+메인+하단바 조합 화면</td><td>(TUI 루트)</td><td><code>ntop</code>(서브커맨드 없음)</td><td><code>ui.rs::render</code></td><td><span class="chip">F20</span></td><td>1·2·6·8</td></tr>
+<tr><td><span class="chip">V-EMPTY</span></td><td>빈/로딩[Cyan]</td><td>프로세스 0건 + 스피너("Scanning…")</td><td>V-MAIN</td><td><code>flat_list</code>가 비었을 때 자동</td><td><code>empty_state.rs</code></td><td><span class="chip">F1</span></td><td>1</td></tr>
+<tr><td><span class="chip">V-LIST</span></td><td>패널·포커스1</td><td>분류된 서버 프로세스 트리 목록</td><td>V-MAIN</td><td>TUI 기본 포커스</td><td><code>process_list.rs</code></td><td><span class="chip">F2</span>·<span class="chip">F5</span>·<span class="chip">F10</span>·<span class="chip">F12</span></td><td>1·2·4</td></tr>
+<tr><td><span class="chip">V-DETAIL</span></td><td>패널·포커스2</td><td>선택 프로세스 상세(4탭 컨테이너)</td><td>V-MAIN</td><td><code>Tab</code>(V-LIST→상세)</td><td><code>detail_panel.rs</code></td><td><span class="chip">F15</span></td><td>1·2·6</td></tr>
+<tr><td><span class="chip">TAB-INFO</span></td><td>탭[Yellow]</td><td>PID/Framework/Port/CPU/Mem/Uptime 메트릭</td><td>V-DETAIL</td><td>상세 기본 탭</td><td><code>info_tab.rs</code></td><td><span class="chip">F1</span>·<span class="chip">F18</span></td><td>1·6</td></tr>
+<tr><td><span class="chip">TAB-LOG</span></td><td>탭</td><td>감지된 로그파일 실시간 tail</td><td>V-DETAIL</td><td>탭 순환(<code>Tab</code>/<code>←→</code>)</td><td><code>log_tab.rs</code></td><td><span class="chip">F16</span></td><td>1</td></tr>
+<tr><td><span class="chip">TAB-NET</span></td><td>탭</td><td>LISTEN 포트 + 활성 TCP 연결</td><td>V-DETAIL</td><td>탭 순환</td><td><code>net_tab.rs</code></td><td><span class="chip">F6</span></td><td>2</td></tr>
+<tr><td><span class="chip">TAB-ENV</span></td><td>탭</td><td>환경변수(민감값 자동 마스킹)</td><td>V-DETAIL</td><td>탭 순환</td><td><code>env_tab.rs</code></td><td><span class="chip">F17</span></td><td>6</td></tr>
+<tr><td><span class="chip">V-FILTER</span></td><td>모드[Yellow]</td><td>부분일치 필터 입력(실시간 갱신)</td><td>V-MAIN</td><td><code>/</code></td><td><code>ui.rs::handle_filter_key</code>+하단바</td><td><span class="chip">F11</span></td><td>1·4</td></tr>
+<tr><td><span class="chip p0">DLG-KILL</span></td><td>모달·위험[Red]</td><td>단건 종료(SIGTERM) 확인</td><td>V-LIST/V-DETAIL</td><td><code>x</code></td><td><code>kill_dialog.rs</code></td><td><span class="chip">F7</span></td><td>3·5</td></tr>
+<tr><td><span class="chip p0">DLG-KILLTREE</span></td><td>모달·위험[Red]</td><td>트리 종료(부모+자식) 확인</td><td>V-LIST</td><td><code>K</code></td><td><code>kill_dialog.rs</code></td><td><span class="chip">F8</span></td><td>5</td></tr>
+<tr><td><span class="chip p1">DLG-SIGNAL</span></td><td>모달[Yellow]</td><td>임의 시그널 선택 전송</td><td>V-LIST/V-DETAIL</td><td><code>S</code></td><td><code>signal_picker.rs</code></td><td><span class="chip">F9</span></td><td>5</td></tr>
+<tr><td><span class="chip p0">DLG-FORCE</span></td><td>모달·위험[Red]</td><td>graceful 실패 후 강제(SIGKILL) 확인</td><td>(kill 진행 중)</td><td>graceful timeout 초과 시 자동</td><td><code>kill_dialog.rs</code></td><td><span class="chip">F7</span></td><td>5</td></tr>
+<tr><td><span class="chip">DLG-HELP</span></td><td>모달</td><td>키 바인딩 도움말(스크롤)</td><td>V-MAIN</td><td><code>H</code></td><td><code>help_dialog.rs</code></td><td>—</td><td>발견성</td></tr>
+<tr><td><span class="chip ok">CLI-LIST</span></td><td>CLI 출력</td><td>분류 서버 목록(table/json/csv)</td><td>(CLI 루트)</td><td><code>ntop list …</code></td><td><code>main.rs cmd_list</code></td><td><span class="chip">F19</span></td><td>1·7</td></tr>
+<tr><td><span class="chip ok">CLI-KILL</span></td><td>CLI 출력</td><td>종료(graceful/tree/all)</td><td>(CLI 루트)</td><td><code>ntop kill …</code></td><td><code>main.rs cmd_kill</code></td><td><span class="chip">F19</span>·<span class="chip">F7</span>·<span class="chip">F8</span></td><td>5·7</td></tr>
+<tr><td><span class="chip ok">CLI-INFO</span></td><td>CLI 출력</td><td>단일 프로세스 상세</td><td>(CLI 루트)</td><td><code>ntop info &lt;PID&gt;</code></td><td><code>main.rs cmd_info</code></td><td><span class="chip">F19</span></td><td>1·6</td></tr>
+<tr><td><span class="chip ok">CLI-LOG</span></td><td>CLI 출력</td><td>로그 스트림(폴링)</td><td>(CLI 루트)</td><td><code>ntop log &lt;PID&gt;</code></td><td><code>main.rs cmd_log</code></td><td><span class="chip">F19</span>·<span class="chip">F16</span></td><td>1</td></tr>
+<tr><td><span class="chip ok">CLI-CONFIG</span></td><td>CLI 출력</td><td>설정 경로 + 값 출력</td><td>(CLI 루트)</td><td><code>ntop config</code></td><td><code>main.rs cmd_config</code></td><td><span class="chip">F19</span>·<span class="chip">F21</span></td><td>—</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>합계:</strong> TUI = 크롬 2 + 합성/패널 3(V-MAIN/LIST/DETAIL) + 빈로딩 1 + 탭 4 + 모드 1 + 모달 5 = <strong>고유 화면 16종</strong> · CLI = <strong>5종</strong>. <strong>별도 설정·로그인·온보딩 화면 없음</strong>(§7).</p>
+
+<h3 id="s6-2">6-2. 노출 경로 한눈 다이어그램 (어느 키/모드에서 도달)<a class="anchor" href="#s6-2">#</a></h3>
+
+<figure class="viz">
+<svg viewBox="0 0 860 470" role="img" aria-label="노출 경로(도달성) 다이어그램">
+  <!-- 기동 -->
+  <rect x="20" y="20" width="160" height="30" rx="6" class="r-root"/>
+  <text x="100" y="40" text-anchor="middle" class="lbl-wb">TUI 기동: ntop</text>
+  <path d="M100,50 L100,70" class="edge"/><polygon points="100,76 96,68 104,68" class="arrow"/>
+
+  <!-- V-MAIN container -->
+  <rect x="20" y="78" width="820" height="300" rx="10" fill="#fafbff" stroke="#6366f1" stroke-width="1.5"/>
+  <text x="34" y="98" class="lbl-b">V-MAIN  (BAR-TOP 상시 · BAR-BOTTOM 상시)</text>
+
+  <!-- empty / list -->
+  <rect x="40" y="112" width="200" height="30" rx="5" class="r-empty"/>
+  <text x="140" y="132" text-anchor="middle" class="lbl" style="font-size:11px;fill:#0e7490">서버 0건 → V-EMPTY</text>
+  <rect x="330" y="112" width="240" height="30" rx="5" class="r-panel"/>
+  <text x="450" y="132" text-anchor="middle" class="lbl-b">서버 ≥1 → V-LIST ◀ 기본 포커스</text>
+
+  <!-- list <-> detail -->
+  <path d="M450,142 L450,176" class="edge"/>
+  <text x="462" y="162" class="lbl-s">Tab ↓ / Esc ↑</text>
+  <rect x="330" y="178" width="240" height="30" rx="5" class="r-panel"/>
+  <text x="450" y="198" text-anchor="middle" class="lbl-b">V-DETAIL</text>
+  <path d="M570,193 L620,193" class="edge"/><polygon points="626,193 618,189 618,197" class="arrow"/>
+  <rect x="628" y="178" width="120" height="30" rx="5" class="r-tabA"/>
+  <text x="688" y="198" text-anchor="middle" class="lbl-w">TAB-INFO</text>
+  <text x="760" y="186" class="lbl-s">↻ LOG</text>
+  <text x="760" y="200" class="lbl-s">↻ NET</text>
+  <text x="760" y="214" class="lbl-s">↻ ENV</text>
+
+  <!-- global overlay keys -->
+  <text x="40" y="240" class="lbl-b">전역 키로 오버레이 호출 (어디서나):</text>
+  <rect x="40" y="252" width="200" height="28" rx="5" class="r-mode"/><text x="50" y="270" class="lbl" style="font-size:11px;fill:#b45309">/ → V-FILTER</text>
+  <rect x="40" y="288" width="200" height="28" rx="5" class="r-modal"/><text x="50" y="306" class="lbl" style="font-size:11px;fill:#854d0e">H → DLG-HELP</text>
+
+  <rect x="260" y="252" width="200" height="28" rx="5" class="r-danger"/><text x="270" y="270" class="lbl" style="font-size:11px;fill:#b91c1c">x → DLG-KILL</text>
+  <path d="M460,266 L500,266" class="edge-d"/><polygon points="506,266 498,262 498,270" class="arrow"/>
+  <text x="466" y="248" class="lbl-s">timeout</text>
+  <rect x="508" y="252" width="180" height="28" rx="5" class="r-danger"/><text x="518" y="270" class="lbl" style="font-size:11px;fill:#b91c1c">→ DLG-FORCE</text>
+
+  <rect x="260" y="288" width="200" height="28" rx="5" class="r-danger"/><text x="270" y="306" class="lbl" style="font-size:11px;fill:#b91c1c">K → DLG-KILLTREE</text>
+  <rect x="508" y="288" width="180" height="28" rx="5" class="r-modal"/><text x="518" y="306" class="lbl" style="font-size:11px;fill:#854d0e">S → DLG-SIGNAL</text>
+
+  <text x="40" y="350" class="lbl-s">(모달은 메인 위 오버레이 · DialogKind 한 번에 하나)</text>
+
+  <!-- CLI flat row -->
+  <rect x="20" y="398" width="820" height="56" rx="10" fill="#f0fdfa" stroke="#0d9488" stroke-width="1.5"/>
+  <text x="34" y="418" class="lbl-b" style="fill:#0f766e">CLI: ntop &lt;서브커맨드&gt; (평면 · 상호 독립)</text>
+  <text x="34" y="440" class="lbl-s" style="fill:#0f766e">CLI-LIST · CLI-KILL · CLI-INFO · CLI-LOG · CLI-CONFIG</text>
+</svg>
+<figcaption>그림 6 · 노출 경로(도달성) — V-MAIN 안에서 V-EMPTY/V-LIST⇄V-DETAIL→탭, 전역 키로 모달/필터 오버레이 호출. CLI는 평면·독립 5명령. 점선 = graceful timeout 후 자동 표시. (키의 정규 출처는 21)</figcaption>
+</figure>
+
+<blockquote><strong>노출 경로 메모(키의 정규 출처는 21):</strong> 위 진입 키는 IA 도달성 표기를 위한 인용이며, 전역/리스트/상세/필터/다이얼로그별 <strong>정규 키표는 <code>21-screen-spec</code></strong>(현재 <code>research-s3</code> §7)이 소유한다. 본 표는 화면 도달성만 확정한다.</blockquote>
+
+<details class="raw"><summary>원본 ASCII 도달 다이어그램 보기</summary>
+<pre>
+ [TUI 기동: ntop]
+        │
+        ▼
+   ┌─ V-MAIN ─────────────────────────────────────────────────────────────┐
+   │  (BAR-TOP 상시 · BAR-BOTTOM 상시)                                       │
+   │                                                                        │
+   │   서버 0건 ─▶ V-EMPTY                서버 ≥1건 ─▶ V-LIST ◀(기본 포커스) │
+   │                                          │                             │
+   │                                  Tab ────┼──── Esc                     │
+   │                                          ▼                             │
+   │                                      V-DETAIL ── Tab/←→ ──▶ TAB-INFO   │
+   │                                                              ↻ LOG     │
+   │                                                              ↻ NET     │
+   │                                                              ↻ ENV     │
+   │                                                                        │
+   │   전역 키로 오버레이 호출(어디서나):                                    │
+   │     /  ─▶ V-FILTER       x  ─▶ DLG-KILL ── (timeout) ─▶ DLG-FORCE      │
+   │     H  ─▶ DLG-HELP       K  ─▶ DLG-KILLTREE                            │
+   │                          S  ─▶ DLG-SIGNAL                              │
+   └────────────────────────────────────────────────────────────────────────┘
+
+ [CLI: ntop &lt;서브커맨드&gt;] ─▶ CLI-LIST / CLI-KILL / CLI-INFO / CLI-LOG / CLI-CONFIG (평면 · 상호 독립)
+</pre>
+</details>
+
+<h2 id="s7">7. IA 특성 분석 — 왜 이렇게 평평한가<a class="anchor" href="#s7">#</a></h2>
+<blockquote>IA의 구조 자체가 ntop의 가치(저마찰·안전)를 떠받친다. 깊이·분기 수를 시각화한다.</blockquote>
+
+<figure class="viz">
+<svg viewBox="0 0 820 290" role="img" aria-label="IA 깊이 분석">
+  <!-- depth bands -->
+  <g>
+    <rect x="20" y="20" width="120" height="50" rx="6" fill="#eef2ff" stroke="#6366f1"/>
+    <text x="80" y="40" text-anchor="middle" class="lbl-b">depth 0</text><text x="80" y="58" text-anchor="middle" class="lbl-s">바이너리</text>
+    <rect x="160" y="20" width="640" height="50" rx="6" class="r-root"/>
+    <text x="180" y="50" class="lbl-wb">ntop</text>
+  </g>
+  <path d="M410,70 L410,82" class="edge"/>
+  <g>
+    <rect x="20" y="84" width="120" height="50" rx="6" fill="#eef2ff" stroke="#6366f1"/>
+    <text x="80" y="104" text-anchor="middle" class="lbl-b">depth 1</text><text x="80" y="122" text-anchor="middle" class="lbl-s">진입 분기</text>
+    <rect x="160" y="84" width="310" height="50" rx="6" class="r-view"/>
+    <text x="315" y="113" text-anchor="middle" class="lbl-b">[A] TUI 기동 (run_tui)</text>
+    <rect x="490" y="84" width="310" height="50" rx="6" class="r-cli"/>
+    <text x="645" y="113" text-anchor="middle" class="lbl-b" style="fill:#0f766e">[B] CLI 5명령</text>
+  </g>
+  <path d="M315,134 L315,146" class="edge"/><path d="M645,134 L645,146" class="edge"/>
+  <g>
+    <rect x="20" y="148" width="120" height="50" rx="6" fill="#eef2ff" stroke="#6366f1"/>
+    <text x="80" y="168" text-anchor="middle" class="lbl-b">depth 2</text><text x="80" y="186" text-anchor="middle" class="lbl-s">주 화면</text>
+    <rect x="160" y="148" width="310" height="50" rx="6" class="r-panel"/>
+    <text x="315" y="170" text-anchor="middle" class="lbl-b" style="font-size:11px">V-MAIN (BAR-TOP/BOTTOM ·</text>
+    <text x="315" y="186" text-anchor="middle" class="lbl-b" style="font-size:11px">V-LIST · V-DETAIL · V-EMPTY)</text>
+    <rect x="490" y="148" width="310" height="50" rx="6" class="r-cli"/>
+    <text x="645" y="177" text-anchor="middle" class="lbl-b" style="font-size:11px;fill:#0f766e">CLI-LIST/KILL/INFO/LOG/CONFIG</text>
+  </g>
+  <path d="M315,198 L315,210" class="edge"/>
+  <g>
+    <rect x="20" y="212" width="120" height="56" rx="6" fill="#eef2ff" stroke="#6366f1"/>
+    <text x="80" y="234" text-anchor="middle" class="lbl-b">depth 3</text><text x="80" y="252" text-anchor="middle" class="lbl-s">하위/오버레이</text>
+    <rect x="160" y="212" width="310" height="56" rx="6" class="r-tab"/>
+    <text x="315" y="234" text-anchor="middle" class="lbl" style="font-size:11px;fill:#854d0e">TAB-INFO/LOG/NET/ENV</text>
+    <text x="315" y="252" text-anchor="middle" class="lbl-s" style="fill:#b45309">V-FILTER · DLG-KILL/KILLTREE/SIGNAL/FORCE/HELP</text>
+    <rect x="490" y="212" width="310" height="56" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+    <text x="645" y="244" text-anchor="middle" class="lbl-s">⇒ 최대 깊이 3 · 페이지 전환/라우팅 없음</text>
+  </g>
+</svg>
+<figcaption>그림 7 · IA 깊이 분석 — 최대 깊이 3. "위험 동작(kill/signal)"만 모달 한 겹 추가. 페이지 전환·라우팅 없음.</figcaption>
+</figure>
+
+<details class="raw"><summary>원본 ASCII 깊이표 보기</summary>
+<pre>
+ 깊이(depth)   화면 수    예
+ ─────────────────────────────────────────────────────────────────────────
+ depth 0    바이너리       ntop
+ depth 1    진입 분기      [A] TUI 기동(run_tui)   ·   [B] CLI 5명령
+ depth 2    주 화면        V-MAIN(=BAR-TOP/BOTTOM·V-LIST·V-DETAIL·V-EMPTY) · CLI-LIST/KILL/INFO/LOG/CONFIG
+ depth 3    하위/오버레이  TAB-INFO/LOG/NET/ENV · V-FILTER · DLG-KILL/KILLTREE/SIGNAL/FORCE/HELP
+ ─────────────────────────────────────────────────────────────────────────
+ ⇒ 최대 깊이 3. 페이지 전환·라우팅 없음. "위험 동작(kill/signal)"만 모달 한 겹 추가.
+</pre>
+</details>
+
+<p><strong>구조가 해소하는 문제(PRB):</strong></p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>IA 특성</th><th>해소하는 문제</th><th>근거</th></tr></thead>
+<tbody>
+<tr><td>단일 메인 뷰에 식별+점검+종료 집약(V-MAIN)</td><td><strong><span class="chip p1">PRB-8</span></strong> GUI↔터미널 왕복</td><td>외부 GUI로 나갈 필요 제거(<span class="chip">F20</span>)</td></tr>
+<tr><td>위험 동작만 모달 한 겹(DLG-*)</td><td><strong><span class="chip p1">PRB-3</span></strong> 오kill</td><td>확인 게이트가 오발사 차단(<span class="chip">F7</span>·<span class="chip">F8</span>·<span class="chip">F9</span>)</td></tr>
+<tr><td>필터/정렬/Node-only가 화면 전환 없이 인플레이스</td><td><strong><span class="chip p1">PRB-1·4</span></strong> 식별·다중런타임</td><td><code>rebuild_view</code> 실시간(<span class="chip">F11</span>·<span class="chip">F12</span>·<span class="chip">F13</span>)</td></tr>
+<tr><td>설정 화면 없음(파일+<code>ntop config</code>)</td><td>군더더기 화면 제거</td><td>CLI 관행, 저마찰(spec §4-0)</td></tr>
+<tr><td>TUI/CLI 동일 코어·동일 IA 의미</td><td><strong><span class="chip p1">PRB-7</span></strong> 헤드리스 자동화</td><td>스크립트 연결성(<span class="chip">F19</span>)</td></tr>
+</tbody>
+</table>
+</div>
+<blockquote><strong>디자인 품질(4-D) 적합:</strong> 수동 모드/역할 선택 벽 없음(런타임 자동 분류, Node-only는 토글 한 키), 맥락 파생 정보(포트·런타임·소유자)는 스캔으로 server-side 해결해 사용자에게 묻지 않음, 중복 단계 없음(필터 실시간). 상세는 <code>research-s3</code> §9가 단일 출처.</blockquote>
+
+<h2 id="verify">자체 검증 (Self-verification)<a class="anchor" href="#verify">#</a></h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>#</th><th>체크</th><th>결과</th><th>어디서 충족</th></tr></thead>
+<tbody>
+<tr><td><strong>I-1</strong></td><td>TUI 레이아웃 계층(상단/메인[목록55·상세45·탭4]/하단 + 모달5 + 필터)</td><td><span class="chip ok">PASS</span> — §3 세로 레이아웃 다이어그램(역할 태그·진입키·기능 ID)</td><td>§3</td></tr>
+<tr><td><strong>I-2</strong></td><td>IA 트리(TUI+CLI 통합, 역할/색)</td><td><span class="chip ok">PASS</span> — §4 통합 트리(화면 ID·진입키·F-ID·PRB) + §2 색 범례</td><td>§2·§4</td></tr>
+<tr><td><strong>I-3</strong></td><td>CLI 명령 트리(<code>ntop</code>→TUI + 5명령 + 플래그)</td><td><span class="chip ok">PASS</span> — §5 트리(플래그·필수성·출력 요지)</td><td>§5</td></tr>
+<tr><td><strong>I-4</strong></td><td>화면 ID 배정 + 노출 경로</td><td><span class="chip ok">PASS</span> — §6-1 표(21행: TUI 16 + CLI 5, 진입 키/모드/명령) + §6-2 도달 다이어그램</td><td>§6</td></tr>
+<tr><td><strong>I-5</strong></td><td>색·역할 범례(코드 Color 근거)</td><td><span class="chip ok">PASS</span> — §2 범례(크롬/패널/탭/모드/모달/빈로딩 + 색 의미 임계값)</td><td>§2</td></tr>
+<tr><td><strong>I-6</strong></td><td>사실 정정(세로 레이아웃·FRAMEWORK 컬럼 없음)</td><td><span class="chip ok">PASS</span> — §0 정정 박스 + §3·§4·§6 일관 반영</td><td>§0·§3·§4·§6</td></tr>
+<tr><td><strong>I-7</strong></td><td>시각화(G-g, 외부 렌더러 0)</td><td><span class="chip ok">PASS</span> — §2~§7 전부 순수 ASCII(레이아웃·트리·도달 다이어그램·깊이표), Mermaid 미사용</td><td>전체</td></tr>
+<tr><td><strong>I-8</strong></td><td>단일 출처 준수(기능=10·문제=research-s2·키=21·플로우=13 참조)</td><td><span class="chip ok">PASS</span> — 본문 참조 표기, 화면 ID만 소유·키/기능/문제 재정의 0</td><td>전체</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>추가 원칙 점검:</strong></p>
+<ul>
+<li><strong>창작 금지(spec §7):</strong> 결제·정산·DB·REST·회원 화면 0. 없는 화면(설정 마법사·로그인·대시보드) 지어내지 않음 — 실제 구현된 TUI 뷰·CLI 명령만 열거(도시에 §6·§7).</li>
+<li><strong>사실 역추적성:</strong> 모든 화면에 위젯 파일(<code>process_list.rs</code>·<code>detail_panel.rs</code>·<code>status_bar.rs</code>·<code>empty_state.rs</code>·<code>kill_dialog.rs</code>·<code>signal_picker.rs</code>·<code>help_dialog.rs</code>·<code>*_tab.rs</code>) + 코드 라인(<code>ui.rs</code> L19/L37–44) 부기. 화면 ID는 <code>research-s3</code> §5 승계.</li>
+<li><strong>쉬운 설명(probe):</strong> 첫 등장 용어(IA·TUI·CLI·패널·탭·모달·포커스·크롬·플래그) 풀이 블록 제공.</li>
+<li><strong>교차 추적성(spec §4-2):</strong> 각 화면에 기능 ID(10-prd)·PRB(research-s2) 링크 → 화면↔기능↔문제 일관.</li>
+</ul>
+
+<p><strong>알려진 한계(후속 보완):</strong></p>
+<ul>
+<li><strong>키 바인딩 정규 출처는 <code>21-screen-spec</code></strong>(현재 <code>research-s3</code> §7). 본 문서의 진입 키는 화면 도달성 표기용 인용이며 정규 키표를 재정의하지 않는다.</li>
+<li><strong>레이아웃 좌/우 vs 상/하:</strong> 도시에 §6 일부 표기(좌/우)와 코드(상/하) 불일치 — 코드를 채택(§0). 메인테이너 정정 권고는 <code>research-s3</code> §10에서 회부됨.</li>
+<li>CLI 출력 스키마(table 컬럼·JSON 필드·CSV 9컬럼) 상세는 <code>32-api-spec</code>이 단일 출처 — 본 §5는 요지만 인용.</li>
+</ul>
+
+</main>
+</div>
+
+<script>
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(a){a.classList.remove('active');});
+        var a = map[e.target.id];
+        if(a) a.classList.add('active');
+      }
+    });
+  }, {rootMargin:'-64px 0px -70% 0px', threshold:0});
+  document.querySelectorAll('main h2[id], main h3[id]').forEach(function(h){io.observe(h);});
+})();
+</script>
+</body>
+</html>

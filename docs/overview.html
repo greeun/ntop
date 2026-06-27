@@ -1,0 +1,1299 @@
+<!doctype html>
+<!-- ntop 종합 대시보드 — Fully self-contained (inline SVG/CSS), works offline, no external dependencies. 더블클릭으로 열림. -->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ntop — 기획 패키지 종합 대시보드 (overview)</title>
+<style>
+/* ntop 기획 패키지 — 공통 디자인 시스템 (자체완결: _html-base.css 인라인 복제) */
+/* 외부 의존 0 — CDN/웹폰트/Mermaid 금지. 시스템 폰트만. */
+:root{
+  --accent:#4f46e5;        /* indigo */
+  --accent2:#0d9488;       /* teal */
+  --accent-soft:#eef2ff;
+  --bg:#ffffff;
+  --fg:#1e293b;
+  --muted:#64748b;
+  --line:#e2e8f0;
+  --code-bg:#f1f5f9;
+  --warn:#d97706; --warn-bg:#fffbeb;
+  --bad:#dc2626;  --bad-bg:#fef2f2;
+  --ok:#059669;   --ok-bg:#ecfdf5;
+  --t1:#dc2626; --t2:#d97706; --t3:#ca8a04;
+  --maxw:860px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;color:var(--fg);background:var(--bg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  line-height:1.7;font-size:16px;
+}
+code,pre,.mono{font-family:"SF Mono",SFMono-Regular,ui-monospace,Menlo,Consolas,"D2Coding",monospace}
+
+/* ── 상단바 ── */
+.topbar{
+  position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  padding:10px 18px;background:#0f172a;color:#f8fafc;font-weight:600;font-size:15px;
+  border-bottom:3px solid var(--accent);
+}
+.topbar .doc-no{color:#a5b4fc;font-variant-numeric:tabular-nums}
+.topbar nav{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.topbar nav a,.topbar nav button{
+  color:#e2e8f0;background:#1e293b;border:1px solid #334155;border-radius:6px;
+  padding:4px 10px;font-size:13px;text-decoration:none;cursor:pointer;font-weight:500;
+}
+.topbar nav a:hover,.topbar nav button:hover{background:var(--accent);border-color:var(--accent)}
+
+/* ── 티어 배지 ── */
+.tier{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:700;color:#fff}
+.tier.t1{background:var(--t1)} .tier.t2{background:var(--t2)} .tier.t3{background:var(--t3)}
+
+/* ── 레이아웃: TOC + 본문 ── */
+.layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:0;max-width:1200px;margin:0 auto}
+.toc{position:sticky;top:58px;align-self:start;height:calc(100vh - 58px);overflow:auto;padding:18px 12px;border-right:1px solid var(--line);font-size:13.5px}
+.toc h4{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.toc a{display:block;padding:3px 8px;color:var(--muted);text-decoration:none;border-radius:5px;border-left:2px solid transparent}
+.toc a:hover{background:var(--accent-soft);color:var(--accent)}
+.toc a.active{color:var(--accent);background:var(--accent-soft);border-left-color:var(--accent);font-weight:600}
+.toc a.lv3{padding-left:18px;font-size:12.5px}
+main{padding:26px 34px;max-width:var(--maxw)}
+main h1{font-size:26px;line-height:1.3;margin:0 0 6px}
+main h2{font-size:21px;margin:34px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--line);scroll-margin-top:64px}
+main h3{font-size:17px;margin:24px 0 10px;color:#0f172a;scroll-margin-top:64px}
+main h4{font-size:15px;margin:18px 0 8px;color:var(--muted)}
+main p{margin:10px 0}
+main a{color:var(--accent)}
+.anchor{margin-left:8px;color:var(--line);text-decoration:none;font-weight:400;font-size:.8em}
+main h2:hover .anchor,main h3:hover .anchor{color:var(--accent)}
+
+/* ── 표 ── */
+.table-wrap{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:7px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{background:#f8fafc;font-weight:700;position:sticky;top:0;border-bottom:2px solid var(--line)}
+tbody tr:nth-child(even){background:#fbfcfe}
+tbody tr:hover{background:var(--accent-soft)}
+
+/* ── 코드·칩 ── */
+:not(pre)>code{background:var(--code-bg);padding:1px 6px;border-radius:5px;font-size:.88em;color:#be185d}
+pre{background:#0f172a;color:#e2e8f0;padding:14px 16px;border-radius:8px;overflow-x:auto;font-size:13px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+.chip{display:inline-block;background:var(--accent-soft);color:var(--accent);border:1px solid #c7d2fe;border-radius:5px;padding:0 6px;font-size:.85em;font-weight:600}
+.chip.p0{background:var(--bad-bg);color:var(--bad);border-color:#fecaca}
+.chip.p1{background:var(--warn-bg);color:var(--warn);border-color:#fde68a}
+.chip.ok{background:var(--ok-bg);color:var(--ok);border-color:#a7f3d0}
+
+/* ── 콜아웃 ── */
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+.callout.warn{border-color:var(--warn);background:var(--warn-bg)}
+.callout.bad{border-color:var(--bad);background:var(--bad-bg)}
+.callout.ok{border-color:var(--ok);background:var(--ok-bg)}
+blockquote{border-left:4px solid var(--line);margin:14px 0;padding:4px 16px;color:var(--muted)}
+
+/* ── 인포그래픽 figure ── */
+figure.viz{margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:10px;background:#fcfdff;text-align:center}
+figure.viz svg{max-width:100%;height:auto;display:block;margin:0 auto}
+figure.viz figcaption{margin-top:10px;font-size:13px;color:var(--muted);text-align:center}
+.viz-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+details.raw{margin-top:8px;font-size:13px}
+details.raw summary{cursor:pointer;color:var(--muted);font-size:12.5px}
+details.raw pre{margin-top:6px}
+
+/* SVG 공통 텍스트 */
+svg text{font-family:-apple-system,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+.svg-node{fill:#fff;stroke:var(--accent);stroke-width:1.5}
+.svg-edge{stroke:var(--muted);stroke-width:1.5;fill:none}
+.svg-label{font-size:12px;fill:var(--fg)}
+.svg-accent{fill:var(--accent)} .svg-accent2{fill:var(--accent2)}
+
+/* 화면 mockup 프레임(20/21용) */
+.screen{border:2px solid #334155;border-radius:8px;background:#0f172a;color:#cbd5e1;font-family:"SF Mono",ui-monospace,monospace;font-size:12px;padding:0;overflow:hidden;text-align:left;margin:0 auto;max-width:560px}
+.screen .bar{background:#1e293b;color:#a5b4fc;padding:4px 8px;font-size:11px;border-bottom:1px solid #334155}
+.screen .body{padding:8px 10px;white-space:pre;overflow-x:auto;line-height:1.4}
+
+/* ── print ── */
+@media print{
+  .topbar,.toc,.anchor,details.raw summary{display:none!important}
+  .layout{grid-template-columns:1fr;max-width:none}
+  main{max-width:none;padding:0}
+  details.raw{display:none}
+  *{break-inside:avoid}
+  figure.viz{border:1px solid #ccc}
+}
+/* ── 반응형 ── */
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}
+  main{padding:18px}
+}
+
+/* ===================================================================== */
+/* ===== overview.html 대시보드 전용 추가 스타일 (base.css 뒤, 우선) ===== */
+/* ===================================================================== */
+.menu-btn{display:none}
+.hero .lead{font-size:18px;color:var(--fg);margin:8px 0 4px;font-weight:600;line-height:1.5}
+.hero .sub{color:var(--muted);font-size:14px;margin:2px 0 8px}
+.stat-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px;margin:16px 0 8px}
+.stat-card{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:linear-gradient(180deg,#ffffff,#fbfcff)}
+.stat-card .num{font-size:23px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1.1}
+.stat-card .num.teal{color:var(--accent2)}
+.stat-card .lbl{font-size:12px;color:var(--muted);margin-top:3px}
+/* 다이어그램 범례 */
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:center;font-size:12px;color:var(--muted);margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:13px;height:13px;border-radius:3px;display:inline-block;border:1px solid rgba(0,0,0,.08)}
+.legend i.ln{width:20px;height:0;border:0;border-top:2px solid var(--muted);border-radius:0}
+.legend i.dash{width:20px;height:0;border:0;border-top:2px dashed var(--muted);border-radius:0}
+/* 칩/배지 확장 */
+.chip.p2{background:#f1f5f9;color:#475569;border-color:#cbd5e1}
+.chip.phase{background:var(--ok-bg);color:var(--ok);border-color:#a7f3d0}
+.chip.phase2{background:#f1f5f9;color:#475569;border-color:#cbd5e1}
+.chip.bad{background:var(--bad-bg);color:var(--bad);border-color:#fecaca}
+.chip.mono,.idchip{font-family:"SF Mono",ui-monospace,Menlo,monospace;background:#0f172a;color:#a5b4fc;border:1px solid #334155;border-radius:5px;padding:0 6px;font-size:.82em;font-weight:600;display:inline-block}
+/* 비교 매트릭스 히트맵 */
+.matrix th,.matrix td{text-align:center;white-space:nowrap}
+.matrix td.lh{text-align:left;font-weight:600;white-space:nowrap}
+.matrix td.scope{text-align:left;color:var(--muted);font-size:12.5px;white-space:normal;min-width:120px}
+.cell-y{background:var(--ok-bg);color:var(--ok);font-weight:800}
+.cell-p{background:var(--warn-bg);color:var(--warn);font-weight:800}
+.cell-n{background:var(--bad-bg);color:#ef4444;font-weight:800}
+.matrix tr.row-self td{background:var(--accent-soft);border-top:2px solid var(--accent);border-bottom:2px solid var(--accent)}
+.matrix tr.row-self td.lh{color:var(--accent)}
+.matrix tr.row-self:hover td{background:#e0e7ff}
+/* 점(dot) 추적 매트릭스 */
+.dotmx{font-size:12.5px}
+.dotmx th{text-align:center;padding:5px 6px}
+.dotmx td{text-align:center;padding:4px 6px}
+.dotmx td.fl{text-align:left;white-space:nowrap;font-weight:600}
+.dotmx .pri{font-size:11px}
+.dot{color:var(--accent);font-weight:800}
+.dot.sec{color:#a5b4fc}
+/* 2열 인포그래픽 */
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+.twocol .panel{border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.twocol .panel.inc{border-top:4px solid var(--ok);background:var(--ok-bg)}
+.twocol .panel.exc{border-top:4px solid var(--bad);background:var(--bad-bg)}
+.twocol h4{margin:0 0 10px;color:var(--fg)}
+.twocol ul{margin:6px 0;padding-left:18px}
+.twocol li{margin:5px 0;font-size:13.5px}
+@media(max-width:680px){.twocol{grid-template-columns:1fr}}
+/* 게이지 카드 */
+.gauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:14px 0}
+.gauge{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:#fff}
+.gauge .gt{font-size:13px;color:var(--muted);margin-bottom:6px}
+.gauge .gv{font-size:20px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
+.gauge .gv small{font-size:12px;color:var(--muted);font-weight:600}
+/* 정직 발견 히트맵 셀 */
+.heatcell{display:inline-flex;flex-direction:column;gap:2px;align-items:flex-start}
+/* 햄버거/반응형 토글 (base 뒤에서 우선 적용) */
+@media (max-width:900px){
+  .menu-btn{display:inline-block}
+  .toc{display:none;position:static}
+  .toc.open{display:block}
+  .twocol{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="목차 토글" aria-expanded="false" onclick="toggleToc()">☰</button>
+  <span>ntop <span class="doc-no">overview</span></span>
+  <span style="font-weight:500;color:#cbd5e1;font-size:13px">멀티 런타임 서버 프로세스를 한 화면에서 모니터·안전 종료</span>
+  <nav aria-label="문서 액션">
+    <span style="color:#94a3b8;font-size:12px;align-self:center">Mode 5 · 16문서 · v0.2.0</span>
+    <button onclick="window.print()">🖨 인쇄</button>
+    <a href="index.html">← 허브 index.html</a>
+  </nav>
+</header>
+
+<div class="layout">
+  <nav class="toc" id="toc" aria-label="목차">
+    <h4>종합 대시보드</h4>
+    <a href="#hero" class="lv3">개요 · 전체 구조 마인드맵</a>
+    <a href="#s2">① 핵심 가치 루프</a>
+    <a href="#s3">② 생태계 맵</a>
+    <a href="#s4">③ 경쟁 매트릭스 · 포지셔닝</a>
+    <a href="#s5">④ 페르소나 저니맵</a>
+    <a href="#s6">⑤ 사용자 플로우 · 종료 상태기계</a>
+    <a href="#s7">⑥ IA 화면·명령 트리</a>
+    <a href="#s8">⑦ ERD · Config 기본값</a>
+    <a href="#s9">⑧ 시스템 아키텍처</a>
+    <a href="#s10">⑨ 기능 우선순위·추적</a>
+    <a href="#s11">⑩ 성공지표 게이지</a>
+    <a href="#s12">⑪ MVP vs 비범위</a>
+    <a href="#s13">⑫ 로드맵 · 정직 발견</a>
+    <h4 style="margin-top:14px">원본</h4>
+    <a href="INDEX.md" class="lv3">INDEX.md (분류·순서)</a>
+    <a href="index.html" class="lv3">index.html (허브)</a>
+  </nav>
+
+  <main>
+    <!-- ============ HERO ============ -->
+    <section id="hero" class="hero">
+      <h1>ntop — 기획 패키지 종합 대시보드</h1>
+      <p class="lead">익명 <code>PID·CPU·메모리</code>를 넘어 <strong>프레임워크·포트·역할·안전여부</strong>까지 —
+      여러 런타임의 서버 프로세스를 한 화면에서 <strong>모니터링하고 안전하게 종료</strong>하는 Rust TUI+CLI 단일 바이너리.</p>
+      <p class="sub">이 대시보드는 <b>이미 동작하는 코드를 역설계</b>한 16종 기획 문서의 구조·수치·관계만 시각화합니다(신규 내용 없음). 모든 다이어그램은 인라인 SVG/CSS — 외부 의존 0.</p>
+
+      <div class="stat-cards">
+        <div class="stat-card"><div class="num">Mode&nbsp;5</div><div class="lbl">전체 패키지 모드</div></div>
+        <div class="stat-card"><div class="num">16</div><div class="lbl">기획 문서(종)</div></div>
+        <div class="stat-card"><div class="num teal">8</div><div class="lbl">지원 런타임</div></div>
+        <div class="stat-card"><div class="num">21</div><div class="lbl">기능 F1~F21</div></div>
+        <div class="stat-card"><div class="num teal">10</div><div class="lbl">경쟁 도구 분석</div></div>
+        <div class="stat-card"><div class="num">115</div><div class="lbl">테스트(10모듈)</div></div>
+        <div class="stat-card"><div class="num teal">v0.2.0</div><div class="lbl">현재 버전(MIT)</div></div>
+      </div>
+
+      <!-- ===== ① 전체 구조 마인드맵: 서비스 → 5단계 → 16문서 ===== -->
+      <figure class="viz">
+        <svg viewBox="0 0 770 700" width="770" role="img" aria-label="전체 구조 마인드맵 — ntop 기획 패키지가 5단계·16문서로 구성됨">
+          <defs>
+            <marker id="mm-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#94a3b8"/></marker>
+          </defs>
+          <!-- 루트 -->
+          <rect x="14" y="312" width="118" height="74" rx="12" fill="#0f172a" stroke="#4f46e5" stroke-width="2"/>
+          <text x="73" y="342" text-anchor="middle" fill="#f8fafc" font-size="14" font-weight="800">ntop</text>
+          <text x="73" y="360" text-anchor="middle" fill="#a5b4fc" font-size="10.5">기획 패키지</text>
+          <text x="73" y="375" text-anchor="middle" fill="#94a3b8" font-size="9.5">16문서 · v0.2.0</text>
+
+          <!-- 루트 → 5 단계 곡선 -->
+          <g class="svg-edge" stroke="#94a3b8" fill="none">
+            <path d="M132,335 C180,200 180,110 222,82" marker-end="url(#mm-arrow)"/>
+            <path d="M132,345 C185,300 185,225 222,208" marker-end="url(#mm-arrow)"/>
+            <path d="M132,349 L222,349" marker-end="url(#mm-arrow)"/>
+            <path d="M132,353 C185,400 185,475 222,492" marker-end="url(#mm-arrow)"/>
+            <path d="M132,363 C180,505 180,595 222,620" marker-end="url(#mm-arrow)"/>
+          </g>
+
+          <!-- 단계 노드 -->
+          <g font-size="12.5" font-weight="700">
+            <rect x="222" y="58" width="132" height="48" rx="9" fill="#eef2ff" stroke="#4f46e5"/>
+            <text x="288" y="78" text-anchor="middle" fill="#3730a3">① 정체성·기능</text>
+            <text x="288" y="95" text-anchor="middle" fill="#6366f1" font-size="10" font-weight="500">가치·MVP·지표</text>
+
+            <rect x="222" y="184" width="132" height="48" rx="9" fill="#eef2ff" stroke="#4f46e5"/>
+            <text x="288" y="204" text-anchor="middle" fill="#3730a3">② 문제·맥락</text>
+            <text x="288" y="221" text-anchor="middle" fill="#6366f1" font-size="10" font-weight="500">페르소나·경쟁</text>
+
+            <rect x="222" y="325" width="132" height="48" rx="9" fill="#eef2ff" stroke="#4f46e5"/>
+            <text x="288" y="345" text-anchor="middle" fill="#3730a3">③ 구조·화면</text>
+            <text x="288" y="362" text-anchor="middle" fill="#6366f1" font-size="10" font-weight="500">IA·플로우·명세</text>
+
+            <rect x="222" y="468" width="132" height="48" rx="9" fill="#eef2ff" stroke="#4f46e5"/>
+            <text x="288" y="488" text-anchor="middle" fill="#3730a3">④ 구현 정본</text>
+            <text x="288" y="505" text-anchor="middle" fill="#6366f1" font-size="10" font-weight="500">동작·모델·계약</text>
+
+            <rect x="222" y="596" width="132" height="48" rx="9" fill="#eef2ff" stroke="#4f46e5"/>
+            <text x="288" y="616" text-anchor="middle" fill="#3730a3">⑤ 실행</text>
+            <text x="288" y="633" text-anchor="middle" fill="#6366f1" font-size="10" font-weight="500">로드맵·QA</text>
+          </g>
+
+          <!-- 단계 → 문서 엣지 -->
+          <g class="svg-edge" stroke="#cbd5e1" fill="none">
+            <path d="M354,76 L432,44"/><path d="M354,82 L432,82"/><path d="M354,88 L432,120"/>
+            <path d="M354,202 L432,170"/><path d="M354,208 L432,208"/><path d="M354,214 L432,246"/>
+            <path d="M354,343 L432,300"/><path d="M354,347 L432,338"/><path d="M354,351 L432,376"/><path d="M354,355 L432,414"/>
+            <path d="M354,486 L432,452"/><path d="M354,490 L432,490"/><path d="M354,494 L432,528"/><path d="M354,498 L432,566"/>
+            <path d="M354,614 L432,604"/><path d="M354,620 L432,642"/>
+          </g>
+
+          <!-- 문서 리프 (티어 색: T1 빨강 / T2 주황 / T3 노랑) -->
+          <g font-size="11">
+            <!-- 단계1 -->
+            <a><rect x="432" y="28" width="180" height="30" rx="6" fill="#fff" stroke="#dc2626"/><text x="442" y="47" fill="#1e293b"><tspan font-weight="700" fill="#dc2626">01</tspan> service-plan · 가치</text></a>
+            <a><rect x="432" y="66" width="180" height="30" rx="6" fill="#fff" stroke="#d97706"/><text x="442" y="85" fill="#1e293b"><tspan font-weight="700" fill="#d97706">00</tspan> business-model · 지속</text></a>
+            <a><rect x="432" y="104" width="180" height="30" rx="6" fill="#fff" stroke="#dc2626"/><text x="442" y="123" fill="#1e293b"><tspan font-weight="700" fill="#dc2626">10</tspan> prd · 기능 F1~F21</text></a>
+            <!-- 단계2 -->
+            <a><rect x="432" y="154" width="180" height="30" rx="6" fill="#fff" stroke="#ca8a04"/><text x="442" y="173" fill="#1e293b"><tspan font-weight="700" fill="#ca8a04">03</tspan> personas · P1·P2·P3</text></a>
+            <a><rect x="432" y="192" width="180" height="30" rx="6" fill="#fff" stroke="#ca8a04"/><text x="442" y="211" fill="#1e293b"><tspan font-weight="700" fill="#ca8a04">02</tspan> market-competition</text></a>
+            <a><rect x="432" y="230" width="180" height="30" rx="6" fill="#fff" stroke="#ca8a04"/><text x="442" y="249" fill="#1e293b"><tspan font-weight="700" fill="#ca8a04">11</tspan> user-stories</text></a>
+            <!-- 단계3 -->
+            <a><rect x="432" y="284" width="180" height="30" rx="6" fill="#fff" stroke="#ca8a04"/><text x="442" y="303" fill="#1e293b"><tspan font-weight="700" fill="#ca8a04">12</tspan> ia · 화면·명령</text></a>
+            <a><rect x="432" y="322" width="180" height="30" rx="6" fill="#fff" stroke="#dc2626"/><text x="442" y="341" fill="#1e293b"><tspan font-weight="700" fill="#dc2626">13</tspan> user-flows · 종료SM</text></a>
+            <a><rect x="432" y="360" width="180" height="30" rx="6" fill="#fff" stroke="#ca8a04"/><text x="442" y="379" fill="#1e293b"><tspan font-weight="700" fill="#ca8a04">20</tspan> wireframes</text></a>
+            <a><rect x="432" y="398" width="180" height="30" rx="6" fill="#fff" stroke="#dc2626"/><text x="442" y="417" fill="#1e293b"><tspan font-weight="700" fill="#dc2626">21</tspan> screen-spec · 키</text></a>
+            <!-- 단계4 -->
+            <a><rect x="432" y="436" width="180" height="30" rx="6" fill="#fff" stroke="#dc2626"/><text x="442" y="455" fill="#1e293b"><tspan font-weight="700" fill="#dc2626">30</tspan> functional-spec</text></a>
+            <a><rect x="432" y="474" width="180" height="30" rx="6" fill="#fff" stroke="#dc2626"/><text x="442" y="493" fill="#1e293b"><tspan font-weight="700" fill="#dc2626">31</tspan> erd · Config</text></a>
+            <a><rect x="432" y="512" width="180" height="30" rx="6" fill="#fff" stroke="#dc2626"/><text x="442" y="531" fill="#1e293b"><tspan font-weight="700" fill="#dc2626">32</tspan> api-spec · 계약</text></a>
+            <a><rect x="432" y="550" width="180" height="30" rx="6" fill="#fff" stroke="#dc2626"/><text x="442" y="569" fill="#1e293b"><tspan font-weight="700" fill="#dc2626">33</tspan> policy · 안전·프라이버시</text></a>
+            <!-- 단계5 -->
+            <a><rect x="432" y="588" width="180" height="30" rx="6" fill="#fff" stroke="#dc2626"/><text x="442" y="607" fill="#1e293b"><tspan font-weight="700" fill="#dc2626">40</tspan> backlog · 정직 발견</text></a>
+            <a><rect x="432" y="626" width="180" height="30" rx="6" fill="#fff" stroke="#d97706"/><text x="442" y="645" fill="#1e293b"><tspan font-weight="700" fill="#d97706">41</tspan> qa-testcases</text></a>
+          </g>
+
+          <!-- 티어 범례 (우측) -->
+          <g font-size="10.5" transform="translate(632,300)">
+            <text x="0" y="0" font-weight="700" fill="#475569" font-size="11">중요도 티어</text>
+            <rect x="0" y="10" width="14" height="14" rx="3" fill="#fff" stroke="#dc2626" stroke-width="1.5"/><text x="20" y="21" fill="#475569">T1 필수(9)</text>
+            <rect x="0" y="30" width="14" height="14" rx="3" fill="#fff" stroke="#d97706" stroke-width="1.5"/><text x="20" y="41" fill="#475569">T2 조건부(2)</text>
+            <rect x="0" y="50" width="14" height="14" rx="3" fill="#fff" stroke="#ca8a04" stroke-width="1.5"/><text x="20" y="61" fill="#475569">T3 보조(5)</text>
+          </g>
+        </svg>
+        <figcaption>① 전체 구조 마인드맵 — 서비스(ntop) → 5단계(정체성·문제·구조·구현·실행) → 16문서. 박스 테두리색 = 중요도 티어(<span class="tier t1">T1</span> 9 · <span class="tier t2">T2</span> 2 · <span class="tier t3">T3</span> 5). 출처: <code>INDEX.md</code></figcaption>
+      </figure>
+
+      <details class="raw"><summary>읽기 순서 · 역할별 번들 (INDEX 요약)</summary>
+        <div class="table-wrap"><table>
+          <thead><tr><th>단계</th><th>문서(의존 순서)</th><th>핵심 질문</th></tr></thead>
+          <tbody>
+            <tr><td>① 정체성·기능</td><td><span class="idchip">01</span> <span class="idchip">00</span> <span class="idchip">10</span></td><td>무엇을 왜 만드는가(가치·MVP·지표·기능)</td></tr>
+            <tr><td>② 문제·맥락</td><td><span class="idchip">03</span> → <span class="idchip">02</span> → <span class="idchip">11</span></td><td>누구의 어떤 문제를, 경쟁 대비 어떻게</td></tr>
+            <tr><td>③ 구조·화면</td><td><span class="idchip">12</span> → <span class="idchip">13</span> → <span class="idchip">20</span> → <span class="idchip">21</span></td><td>구조·흐름·화면(IA→플로우→시안→명세)</td></tr>
+            <tr><td>④ 구현 정본</td><td><span class="idchip">30</span> → <span class="idchip">31</span> → <span class="idchip">32</span> → <span class="idchip">33</span></td><td>동작→데이터 모델→인터페이스 계약→안전</td></tr>
+            <tr><td>⑤ 실행</td><td><span class="idchip">40</span> → <span class="idchip">41</span></td><td>무엇이 남았나(로드맵·정직발견)→어떻게 검증</td></tr>
+          </tbody>
+        </table></div>
+        <p style="font-size:12.5px;color:#64748b">단일 출처(중복 정의 0): <span class="idchip">01</span>가치 · <span class="idchip">10</span>기능ID · <span class="idchip">30</span>동작 · <span class="idchip">31</span>Config · <span class="idchip">32</span>계약 · <span class="idchip">33</span>정책 · <span class="idchip">21</span>키.</p>
+      </details>
+    </section>
+
+    <!-- ============ ② 핵심 가치 루프 ============ -->
+    <section id="s2">
+      <h2>① 핵심 가치 루프 / 메커니즘 <a class="anchor" href="#s2">#</a></h2>
+      <p>ntop의 모든 동작은 한 루프 위에 있다 — <b>스캔 → 식별 → 점검 → 안전 종료 → (반복)</b>. 각 단계가 특정 문제(<span class="idchip">PRB</span>)를 직접 해소한다. 출처: <code>01-service-plan §4-1</code>.</p>
+      <figure class="viz">
+        <svg viewBox="0 0 720 470" width="720" role="img" aria-label="핵심 가치 루프 — 스캔에서 식별, 점검, 안전 종료로 순환">
+          <defs><marker id="loop-arrow" markerWidth="9" markerHeight="9" refX="7.5" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#4f46e5"/></marker></defs>
+          <!-- 순환 화살표 (시계방향) -->
+          <g fill="none" stroke="#4f46e5" stroke-width="2.4">
+            <path d="M446,66 C530,86 580,140 600,196" marker-end="url(#loop-arrow)"/>
+            <path d="M600,280 C580,338 528,392 446,410" marker-end="url(#loop-arrow)"/>
+            <path d="M274,410 C192,392 140,338 120,280" marker-end="url(#loop-arrow)"/>
+            <path d="M120,196 C140,140 190,86 274,66" marker-end="url(#loop-arrow)"/>
+          </g>
+          <!-- 중앙 -->
+          <circle cx="360" cy="237" r="60" fill="#0f172a"/>
+          <text x="360" y="230" text-anchor="middle" fill="#f8fafc" font-size="14" font-weight="800">가치 루프</text>
+          <text x="360" y="250" text-anchor="middle" fill="#a5b4fc" font-size="10">식별→점검</text>
+          <text x="360" y="264" text-anchor="middle" fill="#a5b4fc" font-size="10">→안전 종료</text>
+          <!-- 노드: 스캔 (top) -->
+          <g>
+            <rect x="276" y="18" width="168" height="74" rx="12" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.6"/>
+            <text x="360" y="40" text-anchor="middle" font-size="13" font-weight="800" fill="#3730a3">① 스캔 (Scan)</text>
+            <text x="360" y="58" text-anchor="middle" font-size="11" fill="#475569">2-pass 열거 + 포트 채움</text>
+            <text x="360" y="76" text-anchor="middle" font-size="10.5" fill="#6366f1" font-weight="700">PRB-1·2 · event Tick</text>
+          </g>
+          <!-- 노드: 식별 (right) -->
+          <g>
+            <rect x="520" y="200" width="170" height="74" rx="12" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.6"/>
+            <text x="605" y="222" text-anchor="middle" font-size="13" font-weight="800" fill="#3730a3">② 식별 (Identify)</text>
+            <text x="605" y="240" text-anchor="middle" font-size="11" fill="#475569">런타임/FW 분류 · display_name</text>
+            <text x="605" y="258" text-anchor="middle" font-size="10.5" fill="#6366f1" font-weight="700">PRB-1·3·4 · 목록·Info</text>
+          </g>
+          <!-- 노드: 점검 (bottom) -->
+          <g>
+            <rect x="276" y="382" width="168" height="74" rx="12" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.6"/>
+            <text x="360" y="404" text-anchor="middle" font-size="13" font-weight="800" fill="#3730a3">③ 점검 (Inspect)</text>
+            <text x="360" y="422" text-anchor="middle" font-size="11" fill="#475569">Info / Log / Net / Env 4탭</text>
+            <text x="360" y="440" text-anchor="middle" font-size="10.5" fill="#6366f1" font-weight="700">PRB-2·6 · 상세 탭</text>
+          </g>
+          <!-- 노드: 안전 종료 (left) -->
+          <g>
+            <rect x="30" y="200" width="170" height="74" rx="12" fill="#fef2f2" stroke="#dc2626" stroke-width="1.6"/>
+            <text x="115" y="222" text-anchor="middle" font-size="13" font-weight="800" fill="#b91c1c">④ 안전 종료 (Safe-kill)</text>
+            <text x="115" y="240" text-anchor="middle" font-size="10.5" fill="#475569">확인→graceful→force · 트리 역순</text>
+            <text x="115" y="258" text-anchor="middle" font-size="10.5" fill="#dc2626" font-weight="700">PRB-3·5 · 모달 게이트</text>
+          </g>
+        </svg>
+        <figcaption>① 가치 루프 — 4단계 순환. 빨강 단계(안전 종료) = 파괴적 동작이라 확인 게이트가 필수. 3대 능력군(식별·점검·안전 종료)과 1:1 대응.</figcaption>
+      </figure>
+      <details class="raw"><summary>단계별 해소 문제·접점</summary>
+        <div class="table-wrap"><table>
+          <thead><tr><th>단계</th><th>하는 일</th><th>해소 PRB</th><th>접점(화면/이벤트)</th></tr></thead>
+          <tbody>
+            <tr><td><b>스캔</b></td><td>2-pass 스캔 + 포트 채움</td><td><span class="idchip">PRB-1</span><span class="idchip">PRB-2</span></td><td>event Tick → do_scan()</td></tr>
+            <tr><td><b>식별</b></td><td>런타임/FW 분류 + display_name</td><td><span class="idchip">PRB-1</span><span class="idchip">PRB-3</span><span class="idchip">PRB-4</span></td><td>목록 · Info 탭</td></tr>
+            <tr><td><b>점검</b></td><td>Info/Log/Net/Env 4탭 점검</td><td><span class="idchip">PRB-2</span><span class="idchip">PRB-6</span></td><td>상세 패널 탭</td></tr>
+            <tr><td><b>안전 종료</b></td><td>KillConfirm → graceful→force + 트리 역순</td><td><span class="idchip">PRB-3</span><span class="idchip">PRB-5</span></td><td>모달 확인 게이트</td></tr>
+          </tbody>
+        </table></div>
+      </details>
+    </section>
+
+    <!-- ============ ③ 생태계 맵 ============ -->
+    <section id="s3">
+      <h2>② 생태계 맵 <a class="anchor" href="#s3">#</a></h2>
+      <p>ntop을 둘러싼 참여자와 가치 흐름. <b>코드 → 배포 → 사용 → 피드백·후원</b>이 무료 OSS 순환을 이루고, ntop은 크레이트·시스템 명령에 의존하며 런타임/프레임워크를 모니터링한다. 결제·정산 화살표는 없다(후원만). 출처: <code>02-market-competition §1~2</code>.</p>
+      <figure class="viz">
+        <svg viewBox="0 0 840 600" width="840" role="img" aria-label="ntop 생태계 맵 — 공급·수요·플랫폼·보완재·대체재·후원 참여자와 가치 흐름">
+          <defs>
+            <marker id="eco-a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#64748b"/></marker>
+            <marker id="eco-teal" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#0d9488"/></marker>
+            <marker id="eco-amber" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#d97706"/></marker>
+          </defs>
+          <!-- 엣지 (먼저, 노드 뒤) -->
+          <g fill="none" stroke-width="1.8">
+            <!-- 공급 → ntop (코드) -->
+            <path d="M250,120 C320,170 360,210 408,258" stroke="#64748b" marker-end="url(#eco-a)"/>
+            <!-- ntop → 배포 (배포) -->
+            <path d="M512,270 C600,210 650,190 690,168" stroke="#0d9488" marker-end="url(#eco-teal)"/>
+            <!-- 배포 → 수요 (설치) -->
+            <path d="M748,210 C770,260 768,300 752,330" stroke="#0d9488" marker-end="url(#eco-teal)"/>
+            <!-- 수요 → ntop (피드백) -->
+            <path d="M700,360 C610,350 560,335 516,318" stroke="#64748b" marker-end="url(#eco-a)"/>
+            <!-- ntop → 보완재 (모니터링 대상) -->
+            <path d="M500,332 C580,400 640,430 690,460" stroke="#0d9488" marker-end="url(#eco-teal)"/>
+            <!-- ntop → 의존 (의존/호출) -->
+            <path d="M448,338 C440,410 432,450 422,486" stroke="#64748b" marker-end="url(#eco-a)"/>
+            <!-- 대체재 ↔ 수요 (경쟁, 점선) -->
+            <path d="M210,470 C360,500 560,470 700,392" stroke="#94a3b8" stroke-dasharray="5 4" marker-end="url(#eco-a)"/>
+            <!-- 후원/제도 → ntop+공급 (후원·CI) -->
+            <path d="M150,310 C240,300 320,300 406,296" stroke="#d97706" marker-end="url(#eco-amber)"/>
+            <path d="M120,260 C150,180 200,140 235,120" stroke="#d97706" stroke-dasharray="2 3" marker-end="url(#eco-amber)"/>
+          </g>
+          <!-- 엣지 라벨 -->
+          <g font-size="10.5" font-weight="700">
+            <text x="300" y="186" fill="#475569">코드/릴리스</text>
+            <text x="586" y="206" fill="#0f766e">배포(CI→채널)</text>
+            <text x="756" y="278" fill="#0f766e">설치</text>
+            <text x="560" y="330" fill="#475569">피드백·Stars</text>
+            <text x="560" y="408" fill="#0f766e">모니터링·종료</text>
+            <text x="338" y="430" fill="#475569">의존·호출</text>
+            <text x="360" y="492" fill="#64748b">경쟁(대안)</text>
+            <text x="250" y="290" fill="#b45309">후원·CI</text>
+          </g>
+          <!-- 중앙: ntop (강조) -->
+          <rect x="406" y="252" width="106" height="82" rx="14" fill="#0f172a" stroke="#4f46e5" stroke-width="2.5"/>
+          <text x="459" y="284" text-anchor="middle" fill="#f8fafc" font-size="16" font-weight="800">ntop</text>
+          <text x="459" y="302" text-anchor="middle" fill="#a5b4fc" font-size="9.5">MIT OSS · v0.2.0</text>
+          <text x="459" y="316" text-anchor="middle" fill="#94a3b8" font-size="9">github.com/greeun</text>
+          <!-- 공급측 (top-left) -->
+          <g>
+            <rect x="120" y="40" width="190" height="74" rx="10" fill="#eef2ff" stroke="#4f46e5"/>
+            <text x="215" y="62" text-anchor="middle" font-size="12.5" font-weight="800" fill="#3730a3">공급측 (Supply)</text>
+            <text x="215" y="80" text-anchor="middle" font-size="11" fill="#475569">메인테이너 greeun (bus-factor≈1)</text>
+            <text x="215" y="98" text-anchor="middle" font-size="11" fill="#475569">기여자 — 새 Rule 1개로 기여</text>
+          </g>
+          <!-- 플랫폼/배포 (top-right) -->
+          <g>
+            <rect x="638" y="96" width="190" height="74" rx="10" fill="#ecfdf5" stroke="#0d9488"/>
+            <text x="733" y="118" text-anchor="middle" font-size="12.5" font-weight="800" fill="#0f766e">플랫폼·배포</text>
+            <text x="733" y="136" text-anchor="middle" font-size="10.5" fill="#475569">GitHub · crates.io</text>
+            <text x="733" y="153" text-anchor="middle" font-size="10.5" fill="#475569">Homebrew · Releases 바이너리</text>
+          </g>
+          <!-- 수요측 (right) -->
+          <g>
+            <rect x="648" y="330" width="190" height="72" rx="10" fill="#eef2ff" stroke="#4f46e5"/>
+            <text x="743" y="352" text-anchor="middle" font-size="12.5" font-weight="800" fill="#3730a3">수요측 (Demand)</text>
+            <text x="743" y="370" text-anchor="middle" font-size="10.5" fill="#475569">개발자 · 운영자 · 팀 리드</text>
+            <text x="743" y="387" text-anchor="middle" font-size="10.5" fill="#475569">P1 박서연 · P2 정태호 · P3 이준</text>
+          </g>
+          <!-- 보완재 (bottom-right) -->
+          <g>
+            <rect x="620" y="450" width="206" height="74" rx="10" fill="#ecfdf5" stroke="#0d9488"/>
+            <text x="723" y="472" text-anchor="middle" font-size="12.5" font-weight="800" fill="#0f766e">보완재 (모니터링 대상)</text>
+            <text x="723" y="490" text-anchor="middle" font-size="10.5" fill="#475569">런타임 8종 · 프레임워크 10+</text>
+            <text x="723" y="507" text-anchor="middle" font-size="10.5" fill="#475569">Next.js·FastAPI·Spring Boot…</text>
+          </g>
+          <!-- 의존 (bottom) -->
+          <g>
+            <rect x="316" y="490" width="216" height="78" rx="10" fill="#f8fafc" stroke="#64748b"/>
+            <text x="424" y="512" text-anchor="middle" font-size="12.5" font-weight="800" fill="#334155">의존 (Dependencies)</text>
+            <text x="424" y="530" text-anchor="middle" font-size="10.5" fill="#475569">크레이트 7종: sysinfo·ratatui·</text>
+            <text x="424" y="545" text-anchor="middle" font-size="10.5" fill="#475569">crossterm·clap·tokio·nix·windows-sys</text>
+            <text x="424" y="561" text-anchor="middle" font-size="10.5" fill="#475569">시스템 명령: lsof · netstat · taskkill</text>
+          </g>
+          <!-- 대체재 (bottom-left) -->
+          <g>
+            <rect x="36" y="436" width="196" height="74" rx="10" fill="#fef2f2" stroke="#dc2626"/>
+            <text x="134" y="458" text-anchor="middle" font-size="12.5" font-weight="800" fill="#b91c1c">대체재 (경쟁 10종)</text>
+            <text x="134" y="476" text-anchor="middle" font-size="10.5" fill="#475569">htop·btop·top·glances·gotop·</text>
+            <text x="134" y="493" text-anchor="middle" font-size="10.5" fill="#475569">ctop·pm2·systemd·launchd + 수동</text>
+          </g>
+          <!-- 후원/제도 (left) -->
+          <g>
+            <rect x="14" y="250" width="186" height="76" rx="10" fill="#fffbeb" stroke="#d97706"/>
+            <text x="107" y="272" text-anchor="middle" font-size="12.5" font-weight="800" fill="#b45309">후원·제도</text>
+            <text x="107" y="290" text-anchor="middle" font-size="10.5" fill="#475569">GitHub Sponsors(결제 아님)</text>
+            <text x="107" y="306" text-anchor="middle" font-size="10.5" fill="#475569">GitHub Actions(CI) · MIT/OSI</text>
+            <text x="107" y="321" text-anchor="middle" font-size="10.5" fill="#475569">Rust 생태계 관행</text>
+          </g>
+        </svg>
+        <div class="legend">
+          <span><i class="ln" style="border-top-color:#64748b"></i> 코드·피드백·의존</span>
+          <span><i class="ln" style="border-top-color:#0d9488"></i> 배포·설치·모니터링</span>
+          <span><i class="ln" style="border-top-color:#d97706"></i> 후원·CI(무료)</span>
+          <span><i class="dash"></i> 경쟁(순환 밖)</span>
+          <span><i style="background:#0f172a"></i> ntop(강조)</span>
+        </div>
+        <figcaption>② 생태계 맵 — 무료 OSS 순환(코드→배포→사용→피드백·후원). 결제·정산 노드/엣지 없음. 후원은 GitHub Sponsors 가설, 금액 미정.</figcaption>
+      </figure>
+    </section>
+
+    <!-- ============ ④ 경쟁 매트릭스 + 포지셔닝 ============ -->
+    <section id="s4">
+      <h2>③ 경쟁 매트릭스 · 포지셔닝 <a class="anchor" href="#s4">#</a></h2>
+      <p>경쟁 도구 <b>10종 × 8축</b> 비교. <b>RT·FW·PORT</b> 세 열이 동시에 ✓인 도구는 ntop뿐이다 — "더 편리"가 아니라 <b>축이 다르다</b>. 출처: <code>02-market-competition §3~4</code>.</p>
+      <div class="table-wrap">
+        <table class="matrix">
+          <thead>
+            <tr>
+              <th style="text-align:left">도구</th>
+              <th title="런타임 인지">RT</th><th title="프레임워크 식별">FW</th><th title="포트→프로세스 매핑">PORT</th>
+              <th title="시그널/graceful 종료">KILL</th><th title="트리 뷰">TREE</th><th title="크로스플랫폼">XPLAT</th>
+              <th title="TUI+CLI 둘 다">T+C</th><th title="단일 바이너리">BIN</th><th style="text-align:left">탐지 범위</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="row-self"><td class="lh">▶ ntop</td><td class="cell-y">✓</td><td class="cell-y">✓</td><td class="cell-y">✓</td><td class="cell-y">✓</td><td class="cell-y">✓</td><td class="cell-y">✓</td><td class="cell-y">✓</td><td class="cell-y">✓</td><td class="scope">서버 프로세스(선별)</td></tr>
+            <tr><td class="lh">htop</td><td class="cell-n">✗</td><td class="cell-n">✗</td><td class="cell-n">✗</td><td class="cell-p">△</td><td class="cell-y">✓</td><td class="cell-p">△</td><td class="cell-n">✗</td><td class="cell-y">✓</td><td class="scope">시스템 전체</td></tr>
+            <tr><td class="lh">btop</td><td class="cell-n">✗</td><td class="cell-n">✗</td><td class="cell-n">✗</td><td class="cell-p">△</td><td class="cell-y">✓</td><td class="cell-p">△</td><td class="cell-n">✗</td><td class="cell-y">✓</td><td class="scope">시스템 전체</td></tr>
+            <tr><td class="lh">top</td><td class="cell-n">✗</td><td class="cell-n">✗</td><td class="cell-n">✗</td><td class="cell-p">△</td><td class="cell-p">△</td><td class="cell-p">△</td><td class="cell-p">△</td><td class="cell-y">✓</td><td class="scope">시스템 전체</td></tr>
+            <tr><td class="lh">glances</td><td class="cell-n">✗</td><td class="cell-n">✗</td><td class="cell-n">✗</td><td class="cell-p">△</td><td class="cell-n">✗</td><td class="cell-y">✓</td><td class="cell-y">✓</td><td class="cell-n">✗</td><td class="scope">시스템 전체</td></tr>
+            <tr><td class="lh">gotop</td><td class="cell-n">✗</td><td class="cell-n">✗</td><td class="cell-n">✗</td><td class="cell-p">△</td><td class="cell-n">✗</td><td class="cell-p">△</td><td class="cell-n">✗</td><td class="cell-y">✓</td><td class="scope">시스템 전체</td></tr>
+            <tr><td class="lh">Activity&nbsp;Monitor</td><td class="cell-n">✗</td><td class="cell-n">✗</td><td class="cell-n">✗</td><td class="cell-p">△</td><td class="cell-y">✓</td><td class="cell-n">✗</td><td class="cell-n">✗</td><td class="cell-y">✓</td><td class="scope">시스템 전체(GUI)</td></tr>
+            <tr><td class="lh">ctop</td><td class="cell-n">✗</td><td class="cell-n">✗</td><td class="cell-p">△</td><td class="cell-p">△</td><td class="cell-n">✗</td><td class="cell-p">△</td><td class="cell-n">✗</td><td class="cell-y">✓</td><td class="scope">컨테이너만</td></tr>
+            <tr><td class="lh">pm2</td><td class="cell-p">△</td><td class="cell-n">✗</td><td class="cell-n">✗</td><td class="cell-y">✓</td><td class="cell-n">✗</td><td class="cell-y">✓</td><td class="cell-y">✓</td><td class="cell-n">✗</td><td class="scope">자신이 실행한 앱</td></tr>
+            <tr><td class="lh">systemd</td><td class="cell-n">✗</td><td class="cell-n">✗</td><td class="cell-n">✗</td><td class="cell-y">✓</td><td class="cell-p">△</td><td class="cell-n">✗</td><td class="cell-p">△</td><td class="cell-p">△</td><td class="scope">구성된 유닛(Linux)</td></tr>
+            <tr><td class="lh">launchd</td><td class="cell-n">✗</td><td class="cell-n">✗</td><td class="cell-n">✗</td><td class="cell-p">△</td><td class="cell-n">✗</td><td class="cell-n">✗</td><td class="cell-n">✗</td><td class="cell-p">△</td><td class="scope">구성된 잡(macOS)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="legend">
+        <span><i style="background:#ecfdf5;border-color:#a7f3d0"></i> <b style="color:#059669">✓</b> 한다</span>
+        <span><i style="background:#fffbeb;border-color:#fde68a"></i> <b style="color:#d97706">△</b> 부분·조건부</span>
+        <span><i style="background:#fef2f2;border-color:#fecaca"></i> <b style="color:#ef4444">✗</b> 안 한다</span>
+        <span><i style="background:#eef2ff;border-color:#c7d2fe"></i> ntop 행(강조)</span>
+      </div>
+
+      <h3>포지셔닝 — 의미 인지 × 제어 깊이</h3>
+      <figure class="viz">
+        <svg viewBox="0 0 580 430" width="580" role="img" aria-label="포지셔닝 스캐터 — 가로축 의미 인지, 세로축 제어 깊이. ntop만 우상단">
+          <!-- 사분면 가이드 -->
+          <rect x="80" y="40" width="448" height="320" fill="#fcfdff" stroke="#e2e8f0"/>
+          <line x1="304" y1="40" x2="304" y2="360" stroke="#e2e8f0" stroke-dasharray="4 4"/>
+          <line x1="80" y1="200" x2="528" y2="200" stroke="#e2e8f0" stroke-dasharray="4 4"/>
+          <!-- 축 -->
+          <line x1="80" y1="360" x2="540" y2="360" stroke="#94a3b8" stroke-width="1.5"/>
+          <line x1="80" y1="360" x2="80" y2="30" stroke="#94a3b8" stroke-width="1.5"/>
+          <text x="540" y="378" text-anchor="end" font-size="11.5" font-weight="700" fill="#475569">의미 인지 →  높음</text>
+          <text x="84" y="376" font-size="11.5" fill="#94a3b8">낮음</text>
+          <text x="64" y="40" text-anchor="end" font-size="11.5" font-weight="700" fill="#475569" transform="rotate(-90 64 40)">제어 깊이 →  높음</text>
+          <!-- 우상단 강조 영역 -->
+          <rect x="304" y="40" width="224" height="160" fill="#eef2ff" opacity="0.5"/>
+          <text x="420" y="58" text-anchor="middle" font-size="10.5" fill="#6366f1" font-weight="700">의미 인지 × 안전 제어 동시</text>
+          <!-- 점들 (경쟁자, 좌측 군집) -->
+          <g font-size="10.5" fill="#475569">
+            <circle cx="120" cy="300" r="5" fill="#94a3b8"/><text x="100" y="318" text-anchor="middle">top</text>
+            <circle cx="158" cy="306" r="5" fill="#94a3b8"/><text x="158" y="324" text-anchor="middle">gotop</text>
+            <circle cx="186" cy="286" r="5" fill="#94a3b8"/><text x="206" y="290" text-anchor="middle">glances</text>
+            <circle cx="124" cy="262" r="5" fill="#94a3b8"/><text x="104" y="258" text-anchor="middle">htop</text>
+            <circle cx="158" cy="264" r="5" fill="#94a3b8"/><text x="172" y="252" text-anchor="start">btop</text>
+            <circle cx="140" cy="232" r="5" fill="#94a3b8"/><text x="148" y="226" text-anchor="start">Activity Mon.</text>
+            <!-- ctop: 다른 평면(컨테이너) 점선 테두리 -->
+            <circle cx="222" cy="300" r="6" fill="#fff" stroke="#94a3b8" stroke-dasharray="3 2"/><text x="246" y="304" text-anchor="start" fill="#94a3b8">ctop(컨테이너)</text>
+          </g>
+          <!-- 고-제어, 저-의미 -->
+          <g font-size="10.5" fill="#475569">
+            <circle cx="150" cy="200" r="5" fill="#64748b"/><text x="166" y="196" text-anchor="start">launchd</text>
+            <circle cx="214" cy="146" r="6" fill="#0d9488"/><text x="230" y="142" text-anchor="start" fill="#0f766e" font-weight="700">pm2</text>
+            <circle cx="138" cy="96" r="6" fill="#0d9488"/><text x="154" y="92" text-anchor="start" fill="#0f766e" font-weight="700">systemd</text>
+          </g>
+          <!-- ntop (강조) -->
+          <circle cx="486" cy="82" r="11" fill="#4f46e5" stroke="#0f172a" stroke-width="2"/>
+          <text x="486" y="64" text-anchor="middle" font-size="13" font-weight="800" fill="#3730a3">ntop</text>
+          <text x="486" y="106" text-anchor="middle" font-size="9.5" fill="#6366f1">8런타임·FW·트리·graceful</text>
+        </svg>
+        <figcaption>③ 포지셔닝 — 경쟁자는 모두 좌측(의미 인지 낮음)에 군집, ntop만 우상단(높은 의미 인지 × 높은 제어). ctop은 컨테이너 평면이라 직접 경쟁 아님(점선).</figcaption>
+      </figure>
+    </section>
+
+    <!-- ============ ⑤ 페르소나 저니맵 ============ -->
+    <section id="s5">
+      <h2>④ 페르소나 저니맵 <a class="anchor" href="#s5">#</a></h2>
+      <p>핵심 페르소나 3인. <b>P1 박서연</b>(폴리글랏 풀스택·1순위)의 감정 곡선이 정본이며, ntop 도입을 전환점으로 부정 누적 → 안도·확신으로 반전한다. 출처: <code>03-personas §7</code>.</p>
+
+      <h3>P1 박서연 — 감정 곡선 (7단계)</h3>
+      <figure class="viz">
+        <svg viewBox="0 0 760 330" width="760" role="img" aria-label="P1 박서연 감정 곡선 — ntop 도입 전 부정 누적, 도입 후 안도와 확신으로 반전">
+          <!-- 기준선 -->
+          <line x1="40" y1="79" x2="720" y2="79" stroke="#ecfdf5" stroke-width="14"/>
+          <line x1="40" y1="217" x2="720" y2="217" stroke="#fef2f2" stroke-width="14"/>
+          <text x="46" y="60" font-size="10.5" fill="#059669" font-weight="700">긍정</text>
+          <text x="46" y="246" font-size="10.5" fill="#dc2626" font-weight="700">부정</text>
+          <!-- 전환점 divider -->
+          <line x1="485" y1="30" x2="485" y2="270" stroke="#4f46e5" stroke-width="1.6" stroke-dasharray="5 4"/>
+          <text x="485" y="24" text-anchor="middle" font-size="11" fill="#4f46e5" font-weight="800">═ ntop 도입(전환점) ═</text>
+          <!-- 곡선 -->
+          <polyline points="70,79 160,136 250,164 340,202 430,217 560,107 670,69" fill="none" stroke="#94a3b8" stroke-width="2.4"/>
+          <!-- 포인트 -->
+          <g font-size="17" text-anchor="middle">
+            <circle cx="70" cy="79" r="6" fill="#059669"/><text x="70" y="55">😀</text>
+            <circle cx="160" cy="136" r="6" fill="#d97706"/><text x="160" y="116">😐</text>
+            <circle cx="250" cy="164" r="6" fill="#d97706"/><text x="250" y="144">😟</text>
+            <circle cx="340" cy="202" r="6" fill="#dc2626"/><text x="340" y="184">😣</text>
+            <circle cx="430" cy="217" r="6" fill="#dc2626"/><text x="430" y="199">😩</text>
+            <circle cx="560" cy="107" r="6" fill="#059669"/><text x="560" y="87">😌</text>
+            <circle cx="670" cy="69" r="7" fill="#059669"/><text x="670" y="48">😄</text>
+          </g>
+          <!-- 라벨 -->
+          <g font-size="10" fill="#475569" text-anchor="middle">
+            <text x="70" y="290">① 서버 다수</text><text x="70" y="302">띄움(집중)</text>
+            <text x="160" y="290">② 문제 발생</text><text x="160" y="302">(짜증)</text>
+            <text x="250" y="290">③ 뭐가 뭔지</text><text x="250" y="302">모름(혼란)</text>
+            <text x="340" y="290">④ 포트추적/</text><text x="340" y="302">오kill(불안)</text>
+            <text x="430" y="290">⑤ GUI 왕복</text><text x="430" y="302">(피로)</text>
+            <text x="560" y="290">⑥ ntop 식별</text><text x="560" y="302">(안도)</text>
+            <text x="670" y="290">⑦ 안전 종료</text><text x="670" y="302">(확신)</text>
+          </g>
+        </svg>
+        <figcaption>④ P1 감정 곡선 — 😀집중→😐짜증→😟혼란→😣불안→😩피로 │전환점│ 😌안도→😄확신. ③~⑤에서 ps·lsof·kill·GUI 왕복으로 부정 누적, ntop이 식별→안전 종료로 반전.</figcaption>
+      </figure>
+
+      <h3>P2 정태호 · P3 이준 — 장면 기반 감정 전환</h3>
+      <div class="viz-grid">
+        <figure class="viz">
+          <svg viewBox="0 0 360 200" width="360" role="img" aria-label="P2 정태호 감정 전환">
+            <line x1="30" y1="150" x2="330" y2="150" stroke="#e2e8f0"/>
+            <line x1="190" y1="20" x2="190" y2="170" stroke="#4f46e5" stroke-dasharray="4 4"/>
+            <text x="190" y="14" text-anchor="middle" font-size="9.5" fill="#4f46e5" font-weight="700">ntop(CLI·트리)</text>
+            <polyline points="80,128 190,128 290,58" fill="none" stroke="#94a3b8" stroke-width="2.2"/>
+            <circle cx="80" cy="128" r="6" fill="#dc2626"/><text x="80" y="100" text-anchor="middle" font-size="17">😩</text>
+            <circle cx="290" cy="58" r="6" fill="#059669"/><text x="290" y="40" text-anchor="middle" font-size="17">😌</text>
+            <text x="80" y="170" text-anchor="middle" font-size="10" fill="#475569">새벽 인시던트</text>
+            <text x="80" y="183" text-anchor="middle" font-size="9.5" fill="#94a3b8">kill -9 부모→자식 고아</text>
+            <text x="290" y="170" text-anchor="middle" font-size="10" fill="#475569">트리 종료(역순)</text>
+            <text x="290" y="183" text-anchor="middle" font-size="9.5" fill="#94a3b8">고아 0·재점유 끊김</text>
+          </svg>
+          <figcaption>P2 운영자 — 헤드리스 SSH·트리 종료(통증 4개). 출처 장면: §1·§7-3.</figcaption>
+        </figure>
+        <figure class="viz">
+          <svg viewBox="0 0 360 200" width="360" role="img" aria-label="P3 이준 감정 전환">
+            <line x1="30" y1="150" x2="330" y2="150" stroke="#e2e8f0"/>
+            <line x1="240" y1="20" x2="240" y2="170" stroke="#4f46e5" stroke-dasharray="4 4"/>
+            <text x="240" y="14" text-anchor="middle" font-size="9.5" fill="#4f46e5" font-weight="700">ntop(정확분류)</text>
+            <polyline points="60,108 150,138 240,138 310,58" fill="none" stroke="#94a3b8" stroke-width="2.2"/>
+            <circle cx="60" cy="108" r="6" fill="#d97706"/><text x="60" y="88" text-anchor="middle" font-size="16">😟</text>
+            <circle cx="150" cy="138" r="6" fill="#dc2626"/><text x="150" y="118" text-anchor="middle" font-size="16">😣</text>
+            <circle cx="310" cy="58" r="6" fill="#059669"/><text x="310" y="40" text-anchor="middle" font-size="17">😌</text>
+            <text x="95" y="170" text-anchor="middle" font-size="10" fill="#475569">node 10개 동일 이름</text>
+            <text x="150" y="183" text-anchor="middle" font-size="9.5" fill="#94a3b8">MCP 오kill→세션 끊김</text>
+            <text x="310" y="170" text-anchor="middle" font-size="10" fill="#475569">fs 미독 분류</text>
+            <text x="310" y="183" text-anchor="middle" font-size="9.5" fill="#94a3b8">MCP vs dev 구분</text>
+          </svg>
+          <figcaption>P3 AI 응용 — npx/MCP 헤비·오분류 회피(통증 2개). 출처 장면: §1·§7-3.</figcaption>
+        </figure>
+      </div>
+
+      <h3>문제 × 페르소나 매트릭스 (강도)</h3>
+      <div class="table-wrap">
+        <table class="dotmx">
+          <thead><tr><th class="fl">문제(PRB)</th><th>P1 폴리글랏</th><th>P2 운영자</th><th>P3 AI도구</th><th class="fl">능력군</th></tr></thead>
+          <tbody>
+            <tr><td class="fl"><span class="idchip">PRB-1</span> 익명 node 더미</td><td><span class="dot">●</span></td><td><span class="dot sec">◐</span></td><td><span class="dot">●</span></td><td class="fl">식별</td></tr>
+            <tr><td class="fl"><span class="idchip">PRB-2</span> 포트 역추적</td><td><span class="dot">●</span></td><td><span class="dot">●</span></td><td><span class="dot sec">◐</span></td><td class="fl">포트</td></tr>
+            <tr><td class="fl"><span class="idchip">PRB-3</span> 오kill(MCP vs dev)</td><td><span class="dot">●</span></td><td><span class="dot sec">◐</span></td><td><span class="dot">●</span></td><td class="fl">식별+안전</td></tr>
+            <tr><td class="fl"><span class="idchip">PRB-4</span> 다중런타임 전환</td><td><span class="dot">●</span></td><td><span class="dot">●</span></td><td><span class="dot sec">◐</span></td><td class="fl">식별</td></tr>
+            <tr><td class="fl"><span class="idchip">PRB-5</span> 거친 종료(고아)</td><td><span class="dot">●</span></td><td><span class="dot">●</span></td><td style="color:#cbd5e1">○</td><td class="fl">안전</td></tr>
+            <tr><td class="fl"><span class="idchip">PRB-6</span> 메모리·Env 민감</td><td><span class="dot">●</span></td><td><span class="dot sec">◐</span></td><td style="color:#cbd5e1">○</td><td class="fl">식별</td></tr>
+            <tr><td class="fl"><span class="idchip">PRB-7</span> 헤드리스·자동화</td><td style="color:#cbd5e1">○</td><td><span class="dot">●</span></td><td style="color:#cbd5e1">○</td><td class="fl">식별(CLI)</td></tr>
+            <tr><td class="fl"><span class="idchip">PRB-8</span> GUI↔터미널 왕복</td><td><span class="dot">●</span></td><td style="color:#cbd5e1">○</td><td><span class="dot sec">◐</span></td><td class="fl">식별+안전</td></tr>
+            <tr style="background:#f8fafc;font-weight:800"><td class="fl">합계 (● 개수)</td><td style="color:#4f46e5">7</td><td style="color:#4f46e5">4</td><td style="color:#4f46e5">2</td><td class="fl">우선순위 = ● 수</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="legend"><span><span class="dot">●</span> 강</span><span><span class="dot sec">◐</span> 중</span><span style="color:#94a3b8">○ 약</span><span>우선순위: P1 ▸ P2 ▸ P3</span></div>
+
+      <details class="raw"><summary>P1 통증-빈도 차트 (§7-4)</summary>
+        <svg viewBox="0 0 600 220" width="600" role="img" aria-label="P1 통증 빈도 막대">
+          <g font-size="11" fill="#475569">
+            <text x="0" y="24">PRB-1 익명 더미</text><rect x="150" y="13" width="416" height="14" rx="3" fill="#dc2626"/><text x="572" y="24" font-size="10" fill="#94a3b8">매 세션</text>
+            <text x="0" y="50">PRB-4 다중런타임</text><rect x="150" y="39" width="416" height="14" rx="3" fill="#dc2626"/><text x="572" y="50" font-size="10" fill="#94a3b8">상시</text>
+            <text x="0" y="76">PRB-5 거친 종료</text><rect x="150" y="65" width="320" height="14" rx="3" fill="#d97706"/><text x="476" y="76" font-size="10" fill="#94a3b8">매 재시작</text>
+            <text x="0" y="102">PRB-8 GUI 왕복</text><rect x="150" y="91" width="320" height="14" rx="3" fill="#d97706"/><text x="476" y="102" font-size="10" fill="#94a3b8">점검 시마다</text>
+            <text x="0" y="128">PRB-2 포트 역추적</text><rect x="150" y="117" width="240" height="14" rx="3" fill="#d97706"/><text x="396" y="128" font-size="10" fill="#94a3b8">주 10+</text>
+            <text x="0" y="154">PRB-6 메모리/Env</text><rect x="150" y="143" width="100" height="14" rx="3" fill="#ca8a04"/><text x="256" y="154" font-size="10" fill="#94a3b8">점검 시마다</text>
+            <text x="0" y="180">PRB-3 오kill</text><rect x="150" y="169" width="64" height="14" rx="3" fill="#ca8a04"/><text x="220" y="180" font-size="10" fill="#94a3b8">월 1~2회(세션 10~15분 끊김)</text>
+          </g>
+        </svg>
+      </details>
+    </section>
+
+    <!-- ============ ⑥ 사용자 플로우 + 종료 2-lane 상태기계 ============ -->
+    <section id="s6">
+      <h2>⑤ 사용자 플로우 · 종료 상태기계 <a class="anchor" href="#s6">#</a></h2>
+      <p>핵심 플로우 6종(<span class="idchip">UF-1</span>~<span class="idchip">UF-6</span>). <b>UF-1</b>이 척추(기동→스캔→점검→종료)이고 나머지는 V-LIST에서 분기한다. 출처: <code>13-user-flows §1</code>.</p>
+      <figure class="viz">
+        <svg viewBox="0 0 770 220" width="770" role="img" aria-label="UF-1 척추 플로우 — 기동에서 스캔, 선택, 상세 점검, 종료까지">
+          <defs><marker id="uf-a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#64748b"/></marker></defs>
+          <g fill="none" stroke="#64748b" stroke-width="1.8">
+            <path d="M112,103 L128,103" marker-end="url(#uf-a)"/>
+            <path d="M246,103 L266,103" marker-end="url(#uf-a)"/>
+            <path d="M330,90 C350,72 360,66 392,66" marker-end="url(#uf-a)"/>
+            <path d="M330,116 C350,134 360,140 392,140" marker-end="url(#uf-a)"/>
+            <path d="M500,140 L520,140" marker-end="url(#uf-a)"/>
+            <path d="M634,140 L654,140" marker-end="url(#uf-a)"/>
+          </g>
+          <!-- 노드 -->
+          <g font-size="11">
+            <rect x="20" y="82" width="92" height="42" rx="8" class="svg-node"/><text x="66" y="100" text-anchor="middle" font-weight="700">ntop 기동</text><text x="66" y="115" text-anchor="middle" fill="#64748b" font-size="9.5">run_tui</text>
+            <rect x="128" y="82" width="118" height="42" rx="8" class="svg-node"/><text x="187" y="100" text-anchor="middle" font-weight="700">스캔 do_scan</text><text x="187" y="115" text-anchor="middle" fill="#64748b" font-size="9.5">2-pass + 포트</text>
+            <!-- 결정 마름모 -->
+            <path d="M298,103 L320,86 L342,103 L320,120 Z" fill="#fff" stroke="#4f46e5" stroke-width="1.5"/><text x="320" y="106" text-anchor="middle" font-size="9">목록?</text>
+            <rect x="392" y="48" width="108" height="36" rx="8" fill="#f1f5f9" stroke="#94a3b8"/><text x="446" y="71" text-anchor="middle" font-size="10.5">V-EMPTY 스피너</text>
+            <rect x="392" y="122" width="108" height="36" rx="8" class="svg-node"/><text x="446" y="145" text-anchor="middle" font-weight="700" font-size="10.5">V-LIST 트리</text>
+            <rect x="520" y="119" width="114" height="42" rx="8" class="svg-node"/><text x="577" y="137" text-anchor="middle" font-weight="700" font-size="10.5">V-DETAIL</text><text x="577" y="151" text-anchor="middle" fill="#64748b" font-size="9">Info/Log/Net/Env</text>
+            <rect x="654" y="119" width="96" height="42" rx="8" fill="#fef2f2" stroke="#dc2626"/><text x="702" y="137" text-anchor="middle" font-weight="700" font-size="10.5" fill="#b91c1c">종료</text><text x="702" y="151" text-anchor="middle" fill="#64748b" font-size="9">q · Ctrl+C</text>
+          </g>
+          <!-- 분기 표식 -->
+          <text x="446" y="178" text-anchor="middle" font-size="10" fill="#6366f1" font-weight="700">↓ UF-2 필터/정렬/Node-only · UF-3·4·5 kill(x·K·S)</text>
+          <line x1="446" y1="158" x2="446" y2="166" stroke="#6366f1" stroke-dasharray="3 3"/>
+        </svg>
+        <figcaption>⑤ UF-1 척추 플로우. UF-2(필터/정렬/Node-only), UF-3(kill 단건 x), UF-4(트리 K), UF-5(시그널 S)는 V-LIST에서 분기. UF-6은 CLI 헤드리스(list --json → kill --tree).</figcaption>
+      </figure>
+
+      <details class="raw"><summary>플로우 6종 색인 (UF-1~6)</summary>
+        <div class="table-wrap"><table>
+          <thead><tr><th>ID</th><th>플로우</th><th>진입점</th><th>주 기능</th><th>PRB</th><th>페르소나</th></tr></thead>
+          <tbody>
+            <tr><td><span class="idchip">UF-1</span></td><td>기동→스캔(2-pass)→선택→상세 4탭→종료</td><td><code>ntop</code></td><td>F1·F2·F5·F10·F15·F18</td><td>1·2·6·8</td><td>P1</td></tr>
+            <tr><td><span class="idchip">UF-2</span></td><td>필터(/)/정렬(s,r)/Node-only(n)</td><td>V-LIST</td><td>F11·F12·F13</td><td>1·4</td><td>P1·P3</td></tr>
+            <tr><td><span class="idchip">UF-3</span></td><td>kill 단건 (x → SIGTERM 1회)</td><td>V-LIST/DETAIL</td><td>F7</td><td>3·5</td><td>P1</td></tr>
+            <tr><td><span class="idchip">UF-4</span></td><td>kill 트리 (K, 자식부터 역순)</td><td>V-LIST</td><td>F8</td><td>5</td><td>P2</td></tr>
+            <tr><td><span class="idchip">UF-5</span></td><td>SignalPicker (S, 임의 시그널)</td><td>V-LIST/DETAIL</td><td>F9</td><td>5</td><td>P1</td></tr>
+            <tr><td><span class="idchip">UF-6</span></td><td>CLI: list --json → kill --tree</td><td>셸/스크립트</td><td>F19·F7·F8</td><td>7·5</td><td>P2</td></tr>
+          </tbody>
+        </table></div>
+      </details>
+
+      <h3>종료 2-lane 상태기계 (code-truth)</h3>
+      <div class="callout bad" style="margin-bottom:6px"><b>핵심 구분:</b> 자동 graceful→force 에스컬레이션은 <b>CLI <code>ntop kill</code> 단건 전용</b>. <b>TUI 종료는 SIGTERM 1회만</b> 보내고 폴링·자동 강제승격이 없다. 출처: <code>13 §8-1</code> · <code>30 §2-6</code> · <code>33 §2-1</code>.</div>
+      <figure class="viz">
+        <svg viewBox="0 0 800 600" width="800" role="img" aria-label="종료 2-lane 상태기계 — TUI는 SIGTERM 1회, CLI는 graceful 폴링 후 자동 SIGKILL">
+          <defs>
+            <marker id="sm-a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#475569"/></marker>
+            <marker id="sm-r" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#dc2626"/></marker>
+          </defs>
+          <!-- ===== 공유 preamble ===== -->
+          <rect x="356" y="14" width="88" height="40" rx="20" fill="#0f172a"/><text x="400" y="39" text-anchor="middle" fill="#f8fafc" font-size="13" font-weight="700">Idle</text>
+          <path d="M400,54 L400,86" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#sm-a)"/>
+          <text x="408" y="74" font-size="9.5" fill="#64748b">x · kill &lt;PID&gt;</text>
+          <rect x="332" y="88" width="136" height="48" rx="10" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.6"/><text x="400" y="109" text-anchor="middle" font-size="12.5" font-weight="800" fill="#3730a3">Confirming</text><text x="400" y="125" text-anchor="middle" font-size="9.5" fill="#64748b">TUI 모달 · CLI [y/N]</text>
+          <!-- Esc 취소 루프 -->
+          <path d="M332,104 C280,96 286,40 354,36" fill="none" stroke="#94a3b8" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#sm-a)"/>
+          <text x="276" y="66" font-size="9.5" fill="#94a3b8">Esc 취소</text>
+          <!-- 분기 -->
+          <path d="M360,136 C300,168 240,178 200,190" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#sm-a)"/>
+          <text x="232" y="160" font-size="10" fill="#4f46e5" font-weight="700">Enter (TUI)</text>
+          <path d="M448,136 C520,168 580,178 612,190" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#sm-a)"/>
+          <text x="486" y="160" font-size="10" fill="#0f766e" font-weight="700">y / --no-confirm (CLI)</text>
+
+          <!-- ===== LANE ① TUI ===== -->
+          <rect x="36" y="188" width="300" height="20" rx="5" fill="#4f46e5"/><text x="186" y="202" text-anchor="middle" fill="#fff" font-size="11" font-weight="800">LANE ① — TUI KillConfirm</text>
+          <rect x="60" y="220" width="252" height="70" rx="10" fill="#fff" stroke="#4f46e5" stroke-width="1.6"/>
+          <text x="186" y="242" text-anchor="middle" font-size="12" font-weight="800" fill="#3730a3">send_signal(pid, SIGTERM)</text>
+          <text x="186" y="259" text-anchor="middle" font-size="10.5" fill="#475569">1회 직접 전송 · 폴링 없음</text>
+          <text x="186" y="275" text-anchor="middle" font-size="10.5" fill="#dc2626" font-weight="700">자동 force 없음 · needs_rescan=true</text>
+          <path d="M186,290 L186,318" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#sm-a)"/>
+          <rect x="96" y="320" width="180" height="40" rx="9" fill="#f8fafc" stroke="#94a3b8"/><text x="186" y="345" text-anchor="middle" font-size="11">다음 스캔 → 목록서 제거</text>
+          <path d="M186,360 L186,386" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#sm-a)"/>
+          <rect x="136" y="388" width="100" height="34" rx="17" fill="#ecfdf5" stroke="#059669" stroke-width="1.6"/><text x="186" y="410" text-anchor="middle" font-size="11" font-weight="700" fill="#059669">→ Idle (종료)</text>
+          <!-- dead code note -->
+          <rect x="46" y="448" width="282" height="58" rx="9" fill="#f1f5f9" stroke="#94a3b8" stroke-dasharray="5 4"/>
+          <text x="187" y="470" text-anchor="middle" font-size="10.5" font-weight="800" fill="#64748b">❗ ForceKillPrompt · kill_in_progress</text>
+          <text x="187" y="486" text-anchor="middle" font-size="10" fill="#64748b">= 미도달 죽은 코드 (40 M1)</text>
+          <text x="187" y="500" text-anchor="middle" font-size="10" fill="#94a3b8">핸들러 실재하나 진입 경로 없음</text>
+
+          <!-- ===== LANE ② CLI ===== -->
+          <rect x="440" y="188" width="330" height="20" rx="5" fill="#0d9488"/><text x="605" y="202" text-anchor="middle" fill="#fff" font-size="11" font-weight="800">LANE ② — CLI ntop kill &lt;PID&gt; (graceful)</text>
+          <rect x="466" y="220" width="288" height="56" rx="10" fill="#fff" stroke="#0d9488" stroke-width="1.6"/>
+          <text x="610" y="242" text-anchor="middle" font-size="12" font-weight="800" fill="#0f766e">graceful_kill(pid, 10s)</text>
+          <text x="610" y="260" text-anchor="middle" font-size="10.5" fill="#475569">step1: send SIGTERM</text>
+          <path d="M610,276 L610,300" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#sm-a)"/>
+          <rect x="486" y="302" width="248" height="54" rx="10" fill="#ecfdf5" stroke="#0d9488" stroke-width="1.6"/>
+          <text x="610" y="324" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0f766e">poll is_alive @ 200ms</text>
+          <text x="610" y="341" text-anchor="middle" font-size="10.5" fill="#475569">until graceful_timeout = 10s</text>
+          <!-- self loop -->
+          <path d="M734,318 C772,322 772,346 736,348" fill="none" stroke="#94a3b8" stroke-width="1.4" marker-end="url(#sm-a)"/>
+          <text x="748" y="304" font-size="9" fill="#94a3b8" text-anchor="middle">alive &amp;&amp;</text>
+          <text x="748" y="314" font-size="9" fill="#94a3b8" text-anchor="middle">!timeout</text>
+          <path d="M610,356 L610,380" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#sm-a)"/>
+          <text x="610" y="375" text-anchor="middle" font-size="9.5" fill="#64748b">5 GracefulResult 분기</text>
+          <!-- 5 terminal branches -->
+          <g font-size="10.5">
+            <rect x="466" y="384" width="288" height="26" rx="6" fill="#ecfdf5" stroke="#059669"/><text x="476" y="401" fill="#059669" font-weight="700">Terminated</text><text x="600" y="401" fill="#475569">timeout 내 사망</text>
+            <rect x="466" y="414" width="288" height="34" rx="6" fill="#fef2f2" stroke="#dc2626" stroke-width="1.6"/><text x="476" y="429" fill="#b91c1c" font-weight="800">TimedOut ★</text><text x="476" y="442" fill="#dc2626" font-size="9.5">→ force_kill(SIGKILL) 자동 에스컬레이션</text>
+            <rect x="466" y="452" width="288" height="26" rx="6" fill="#f1f5f9" stroke="#94a3b8"/><text x="476" y="469" fill="#475569" font-weight="700">AlreadyDead</text><text x="600" y="469" fill="#94a3b8">ESRCH</text>
+            <rect x="466" y="482" width="288" height="26" rx="6" fill="#fffbeb" stroke="#d97706"/><text x="476" y="499" fill="#b45309" font-weight="700">PermissionDenied</text><text x="620" y="499" fill="#94a3b8">EPERM</text>
+            <rect x="466" y="512" width="288" height="26" rx="6" fill="#f1f5f9" stroke="#94a3b8"/><text x="476" y="529" fill="#475569" font-weight="700">Error</text><text x="600" y="529" fill="#94a3b8">기타 errno</text>
+          </g>
+          <path d="M610,538 C610,558 400,560 400,556" fill="none" stroke="#94a3b8" stroke-width="1.4" stroke-dasharray="4 3"/>
+          <path d="M186,506 C186,556 360,560 392,554" fill="none" stroke="#94a3b8" stroke-width="1.4" stroke-dasharray="4 3"/>
+          <text x="400" y="574" text-anchor="middle" font-size="9.5" fill="#94a3b8">모든 종단 → 메시지 / needs_rescan → Idle</text>
+        </svg>
+        <figcaption>⑤ 종료 2-lane 상태기계 — <b>왼쪽 TUI</b>: <code>send_signal(TERM)</code> 1회, 폴링·force 없음(ForceKillPrompt는 미도달 죽은 코드). <b>오른쪽 CLI</b>: <code>graceful_kill(10s)</code> → 200ms 폴링 → 5분기, <code>TimedOut</code>이면 SIGKILL 자동 승격.</figcaption>
+      </figure>
+    </section>
+
+    <!-- ============ ⑦ IA 화면·명령 트리 ============ -->
+    <section id="s7">
+      <h2>⑥ IA — 화면·명령 트리 <a class="anchor" href="#s7">#</a></h2>
+      <p>TUI는 <b>16 고유 화면</b>(세로 3단 + 탭 4 + 모달 5 …), CLI는 <b>5종 명령</b>. 최대 깊이 3. 출처: <code>12-ia §3~6</code> · <code>21-screen-spec §1</code>.</p>
+      <div class="viz-grid">
+      <figure class="viz">
+        <svg viewBox="0 0 470 472" width="470" role="img" aria-label="TUI 레이아웃 계층 트리">
+          <!-- 연결선 -->
+          <g stroke="#cbd5e1" stroke-width="1.4" fill="none">
+            <line x1="28" y1="28" x2="28" y2="388"/>
+            <line x1="28" y1="58" x2="46" y2="58"/><line x1="28" y1="88" x2="46" y2="88"/><line x1="28" y1="358" x2="46" y2="358"/><line x1="28" y1="388" x2="46" y2="388"/>
+            <line x1="54" y1="88" x2="54" y2="148"/><line x1="54" y1="118" x2="72" y2="118"/><line x1="54" y1="148" x2="72" y2="148"/>
+            <line x1="80" y1="148" x2="80" y2="208"/><line x1="80" y1="178" x2="98" y2="178"/><line x1="80" y1="208" x2="98" y2="208"/>
+            <line x1="106" y1="208" x2="106" y2="328"/><line x1="106" y1="238" x2="124" y2="238"/><line x1="106" y1="268" x2="124" y2="268"/><line x1="106" y1="298" x2="124" y2="298"/><line x1="106" y1="328" x2="124" y2="328"/>
+            <line x1="54" y1="388" x2="54" y2="448"/><line x1="54" y1="418" x2="72" y2="418"/><line x1="54" y1="448" x2="72" y2="448"/>
+          </g>
+          <g font-size="10.5">
+            <!-- d0 -->
+            <rect x="14" y="16" width="190" height="24" rx="5" fill="#0f172a"/><text x="24" y="32" fill="#f8fafc" font-weight="800">ntop TUI · V-MAIN</text>
+            <!-- d1 -->
+            <rect x="46" y="46" width="220" height="24" rx="5" fill="#f1f5f9" stroke="#94a3b8"/><text x="56" y="62" fill="#475569">BAR-TOP 상단 상태바 (크롬)</text>
+            <rect x="46" y="76" width="170" height="24" rx="5" fill="#eef2ff" stroke="#4f46e5"/><text x="56" y="92" fill="#3730a3" font-weight="600">main_content</text>
+            <!-- d2 -->
+            <rect x="72" y="106" width="200" height="24" rx="5" fill="#f1f5f9" stroke="#94a3b8"/><text x="82" y="122" fill="#475569">V-EMPTY 빈/로딩 (스피너)</text>
+            <rect x="72" y="136" width="200" height="24" rx="5" fill="#eef2ff" stroke="#4f46e5"/><text x="82" y="152" fill="#3730a3" font-weight="600">세로분할 Layout 55/45</text>
+            <!-- d3 -->
+            <rect x="98" y="166" width="220" height="24" rx="5" fill="#e0e7ff" stroke="#4f46e5"/><text x="108" y="182" fill="#3730a3" font-weight="700">V-LIST 목록 (포커스1)</text>
+            <rect x="98" y="196" width="220" height="24" rx="5" fill="#e0e7ff" stroke="#4f46e5"/><text x="108" y="212" fill="#3730a3" font-weight="700">V-DETAIL 상세 (포커스2)</text>
+            <!-- d4 tabs -->
+            <rect x="124" y="226" width="150" height="24" rx="5" fill="#ecfdf5" stroke="#0d9488"/><text x="134" y="242" fill="#0f766e">TAB-INFO (기본)</text>
+            <rect x="124" y="256" width="150" height="24" rx="5" fill="#ecfdf5" stroke="#0d9488"/><text x="134" y="272" fill="#0f766e">TAB-LOG</text>
+            <rect x="124" y="286" width="150" height="24" rx="5" fill="#ecfdf5" stroke="#0d9488"/><text x="134" y="302" fill="#0f766e">TAB-NET</text>
+            <rect x="124" y="316" width="150" height="24" rx="5" fill="#ecfdf5" stroke="#0d9488"/><text x="134" y="332" fill="#0f766e">TAB-ENV (마스킹)</text>
+            <!-- d1 cont -->
+            <rect x="46" y="346" width="220" height="24" rx="5" fill="#f1f5f9" stroke="#94a3b8"/><text x="56" y="362" fill="#475569">BAR-BOTTOM 키 힌트 (크롬)</text>
+            <rect x="46" y="376" width="200" height="24" rx="5" fill="#fffbeb" stroke="#d97706"/><text x="56" y="392" fill="#b45309" font-weight="600">오버레이 (한 번에 하나)</text>
+            <!-- d2 overlay -->
+            <rect x="72" y="406" width="140" height="24" rx="5" fill="#fffbeb" stroke="#d97706"/><text x="82" y="422" fill="#b45309">V-FILTER (/)</text>
+            <rect x="72" y="436" width="380" height="24" rx="5" fill="#fef2f2" stroke="#dc2626"/><text x="82" y="452" fill="#b91c1c">모달 DLG-KILL/KILLTREE/SIGNAL/FORCE/HELP</text>
+          </g>
+        </svg>
+        <figcaption>⑥-a TUI 레이아웃 계층 — 세로 3단(BAR-TOP / main_content / BAR-BOTTOM) + 오버레이. 색: 크롬 회색 · 패널 인디고 · 탭 틸 · 모드 황색 · 모달 적색.</figcaption>
+      </figure>
+      <figure class="viz">
+        <svg viewBox="0 0 460 320" width="460" role="img" aria-label="CLI 명령 트리">
+          <g stroke="#cbd5e1" stroke-width="1.4" fill="none">
+            <line x1="40" y1="40" x2="40" y2="288"/>
+            <line x1="40" y1="64" x2="64" y2="64"/><line x1="40" y1="104" x2="64" y2="104"/><line x1="40" y1="152" x2="64" y2="152"/><line x1="40" y1="200" x2="64" y2="200"/><line x1="40" y1="240" x2="64" y2="240"/><line x1="40" y1="280" x2="64" y2="280"/>
+          </g>
+          <g font-size="11">
+            <rect x="16" y="16" width="100" height="26" rx="6" fill="#0f172a"/><text x="66" y="34" text-anchor="middle" fill="#f8fafc" font-weight="800" font-size="12">ntop</text>
+            <rect x="64" y="52" width="270" height="26" rx="6" fill="#f1f5f9" stroke="#94a3b8"/><text x="74" y="69" fill="#475569">(서브커맨드 없음) → TUI 기동 run_tui</text>
+            <rect x="64" y="90" width="300" height="30" rx="6" fill="#eef2ff" stroke="#4f46e5"/><text x="74" y="103" fill="#3730a3" font-weight="700">list</text><text x="120" y="103" fill="#475569" font-size="9.5">--json · --format table/csv/json</text><text x="74" y="115" fill="#94a3b8" font-size="9">분류된 서버 목록 · F19</text>
+            <rect x="64" y="130" width="380" height="34" rx="6" fill="#fef2f2" stroke="#dc2626"/><text x="74" y="145" fill="#b91c1c" font-weight="700">kill &lt;PID&gt;</text><text x="146" y="145" fill="#475569" font-size="9.5">--tree · --signal &lt;SIG&gt; · --all · --no-confirm</text><text x="74" y="158" fill="#94a3b8" font-size="9">graceful: SIGTERM→10s→자동 SIGKILL · F7·F8·F9</text>
+            <rect x="64" y="178" width="300" height="30" rx="6" fill="#eef2ff" stroke="#4f46e5"/><text x="74" y="191" fill="#3730a3" font-weight="700">info &lt;PID&gt;</text><text x="150" y="191" fill="#475569" font-size="9.5">단일 프로세스 상세 (16행)</text><text x="74" y="203" fill="#94a3b8" font-size="9">env 미마스킹 ★ (40 R8)</text>
+            <rect x="64" y="228" width="280" height="26" rx="6" fill="#ecfdf5" stroke="#0d9488"/><text x="74" y="245" fill="#0f766e" font-weight="700">log &lt;PID&gt;</text><text x="150" y="245" fill="#475569" font-size="9.5">로그 스트림(200ms 폴링)</text>
+            <rect x="64" y="268" width="280" height="26" rx="6" fill="#eef2ff" stroke="#4f46e5"/><text x="74" y="285" fill="#3730a3" font-weight="700">config</text><text x="140" y="285" fill="#475569" font-size="9.5">설정 경로 + 3섹션 값 출력</text>
+          </g>
+        </svg>
+        <figcaption>⑥-b CLI 명령 트리 — <code>ntop</code> + 5 서브커맨드. <code>kill</code>이 유일하게 자동 graceful→force 에스컬레이션. 종료코드는 현재 대부분 0(40 R9).</figcaption>
+      </figure>
+      </div>
+    </section>
+
+    <!-- ============ ⑧ ERD + Config 기본값 ============ -->
+    <section id="s8">
+      <h2>⑦ ERD · Config 기본값 <a class="anchor" href="#s8">#</a></h2>
+      <p>인메모리 도메인 모델. <code>ProcessInfo</code>가 코어(18필드, 자기참조 트리), <code>App</code>이 집합 루트, <code>NetworkConnection</code>은 <code>pid</code>로 논리 조인된다. 출처: <code>31-erd</code>.</p>
+      <figure class="viz">
+        <svg viewBox="0 0 790 480" width="790" role="img" aria-label="ERD — App, ProcessInfo, Config, NetworkConnection, LogStreamer, Rule 엔티티와 1:N 관계">
+          <defs>
+            <marker id="cf" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto"><path d="M12,1 L2,7 M12,7 L2,7 M12,13 L2,7" stroke="#64748b" fill="none" stroke-width="1.2"/></marker>
+            <marker id="one" markerWidth="12" markerHeight="14" refX="6" refY="7" orient="auto"><path d="M6,1 L6,13" stroke="#64748b" stroke-width="1.4"/></marker>
+          </defs>
+          <!-- 관계선 (엔티티 뒤) -->
+          <g fill="none" stroke="#64748b" stroke-width="1.5">
+            <path d="M190,116 L304,152" marker-start="url(#one)" marker-end="url(#cf)"/>
+            <path d="M216,40 L556,40" marker-start="url(#one)" marker-end="url(#one)"/>
+            <path d="M96,122 L96,180" marker-start="url(#one)" marker-end="url(#one)"/>
+            <path d="M560,318 L516,256" marker-start="url(#one)" marker-end="url(#cf)"/>
+            <path d="M566,346 L532,392" marker-start="url(#one)" marker-end="url(#cf)"/>
+            <path d="M318,300 L178,366" marker-start="url(#one)" marker-end="url(#cf)"/>
+          </g>
+          <!-- Config → 3 subs -->
+          <g fill="none" stroke="#94a3b8" stroke-width="1.3">
+            <path d="M650,94 L650,110" marker-end="url(#one)"/>
+            <path d="M650,94 C650,150 668,150 668,150" marker-end="url(#one)"/>
+            <path d="M650,94 C650,190 668,190 668,190" marker-end="url(#one)"/>
+          </g>
+          <!-- 자기참조 children -->
+          <path d="M514,180 C572,176 572,236 516,236" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#cf)"/>
+          <text x="582" y="212" font-size="9.5" fill="#64748b">children</text>
+          <text x="582" y="223" font-size="9.5" fill="#64748b">1:N 자기참조</text>
+          <!-- 카디널리티 라벨 -->
+          <g font-size="9.5" fill="#475569" font-weight="600">
+            <text x="240" y="128">1:N raw·flat·trees</text>
+            <text x="360" y="32">App 1:1 Config</text>
+            <text x="100" y="156">0..1</text>
+            <text x="520" y="296">N:1 참조</text>
+            <text x="540" y="376">N:1</text>
+            <text x="206" y="332">join pid (1:N)</text>
+            <text x="654" y="106">1:1 ×3</text>
+          </g>
+          <!-- 엔티티 박스 -->
+          <!-- App -->
+          <rect x="36" y="20" width="180" height="100" rx="8" fill="#fff" stroke="#4f46e5" stroke-width="1.6"/>
+          <rect x="36" y="20" width="180" height="22" rx="8" fill="#4f46e5"/><text x="46" y="36" fill="#fff" font-size="11.5" font-weight="800">App · 집합 루트</text>
+          <g font-size="9.8" fill="#475569"><text x="46" y="58">config: Config</text><text x="46" y="72">raw_processes · flat_list</text><text x="46" y="86">process_trees: Vec</text><text x="46" y="100">selected/expanded_pids</text><text x="46" y="114">log_streamer: Option</text></g>
+          <!-- ProcessInfo -->
+          <rect x="300" y="146" width="216" height="158" rx="8" fill="#fff" stroke="#dc2626" stroke-width="1.8"/>
+          <rect x="300" y="146" width="216" height="22" rx="8" fill="#dc2626"/><text x="310" y="162" fill="#fff" font-size="11.5" font-weight="800">ProcessInfo · 코어(18필드)</text>
+          <g font-size="9.8" fill="#475569"><text x="310" y="184">pid · ppid : u32 🔑</text><text x="310" y="199">name · command · cwd</text><text x="310" y="214" fill="#b91c1c" font-weight="700">runtime: Option&lt;Runtime&gt;</text><text x="310" y="229">framework: FrameworkKind</text><text x="310" y="244">ports: Vec&lt;u16&gt;</text><text x="310" y="259">children: Vec&lt;ProcessInfo&gt;</text><text x="310" y="274">cpu · memory_rss · threads</text><text x="310" y="289">env_vars: Vec&lt;(K,V)&gt;</text></g>
+          <text x="310" y="300" font-size="8.5" fill="#94a3b8">runtime=Some→서버 · None→트리 부모</text>
+          <!-- Config -->
+          <rect x="556" y="20" width="200" height="72" rx="8" fill="#fff" stroke="#4f46e5" stroke-width="1.6"/>
+          <rect x="556" y="20" width="200" height="22" rx="8" fill="#4f46e5"/><text x="566" y="36" fill="#fff" font-size="11.5" font-weight="800">Config (serde default)</text>
+          <g font-size="9.8" fill="#475569"><text x="566" y="58">general: GeneralConfig</text><text x="566" y="72">display: DisplayConfig</text><text x="566" y="86">filter: FilterConfig</text></g>
+          <!-- subs -->
+          <rect x="606" y="110" width="160" height="30" rx="6" fill="#eef2ff" stroke="#4f46e5"/><text x="616" y="129" font-size="10" fill="#3730a3" font-weight="600">GeneralConfig</text>
+          <rect x="606" y="150" width="160" height="30" rx="6" fill="#eef2ff" stroke="#4f46e5"/><text x="616" y="169" font-size="10" fill="#3730a3" font-weight="600">DisplayConfig</text>
+          <rect x="606" y="190" width="160" height="30" rx="6" fill="#eef2ff" stroke="#4f46e5"/><text x="616" y="209" font-size="10" fill="#3730a3" font-weight="600">FilterConfig</text>
+          <!-- enums -->
+          <rect x="556" y="298" width="200" height="74" rx="8" fill="#f8fafc" stroke="#0d9488" stroke-width="1.4"/>
+          <rect x="556" y="298" width="200" height="22" rx="8" fill="#0d9488"/><text x="566" y="314" fill="#fff" font-size="11" font-weight="800">enum 참조</text>
+          <g font-size="10" fill="#475569"><text x="566" y="338">Runtime (8 변형)</text><text x="566" y="356">FrameworkKind (15 변형)</text></g>
+          <!-- LogStreamer -->
+          <rect x="36" y="180" width="180" height="80" rx="8" fill="#fff" stroke="#0d9488" stroke-width="1.4"/>
+          <rect x="36" y="180" width="180" height="22" rx="8" fill="#0d9488"/><text x="46" y="196" fill="#fff" font-size="11" font-weight="800">LogStreamer</text>
+          <g font-size="9.8" fill="#475569"><text x="46" y="218">file · path</text><text x="46" y="232">buffer: VecDeque&lt;String&gt;</text><text x="46" y="248" fill="#0f766e" font-weight="700">MAX_BUFFER_LINES = 1000</text></g>
+          <!-- NetworkConnection -->
+          <rect x="36" y="364" width="200" height="92" rx="8" fill="#fff" stroke="#64748b" stroke-width="1.4"/>
+          <rect x="36" y="364" width="200" height="22" rx="8" fill="#64748b"/><text x="46" y="380" fill="#fff" font-size="11" font-weight="800">NetworkConnection</text>
+          <g font-size="9.8" fill="#475569"><text x="46" y="402">local_addr · remote_addr</text><text x="46" y="416">state: String</text><text x="46" y="430" font-weight="700">pid (join → ProcessInfo)</text><text x="46" y="446" font-size="8.5" fill="#94a3b8">LISTEN만 채움 · do_scan 단계</text></g>
+          <!-- Rule -->
+          <rect x="300" y="364" width="232" height="98" rx="8" fill="#fff" stroke="#4f46e5" stroke-width="1.4"/>
+          <rect x="300" y="364" width="232" height="22" rx="8" fill="#4f46e5"/><text x="310" y="380" fill="#fff" font-size="11" font-weight="800">Rule · 탐지 규칙(확장점)</text>
+          <g font-size="9.8" fill="#475569"><text x="310" y="402">runtime · framework</text><text x="310" y="416">name_exact[] (매처1)</text><text x="310" y="430">command_binary[] (매처2)</text><text x="310" y="444">command_contains[] (매처3)</text><text x="310" y="457" font-size="8.5" fill="#94a3b8">FRAMEWORK_RULES · RUNTIME_RULES 2테이블</text></g>
+        </svg>
+        <div class="legend"><span><span style="font-weight:700">| </span>= 1(one)</span><span><span style="font-weight:700">&gt;</span>= N(crow's-foot many)</span><span>🔑 = 식별 키</span></div>
+        <figcaption>⑦ ERD — 핵심 6엔티티 + 1:N(crow's-foot). 관계 11종(R1~R11) 중 핵심을 도식화. <code>ProcessInfo.runtime=None</code>은 "트리 부모"(서버 아님).</figcaption>
+      </figure>
+
+      <h4>Config 기본값 (단일 출처 · <code>~/.config/ntop/config.toml</code>)</h4>
+      <p>
+        <span class="idchip">general.refresh_interval = 3</span>
+        <span class="idchip">general.default_signal = "SIGTERM"</span>
+        <span class="idchip">general.graceful_timeout = 10</span>
+        <span class="idchip">general.confirm_before_kill = true</span>
+        <span class="idchip">display.show_tree = true</span>
+        <span class="idchip">display.color_theme = "auto"</span>
+        <span class="idchip">display.mask_env_values = true</span>
+        <span class="idchip">filter.include_tsx = false</span>
+        <span class="idchip">filter.include_ts_node = false</span>
+        <span class="idchip" style="opacity:.6">filter.include_bun = false (deprecated)</span>
+        <span class="idchip">MAX_BUFFER_LINES = 1000</span>
+        <span class="idchip" style="opacity:.6">poll 200ms (알고리즘 상수, Config 아님)</span>
+      </p>
+    </section>
+
+    <!-- ============ ⑨ 시스템 아키텍처 ============ -->
+    <section id="s9">
+      <h2>⑧ 시스템 아키텍처 <a class="anchor" href="#s9">#</a></h2>
+      <p>한 스캔 틱의 데이터 흐름: <b>지속 System → 2-pass 스캔(분류 포함) → 포트 별도 채움 → 트리 빌드 → TUI/CLI 출력</b>. 분류는 <b>파일시스템을 절대 읽지 않는다</b>(이름+커맨드만). 출처: <code>30-functional-spec</code> · <code>32-api-spec</code>.</p>
+      <figure class="viz">
+        <svg viewBox="0 0 780 440" width="780" role="img" aria-label="시스템 아키텍처 — 스캐너에서 분류기, 네트워크, 트리빌더, TUI/CLI 출력으로의 파이프라인">
+          <defs><marker id="ar-a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#4f46e5"/></marker></defs>
+          <!-- 레이어 라벨 -->
+          <g font-size="10" fill="#94a3b8" font-weight="700">
+            <text x="84" y="52">① 수집</text><text x="258" y="52">② 스캔·분류</text><text x="520" y="52">④ 트리</text><text x="690" y="20">⑤ 출력</text>
+            <text x="450" y="172">③ 포트(별도)</text>
+          </g>
+          <!-- 메인 파이프라인 화살표 -->
+          <g fill="none" stroke="#4f46e5" stroke-width="2"><path d="M150,98 L176,98" marker-end="url(#ar-a)"/><path d="M340,98 L456,98" marker-end="url(#ar-a)"/><path d="M590,86 C612,70 622,62 626,60" marker-end="url(#ar-a)"/><path d="M590,110 C612,128 622,140 626,150" marker-end="url(#ar-a)"/></g>
+          <text x="392" y="90" font-size="9.5" fill="#6366f1" font-weight="700">분류된 서버 목록</text>
+          <!-- 보조 화살표 (분류기 → 스캐너) -->
+          <path d="M260,178 L260,134" fill="none" stroke="#64748b" stroke-width="1.6" marker-end="url(#ar-a)"/>
+          <text x="266" y="160" font-size="9" fill="#64748b">classify(각 프로세스)</text>
+          <!-- 네트워크 → 트리 -->
+          <path d="M455,180 C490,150 510,138 522,132" fill="none" stroke="#64748b" stroke-width="1.6" marker-end="url(#ar-a)"/>
+          <text x="470" y="150" font-size="9" fill="#64748b">ports 병합</text>
+          <!-- 박스 -->
+          <rect x="20" y="68" width="130" height="60" rx="9" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.6"/><text x="85" y="90" text-anchor="middle" font-size="11.5" font-weight="800" fill="#3730a3">지속 System</text><text x="85" y="105" text-anchor="middle" font-size="9" fill="#475569">sysinfo · 장수명</text><text x="85" y="118" text-anchor="middle" font-size="8.5" fill="#94a3b8">2회 prime → CPU delta</text>
+          <rect x="176" y="62" width="164" height="72" rx="9" fill="#fff" stroke="#4f46e5" stroke-width="1.8"/><text x="258" y="82" text-anchor="middle" font-size="11.5" font-weight="800" fill="#3730a3">ProcessScanner (2-pass)</text><text x="186" y="100" font-size="9" fill="#475569">Pass1: classify→서버(runtime=Some)</text><text x="186" y="114" font-size="9" fill="#475569">Pass2: 부모 backfill(runtime=None)</text><text x="186" y="127" font-size="8.5" fill="#94a3b8">scan_blocking은 측정 refresh 1회 추가(CLI)</text>
+          <rect x="456" y="68" width="134" height="60" rx="9" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.6"/><text x="523" y="90" text-anchor="middle" font-size="11.5" font-weight="800" fill="#3730a3">TreeBuilder</text><text x="523" y="105" text-anchor="middle" font-size="9" fill="#475569">build · flatten_with_depth</text><text x="523" y="118" text-anchor="middle" font-size="9" fill="#475569">레벨별 정렬</text>
+          <!-- 분류기 -->
+          <rect x="176" y="180" width="164" height="96" rx="9" fill="#ecfdf5" stroke="#0d9488" stroke-width="1.6"/><text x="258" y="200" text-anchor="middle" font-size="11" font-weight="800" fill="#0f766e">FrameworkDetector.classify()</text><text x="186" y="218" font-size="9" fill="#475569">3-tier: FRAMEWORK_RULES →</text><text x="186" y="231" font-size="9" fill="#475569">RUNTIME_RULES → dev runner(tsx/ts-node)</text><text x="186" y="247" font-size="9" fill="#475569">매처: name_exact→cmd_binary→cmd_contains</text><text x="186" y="262" font-size="9" fill="#b91c1c" font-weight="700">★ fs 미독 (이름+커맨드만)</text><text x="186" y="273" font-size="8.5" fill="#94a3b8">None → 미표시(서버 아님)</text>
+          <!-- 네트워크 -->
+          <rect x="370" y="180" width="178" height="84" rx="9" fill="#ecfdf5" stroke="#0d9488" stroke-width="1.6"/><text x="459" y="200" text-anchor="middle" font-size="11" font-weight="800" fill="#0f766e">NetworkInspector</text><text x="380" y="218" font-size="9" fill="#475569">connections_by_pid()</text><text x="380" y="231" font-size="9" fill="#475569">lsof(Unix) / netstat(Win)</text><text x="380" y="245" font-size="9" fill="#475569">LISTEN만 · 스캐너와 별도 단계</text><text x="380" y="258" font-size="8.5" fill="#94a3b8">명령 부재 → 빈 결과(크래시 0)</text>
+          <!-- 출력 -->
+          <rect x="626" y="32" width="138" height="56" rx="9" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.6"/><text x="695" y="52" text-anchor="middle" font-size="11" font-weight="800" fill="#3730a3">TUI 렌더</text><text x="695" y="67" text-anchor="middle" font-size="9" fill="#475569">App.rebuild_view</text><text x="695" y="80" text-anchor="middle" font-size="8.5" fill="#94a3b8">필터→트리→정렬→평탄화</text>
+          <rect x="626" y="148" width="138" height="56" rx="9" fill="#fffbeb" stroke="#d97706" stroke-width="1.6"/><text x="695" y="168" text-anchor="middle" font-size="11" font-weight="800" fill="#b45309">CLI 출력</text><text x="695" y="183" text-anchor="middle" font-size="9" fill="#475569">print table/json/csv</text><text x="695" y="196" text-anchor="middle" font-size="8.5" fill="#94a3b8">동일 코어 재사용</text>
+          <!-- 하단 노트 -->
+          <rect x="20" y="320" width="744" height="92" rx="9" fill="#f8fafc" stroke="#e2e8f0"/>
+          <text x="32" y="342" font-size="11" font-weight="800" fill="#334155">단일 코어 · 두 표면</text>
+          <text x="32" y="362" font-size="10" fill="#475569">TUI와 CLI는 같은 <tspan font-weight="700">ProcessScanner + NetworkInspector</tspan>를 사용한다 — main.rs의 do_scan / CLI cmd_* 모두 동일 경로.</text>
+          <text x="32" y="380" font-size="10" fill="#475569">공개 라이브러리 크레이트 <tspan font-weight="700">ntop</tspan>: process · config · log · cli · tui 모듈 pub.</text>
+          <text x="32" y="398" font-size="10" fill="#475569">macOS FFI: proc_pid_rusage → <tspan font-weight="700">phys_footprint</tspan>(메모리 정확) · thread_count · open_fd_count. 비-macOS는 폴백.</text>
+        </svg>
+        <figcaption>⑧ 아키텍처 파이프라인 — System(지속) → ProcessScanner 2-pass(분류는 fs 미독) → 포트는 NetworkInspector가 별도로 채움 → TreeBuilder → TUI/CLI. <code>System</code>을 재생성하면 CPU가 영원히 0.0%가 되므로 장수명 유지.</figcaption>
+      </figure>
+    </section>
+
+    <!-- ============ ⑩ 기능 우선순위·추적 ============ -->
+    <section id="s10">
+      <h2>⑨ 기능 우선순위 · 추적 <a class="anchor" href="#s10">#</a></h2>
+      <p>기능 <b>21개(F1~F21)</b>를 6개 군으로, 각 기능이 어떤 문제(<span class="idchip">PRB</span>)를 해소하는지 추적. 우선순위 <span class="chip p0">P0 7</span> <span class="chip p1">P1 11</span> <span class="chip p2">P2 3</span>. v0.2.0에서 21/21 모두 구현 완료. 출처: <code>10-prd §3~6</code>.</p>
+      <figure class="viz">
+        <svg viewBox="0 0 720 168" width="720" role="img" aria-label="우선순위 분포와 PRB 커버리지 막대">
+          <text x="0" y="16" font-size="12" font-weight="800" fill="#334155">우선순위 분포 (총 21)</text>
+          <g font-size="11">
+            <text x="0" y="44" fill="#475569">P0</text><rect x="34" y="33" width="161" height="16" rx="3" fill="#dc2626"/><text x="201" y="45" fill="#dc2626" font-weight="700">7 (코어)</text>
+            <text x="0" y="70" fill="#475569">P1</text><rect x="34" y="59" width="253" height="16" rx="3" fill="#d97706"/><text x="293" y="71" fill="#d97706" font-weight="700">11 (핵심 보조)</text>
+            <text x="0" y="96" fill="#475569">P2</text><rect x="34" y="85" width="69" height="16" rx="3" fill="#94a3b8"/><text x="109" y="97" fill="#64748b" font-weight="700">3 (편의)</text>
+          </g>
+          <text x="0" y="128" font-size="12" font-weight="800" fill="#334155">PRB 커버리지 (해소 기능 수)</text>
+          <g font-size="10" fill="#475569">
+            <text x="0" y="150">PRB-1</text><rect x="40" y="140" width="140" height="12" rx="2" fill="#4f46e5"/><text x="186" y="150" font-size="9" fill="#94a3b8">7</text>
+            <text x="220" y="150">PRB-4</text><rect x="258" y="140" width="120" height="12" rx="2" fill="#4f46e5"/><text x="384" y="150" font-size="9" fill="#94a3b8">6</text>
+            <text x="410" y="150">PRB-5</text><rect x="448" y="140" width="80" height="12" rx="2" fill="#6366f1"/><text x="534" y="150" font-size="9" fill="#94a3b8">4</text>
+            <text x="560" y="150">PRB-6</text><rect x="598" y="140" width="80" height="12" rx="2" fill="#6366f1"/><text x="684" y="150" font-size="9" fill="#94a3b8">4</text>
+          </g>
+          <text x="0" y="166" font-size="9" fill="#94a3b8">그 외: PRB-3=3 · PRB-2=2 · PRB-7=1 · PRB-8=1</text>
+        </svg>
+        <figcaption>⑨-a 우선순위 분포(P0 7·P1 11·P2 3) + PRB 커버리지. 식별 축(PRB-1·4)이 가장 많은 기능으로 덮인다.</figcaption>
+      </figure>
+
+      <div class="table-wrap">
+        <table class="dotmx">
+          <thead>
+            <tr><th class="fl">군</th><th class="fl">기능</th><th>우선</th><th title="PRB-1 식별불가">1</th><th title="PRB-2 포트역추적">2</th><th title="PRB-3 오kill">3</th><th title="PRB-4 다중런타임">4</th><th title="PRB-5 거친종료">5</th><th title="PRB-6 메모리/Env">6</th><th title="PRB-7 헤드리스">7</th><th title="PRB-8 GUI왕복">8</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="fl" rowspan="4" style="vertical-align:middle">A 식별·분류</td><td class="fl"><span class="idchip">F1</span> 런타임/FW 인지 분류</td><td><span class="chip p0">P0</span></td><td class="dot">●</td><td></td><td></td><td class="dot">●</td><td></td><td></td><td></td><td></td></tr>
+            <tr><td class="fl"><span class="idchip">F2</span> display_name 식별 표시</td><td><span class="chip p0">P0</span></td><td class="dot">●</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td class="fl"><span class="idchip">F3</span> 프로세스-로컬 전용 탐지</td><td><span class="chip p0">P0</span></td><td></td><td></td><td class="dot">●</td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td class="fl"><span class="idchip">F4</span> 멀티런타임 횡단</td><td><span class="chip p0">P0</span></td><td></td><td></td><td></td><td class="dot">●</td><td></td><td></td><td></td><td></td></tr>
+            <tr><td class="fl" rowspan="2" style="vertical-align:middle">B 포트·네트워크</td><td class="fl"><span class="idchip">F5</span> 포트→프로세스 매핑</td><td><span class="chip p0">P0</span></td><td></td><td class="dot">●</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td class="fl"><span class="idchip">F6</span> 네트워크 검사</td><td><span class="chip p1">P1</span></td><td></td><td class="dot">●</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td class="fl" rowspan="3" style="vertical-align:middle">C 안전 종료</td><td class="fl"><span class="idchip">F7</span> 확인 게이트 + graceful</td><td><span class="chip p0">P0</span></td><td></td><td></td><td class="dot">●</td><td></td><td class="dot">●</td><td></td><td></td><td></td></tr>
+            <tr><td class="fl"><span class="idchip">F8</span> 트리 종료</td><td><span class="chip p0">P0</span></td><td></td><td></td><td></td><td></td><td class="dot">●</td><td></td><td></td><td></td></tr>
+            <tr><td class="fl"><span class="idchip">F9</span> 임의 시그널 선택 전송</td><td><span class="chip p1">P1</span></td><td></td><td></td><td></td><td></td><td class="dot">●</td><td></td><td></td><td></td></tr>
+            <tr><td class="fl" rowspan="5" style="vertical-align:middle">D 뷰·탐색</td><td class="fl"><span class="idchip">F10</span> 프로세스 트리 뷰</td><td><span class="chip p1">P1</span></td><td class="dot">●</td><td></td><td></td><td class="dot">●</td><td></td><td></td><td></td><td></td></tr>
+            <tr><td class="fl"><span class="idchip">F11</span> 실시간 필터(/)</td><td><span class="chip p1">P1</span></td><td class="dot">●</td><td></td><td></td><td class="dot">●</td><td></td><td></td><td></td><td></td></tr>
+            <tr><td class="fl"><span class="idchip">F12</span> 정렬(s/r)</td><td><span class="chip p1">P1</span></td><td class="dot">●</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td class="fl"><span class="idchip">F13</span> Node-only 토글(n)</td><td><span class="chip p1">P1</span></td><td></td><td></td><td></td><td class="dot">●</td><td></td><td></td><td></td><td></td></tr>
+            <tr><td class="fl"><span class="idchip">F14</span> 다중 선택(Space)</td><td><span class="chip p2">P2</span></td><td></td><td></td><td></td><td class="dot">●</td><td></td><td></td><td></td><td></td></tr>
+            <tr><td class="fl" rowspan="4" style="vertical-align:middle">E 점검</td><td class="fl"><span class="idchip">F15</span> 상세 4탭(Info/Log/Net/Env)</td><td><span class="chip p1">P1</span></td><td class="dot">●</td><td></td><td></td><td></td><td></td><td class="dot">●</td><td></td><td></td></tr>
+            <tr><td class="fl"><span class="idchip">F16</span> 로그 자동 감지·tail</td><td><span class="chip p2">P2</span></td><td class="dot">●</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td class="fl"><span class="idchip">F17</span> 환경변수 마스킹 점검</td><td><span class="chip p1">P1</span></td><td></td><td></td><td></td><td></td><td></td><td class="dot">●</td><td></td><td></td></tr>
+            <tr><td class="fl"><span class="idchip">F18</span> 정확한 메모리 보고</td><td><span class="chip p1">P1</span></td><td></td><td></td><td></td><td></td><td></td><td class="dot">●</td><td></td><td></td></tr>
+            <tr><td class="fl" rowspan="3" style="vertical-align:middle">F 인터페이스·자동화</td><td class="fl"><span class="idchip">F19</span> CLI 5종 + 출력 스키마</td><td><span class="chip p1">P1</span></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="dot">●</td><td></td></tr>
+            <tr><td class="fl"><span class="idchip">F20</span> 터미널 내 TUI 일원화</td><td><span class="chip p2">P2</span></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="dot">●</td></tr>
+            <tr><td class="fl"><span class="idchip">F21</span> 설정(TOML)</td><td><span class="chip p1">P1</span></td><td></td><td></td><td class="dot">●</td><td></td><td class="dot">●</td><td class="dot">●</td><td></td><td></td></tr>
+            <tr style="background:#f8fafc;font-weight:800"><td class="fl" colspan="3">PRB 열 커버리지</td><td>7</td><td>2</td><td>3</td><td>6</td><td>4</td><td>4</td><td>1</td><td>1</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="legend"><span><span class="dot">●</span> 해소 기능</span><span><span class="chip p0">P0</span> 코어</span><span><span class="chip p1">P1</span> 핵심 보조</span><span><span class="chip p2">P2</span> 편의</span></div>
+    </section>
+
+    <!-- ============ ⑪ 성공지표 게이지 ============ -->
+    <section id="s11">
+      <h2>⑩ 성공지표 게이지 <a class="anchor" href="#s11">#</a></h2>
+      <p>측정 가능·사실 기반 <b>제품 품질 지표 7종</b>. (OSS 채택 지표 — Stars·다운로드·기여자 — 는 전부 <b>가설</b>이라 목표치는 사실이 아니므로 제외.) 출처: <code>01-service-plan §6</code>.</p>
+      <figure class="viz">
+        <svg viewBox="0 0 720 200" width="720" role="img" aria-label="품질 게이지 — 테스트 통과율과 분류 무결성 100퍼센트, 시간 임계값">
+          <!-- 도넛 게이지 1: 테스트 -->
+          <g transform="translate(86,86)">
+            <circle r="46" fill="none" stroke="#e2e8f0" stroke-width="14"/>
+            <circle r="46" fill="none" stroke="#059669" stroke-width="14" stroke-dasharray="289 289" stroke-linecap="round" transform="rotate(-90)"/>
+            <text y="-2" text-anchor="middle" font-size="22" font-weight="800" fill="#059669">100%</text>
+            <text y="16" text-anchor="middle" font-size="9.5" fill="#64748b">115 / 115</text>
+          </g>
+          <text x="86" y="166" text-anchor="middle" font-size="11" fill="#475569" font-weight="600">테스트 통과(10모듈)</text>
+          <!-- 도넛 게이지 2: 분류 회귀 -->
+          <g transform="translate(232,86)">
+            <circle r="46" fill="none" stroke="#e2e8f0" stroke-width="14"/>
+            <circle r="46" fill="none" stroke="#4f46e5" stroke-width="14" stroke-dasharray="289 289" stroke-linecap="round" transform="rotate(-90)"/>
+            <text y="-2" text-anchor="middle" font-size="22" font-weight="800" fill="#4f46e5">100%</text>
+            <text y="16" text-anchor="middle" font-size="9.5" fill="#64748b">회귀 무결</text>
+          </g>
+          <text x="232" y="166" text-anchor="middle" font-size="11" fill="#475569" font-weight="600">분류 회귀 통과</text>
+          <!-- 도넛 게이지 3: clippy -->
+          <g transform="translate(378,86)">
+            <circle r="46" fill="none" stroke="#e2e8f0" stroke-width="14"/>
+            <circle r="46" fill="none" stroke="#0d9488" stroke-width="14" stroke-dasharray="289 289" stroke-linecap="round" transform="rotate(-90)"/>
+            <text y="-2" text-anchor="middle" font-size="22" font-weight="800" fill="#0d9488">0</text>
+            <text y="16" text-anchor="middle" font-size="9.5" fill="#64748b">경고</text>
+          </g>
+          <text x="378" y="166" text-anchor="middle" font-size="11" fill="#475569" font-weight="600">clippy 경고</text>
+          <!-- 시간 임계값 막대 -->
+          <g font-size="11" fill="#475569">
+            <text x="470" y="40" font-size="12" font-weight="800" fill="#334155">시간 임계값</text>
+            <text x="470" y="66">스캔 tick</text><rect x="556" y="56" width="46" height="13" rx="3" fill="#4f46e5"/><text x="608" y="66" font-weight="700" fill="#4f46e5">&lt; 3s</text>
+            <text x="470" y="92">graceful</text><rect x="556" y="82" width="120" height="13" rx="3" fill="#d97706"/><text x="682" y="92" font-weight="700" fill="#d97706">10s</text>
+            <text x="470" y="118">폴링 간격</text><rect x="556" y="108" width="20" height="13" rx="3" fill="#0d9488"/><text x="582" y="118" font-weight="700" fill="#0d9488">200ms</text>
+            <text x="470" y="148" font-size="10" fill="#94a3b8">스캔 1회 &lt; refresh_interval → UI 멈춤 0</text>
+            <text x="470" y="162" font-size="10" fill="#94a3b8">graceful_timeout 후 SIGKILL 자동(CLI)</text>
+          </g>
+        </svg>
+        <figcaption>⑩ 품질 게이지 — 테스트 115/115·분류 회귀·clippy 0 = 100% 그린, 스캔&lt;3s·graceful 10s·폴링 200ms 임계값 준수.</figcaption>
+      </figure>
+      <div class="gauges">
+        <div class="gauge"><div class="gt">스캔 tick 비차단성</div><div class="gv">&lt; 3s <small>(refresh_interval)</small></div></div>
+        <div class="gauge"><div class="gt">CPU delta 정확도</div><div class="gv">&gt; 0.0% <small>(0.0% 고정 금지)</small></div></div>
+        <div class="gauge"><div class="gt">macOS 메모리 정확도</div><div class="gv">≈ Activity Monitor <small>(RSS 100× 과소보고 회피)</small></div></div>
+        <div class="gauge"><div class="gt">graceful 에스컬레이션</div><div class="gv">10s → SIGKILL <small>(폴링 200ms)</small></div></div>
+        <div class="gauge"><div class="gt">분류 회귀 무결성</div><div class="gv">100% <small>통과 (비서버=None)</small></div></div>
+        <div class="gauge"><div class="gt">테스트·린트 게이트</div><div class="gv">115 / 10모듈 <small>· clippy 0</small></div></div>
+        <div class="gauge"><div class="gt">크로스플랫폼 빌드</div><div class="gv">3 OS 그린 <small>(mac·Linux·Win)</small></div></div>
+      </div>
+    </section>
+
+    <!-- ============ ⑫ MVP vs 비범위 ============ -->
+    <section id="s12">
+      <h2>⑪ MVP vs 비범위 <a class="anchor" href="#s12">#</a></h2>
+      <p>v0.2.0 = MVP. 코어 가치 루프의 척추(P0)는 모두 포함되었고, <b>영구 제외</b> 항목은 설계 정체성·해자(moat)와 직결된다. 출처: <code>01-service-plan §5</code> · <code>40-backlog §3</code>.</p>
+      <div class="twocol">
+        <div class="panel inc">
+          <h4>✓ MVP 포함 (v0.2.0 · 21/21 구현)</h4>
+          <ul>
+            <li><b>P0 코어</b>: 식별·정확분류(fs 미독)·포트 매핑·안전 종료·트리 종료·멀티런타임(8종)</li>
+            <li><b>P1 보조</b>: 시그널 선택·필터/정렬/Node-only·네트워크 탭·Env 마스킹·정확 메모리·CLI 5종</li>
+            <li><b>P2 편의</b>: 다중 선택·로그 자동 tail·TUI 일원화·설정(TOML)</li>
+            <li>TUI 16화면 + CLI 5명령 · 단일 바이너리 · MIT</li>
+          </ul>
+        </div>
+        <div class="panel exc">
+          <h4>✗ 비범위 (영구 제외 · 로드맵 아님)</h4>
+          <ul>
+            <li><b>파일시스템(package.json) 기반 탐지</b> — npx/전역 프로세스 오분류 유발. 안 읽는 것이 해자(★영구)</li>
+            <li><b>웹 GUI / 데스크톱 앱</b> — 터미널 도구 정체성 밖(PRB-8과 상충)</li>
+            <li><b>프로세스 감독 / 자동 재시작 / 데몬화</b> — "죽이는 도구"이지 supervisor 아님(pm2·systemd 영역)</li>
+            <li><b>시스템 전역 그래프 · 실시간 이력 차트</b> — 전역 모니터(btop·glances) 영역</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ⑬ 로드맵 간트 + 정직 발견 히트맵 ============ -->
+    <section id="s13">
+      <h2>⑫ 로드맵 · 정직 발견 <a class="anchor" href="#s13">#</a></h2>
+      <p>v0.2.0(MVP)에서 <b>21/21 완료</b>. 향후는 <b>권장 순서 3단계</b>(약속된 릴리스 아님 — <span class="chip">가설</span>)로 정렬했고, 같은 문서가 <b>버그·죽은 코드를 정직하게 발견</b>해 로드맵에 올렸다. 출처: <code>40-backlog</code>.</p>
+      <figure class="viz">
+        <svg viewBox="0 0 760 290" width="760" role="img" aria-label="로드맵 간트 — 완료 v0.2.0 이후 3단계 권장 순서에 R 항목 배치">
+          <!-- 헤더 밴드 -->
+          <g font-size="10.5" font-weight="800" text-anchor="middle">
+            <rect x="116" y="14" width="134" height="20" rx="4" fill="#059669"/><text x="183" y="28" fill="#fff">완료 v0.2.0</text>
+            <rect x="258" y="14" width="150" height="20" rx="4" fill="#dc2626"/><text x="333" y="28" fill="#fff">단계1 · High</text>
+            <rect x="416" y="14" width="150" height="20" rx="4" fill="#d97706"/><text x="491" y="28" fill="#fff">단계2 · Med</text>
+            <rect x="574" y="14" width="168" height="20" rx="4" fill="#94a3b8"/><text x="658" y="28" fill="#fff">단계3 · Low</text>
+          </g>
+          <!-- 컬럼 구분선 -->
+          <g stroke="#e2e8f0" stroke-width="1"><line x1="254" y1="40" x2="254" y2="266"/><line x1="412" y1="40" x2="412" y2="266"/><line x1="570" y1="40" x2="570" y2="266"/></g>
+          <!-- Epic 행 -->
+          <g font-size="10.5">
+            <!-- A -->
+            <text x="6" y="58" font-weight="700" fill="#334155">A 식별·분류</text>
+            <rect x="116" y="46" width="134" height="20" rx="4" fill="#a7f3d0" stroke="#059669"/><text x="183" y="60" text-anchor="middle" fill="#065f46">완료</text>
+            <rect x="262" y="46" width="82" height="20" rx="4" fill="#dc2626"/><text x="303" y="60" text-anchor="middle" fill="#fff" font-weight="700">R1</text>
+            <rect x="420" y="46" width="82" height="20" rx="4" fill="#d97706"/><text x="461" y="60" text-anchor="middle" fill="#fff" font-weight="700">R7</text>
+            <!-- B -->
+            <text x="6" y="94" font-weight="700" fill="#334155">B 포트·네트워크</text>
+            <rect x="116" y="82" width="134" height="20" rx="4" fill="#a7f3d0" stroke="#059669"/><text x="183" y="96" text-anchor="middle" fill="#065f46">완료</text>
+            <rect x="578" y="82" width="120" height="20" rx="4" fill="#fbbf24"/><text x="638" y="96" text-anchor="middle" fill="#78350f" font-weight="700">R4 (노력 큼)</text>
+            <!-- C -->
+            <text x="6" y="130" font-weight="700" fill="#334155">C 안전 종료</text>
+            <rect x="116" y="118" width="134" height="20" rx="4" fill="#a7f3d0" stroke="#059669"/><text x="183" y="132" text-anchor="middle" fill="#065f46">완료</text>
+            <rect x="420" y="118" width="100" height="20" rx="4" fill="#d97706"/><text x="470" y="132" text-anchor="middle" fill="#fff" font-weight="700">R3 (Win 시그널)</text>
+            <!-- D -->
+            <text x="6" y="166" font-weight="700" fill="#334155">D 뷰·탐색</text>
+            <rect x="116" y="154" width="134" height="20" rx="4" fill="#a7f3d0" stroke="#059669"/><text x="183" y="168" text-anchor="middle" fill="#065f46">완료</text>
+            <text x="262" y="168" font-size="10" fill="#94a3b8">추가 없음 (완료로 충분)</text>
+            <!-- E -->
+            <text x="6" y="202" font-weight="700" fill="#334155">E 점검</text>
+            <rect x="116" y="190" width="134" height="20" rx="4" fill="#a7f3d0" stroke="#059669"/><text x="183" y="204" text-anchor="middle" fill="#065f46">완료</text>
+            <rect x="262" y="190" width="82" height="20" rx="4" fill="#dc2626"/><text x="303" y="204" text-anchor="middle" fill="#fff" font-weight="700">R6 버그</text>
+            <rect x="420" y="190" width="82" height="20" rx="4" fill="#d97706"/><text x="461" y="204" text-anchor="middle" fill="#fff" font-weight="700">R8</text>
+            <rect x="578" y="190" width="120" height="20" rx="4" fill="#94a3b8"/><text x="638" y="204" text-anchor="middle" fill="#fff" font-weight="700">R5 · R10</text>
+            <!-- F -->
+            <text x="6" y="238" font-weight="700" fill="#334155">F 인터페이스</text>
+            <rect x="116" y="226" width="134" height="20" rx="4" fill="#a7f3d0" stroke="#059669"/><text x="183" y="240" text-anchor="middle" fill="#065f46">완료</text>
+            <rect x="420" y="226" width="82" height="20" rx="4" fill="#d97706"/><text x="461" y="240" text-anchor="middle" fill="#fff" font-weight="700">R9</text>
+            <rect x="578" y="226" width="100" height="20" rx="4" fill="#94a3b8"/><text x="628" y="240" text-anchor="middle" fill="#fff" font-weight="700">R2 클린업</text>
+          </g>
+          <text x="6" y="282" font-size="9.5" fill="#94a3b8">3단계 = 우선순위(근거강도·노력) 기반 권장 순서 [가설] · 날짜 약속 아님. High: R1·R6 / Med: R3·R7·R8·R9·R4 / Low: R2·R5·R10</text>
+        </svg>
+        <figcaption>⑫-a 로드맵 간트 — 완료(v0.2.0) 이후 Epic별 R 항목을 권장 3단계에 배치. 색 = 우선순위(빨강 High·주황 Med·회색 Low). D는 추가 없음.</figcaption>
+      </figure>
+
+      <h3>정직 발견 히트맵 (유형 × 우선순위)</h3>
+      <div class="table-wrap">
+        <table class="dotmx" style="font-size:13px">
+          <thead><tr><th class="fl">유형 ＼ 우선</th><th>High</th><th>Medium</th><th>Low</th></tr></thead>
+          <tbody>
+            <tr><td class="fl">🐞 버그 / 프라이버시</td><td class="cell-n"><span class="idchip">R6</span><br><span style="font-size:10px;color:#b91c1c">health 메모리 인자</span></td><td class="cell-p"><span class="idchip">R8</span> <span class="idchip">R9</span><br><span style="font-size:10px;color:#b45309">CLI env 미마스킹·종료코드</span></td><td class="cell-p"><span class="idchip">R10</span><br><span style="font-size:10px;color:#b45309">env 과마스킹</span></td></tr>
+            <tr><td class="fl">💀 죽은 코드</td><td></td><td></td><td class="cell-p"><span class="idchip">R2</span> <span class="idchip">M1</span><br><span style="font-size:10px;color:#b45309">include_bun · ForceKillPrompt</span></td></tr>
+            <tr><td class="fl">➕ 미구현 / 누락</td><td class="cell-n"><span class="idchip">R1</span><br><span style="font-size:10px;color:#b91c1c">Express/Fastify 규칙</span></td><td class="cell-p"><span class="idchip">R7</span> <span class="idchip">R3</span><br><span style="font-size:10px;color:#b45309">version·Win 시그널</span></td><td></td></tr>
+            <tr><td class="fl">⚠ 한계 / 의존</td><td></td><td class="cell-p"><span class="idchip">R4</span><br><span style="font-size:10px;color:#b45309">외부명령 의존</span></td><td class="cell-p"><span class="idchip">R5</span><br><span style="font-size:10px;color:#b45309">로그 stdout</span></td></tr>
+            <tr><td class="fl">📄 문서 정합</td><td></td><td></td><td class="cell-p"><span class="idchip">M2</span><br><span style="font-size:10px;color:#b45309">NAME 배지 표기</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="legend"><span><i style="background:#fef2f2;border-color:#fecaca"></i> High(즉시)</span><span><i style="background:#fffbeb;border-color:#fde68a"></i> Med</span><span>빈칸 = 해당 없음</span><span>총 12건 (R1~R10 + M1·M2)</span></div>
+
+      <details class="raw"><summary>정직 발견 전체 목록 (12건)</summary>
+        <div class="table-wrap"><table>
+          <thead><tr><th>ID</th><th>제목</th><th>유형</th><th>우선</th></tr></thead>
+          <tbody>
+            <tr><td><span class="idchip">R6</span></td><td>health() 메모리 인자 버그 (RSS의 MB를 %로 오전달 → 거의 모든 서버 오판정)</td><td>버그</td><td><span class="chip bad">High</span></td></tr>
+            <tr><td><span class="idchip">R1</span></td><td>Express/Fastify/Koa/Hapi 탐지 규칙 등록 (enum만 있고 규칙 미등록)</td><td>미구현</td><td><span class="chip bad">High</span></td></tr>
+            <tr><td><span class="idchip">R8</span></td><td>CLI <code>info</code> env 마스킹 적용 (TUI는 마스킹, CLI는 원문)</td><td>버그/프라이버시</td><td><span class="chip p1">Med</span></td></tr>
+            <tr><td><span class="idchip">R9</span></td><td>종료코드 결과 구분 (실패에도 exit 0)</td><td>버그/한계</td><td><span class="chip p1">Med</span></td></tr>
+            <tr><td><span class="idchip">R7</span></td><td>framework_version 채움 (항상 None → Info 탭 Version "-")</td><td>미구현</td><td><span class="chip p1">Med</span></td></tr>
+            <tr><td><span class="idchip">R3</span></td><td>Windows 시그널 보강 (HUP/USR1/USR2 부재)</td><td>OS 제약</td><td><span class="chip p1">Med</span></td></tr>
+            <tr><td><span class="idchip">R4</span></td><td>외부 명령 의존 완화 (lsof/netstat 부재 시 빈 결과)</td><td>한계</td><td><span class="chip p1">Med</span></td></tr>
+            <tr><td><span class="idchip">R10</span></td><td>env 마스킹 과마스킹 정밀화 (KEY 부분일치 → 무관 키 과마스킹)</td><td>버그/한계</td><td><span class="chip p2">Low</span></td></tr>
+            <tr><td><span class="idchip">R2</span></td><td>include_bun deprecated 정리</td><td>죽은 코드</td><td><span class="chip p2">Low</span></td></tr>
+            <tr><td><span class="idchip">R5</span></td><td>로그 stdout 직접 캡처 개선 (cwd glob + /proc fallback만)</td><td>한계</td><td><span class="chip p2">Low</span></td></tr>
+            <tr><td><span class="idchip">M1</span></td><td>ForceKillPrompt · kill_in_progress 미도달 죽은 코드 — 연결 또는 제거</td><td>죽은 코드</td><td><span class="chip p2">Low</span></td></tr>
+            <tr><td><span class="idchip">M2</span></td><td>12/13 목록 NAME 인라인 배지 표기 보강</td><td>문서 정합</td><td><span class="chip p2">Low</span></td></tr>
+          </tbody>
+        </table></div>
+      </details>
+
+      <div class="callout"><b>패키지 한눈 요약:</b> ntop은 <b>이미 동작하는 v0.2.0</b>(21/21 기능·115 테스트·3-OS 그린)이며, 이 16문서는 그 가치·범위·명세·정책·로드맵을 역설계한 것이다. 핵심 정체성: <b>의미 인지(런타임·FW·포트) × 안전 제어(graceful·트리·확인 게이트)</b>를 동시에 갖춘 유일한 좌표. 자세한 분류·읽기 순서는 <a href="index.html">허브 index.html</a> 참조.</div>
+    </section>
+
+    <!-- SECTIONS-END -->
+  </main>
+</div>
+
+<script>
+// 인라인 JS만 — 외부 렌더러/CDN 없음.
+function toggleToc(){
+  var t=document.getElementById('toc'), b=document.getElementById('menuBtn');
+  var open=t.classList.toggle('open');
+  b.setAttribute('aria-expanded', open?'true':'false');
+}
+// 사이드바 active 하이라이트 (IntersectionObserver)
+(function(){
+  var links=[].slice.call(document.querySelectorAll('.toc a[href^="#"]'));
+  var map={}; links.forEach(function(a){ map[a.getAttribute('href').slice(1)]=a; });
+  var ids=Object.keys(map);
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){
+        links.forEach(function(a){a.classList.remove('active');});
+        var a=map[en.target.id]; if(a)a.classList.add('active');
+      }
+    });
+  },{rootMargin:'-12% 0px -75% 0px',threshold:0});
+  ids.forEach(function(id){ var el=document.getElementById(id); if(el)io.observe(el); });
+  // 좁은 화면: 링크 클릭 시 TOC 닫기
+  links.forEach(function(a){ a.addEventListener('click',function(){
+    if(window.matchMedia('(max-width:900px)').matches){ document.getElementById('toc').classList.remove('open'); }
+  });});
+})();
+// 인쇄 전 모든 details 펼침
+window.addEventListener('beforeprint',function(){
+  document.querySelectorAll('details').forEach(function(d){ d.dataset._o=d.open?'1':''; d.open=true; });
+});
+window.addEventListener('afterprint',function(){
+  document.querySelectorAll('details').forEach(function(d){ if(d.dataset._o!=='1')d.open=false; });
+});
+</script>
+</body>
+</html>

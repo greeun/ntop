@@ -1,0 +1,620 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ntop 기획 패키지 — 허브 · INDEX</title>
+<style>
+/* ntop 기획 패키지 — 공통 디자인 시스템 (자체완결: 각 NN-name.html <style>에 인라인 복제) */
+/* 외부 의존 0 — CDN/웹폰트/Mermaid 금지. 시스템 폰트만. */
+:root{
+  --accent:#4f46e5;        /* indigo */
+  --accent2:#0d9488;       /* teal */
+  --accent-soft:#eef2ff;
+  --bg:#ffffff;
+  --fg:#1e293b;
+  --muted:#64748b;
+  --line:#e2e8f0;
+  --code-bg:#f1f5f9;
+  --warn:#d97706; --warn-bg:#fffbeb;
+  --bad:#dc2626;  --bad-bg:#fef2f2;
+  --ok:#059669;   --ok-bg:#ecfdf5;
+  --t1:#dc2626; --t2:#d97706; --t3:#ca8a04;
+  --maxw:860px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;color:var(--fg);background:var(--bg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  line-height:1.7;font-size:16px;
+}
+code,pre,.mono{font-family:"SF Mono",SFMono-Regular,ui-monospace,Menlo,Consolas,"D2Coding",monospace}
+
+/* ── 상단바 ── */
+.topbar{
+  position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  padding:10px 18px;background:#0f172a;color:#f8fafc;font-weight:600;font-size:15px;
+  border-bottom:3px solid var(--accent);
+}
+.topbar .doc-no{color:#a5b4fc;font-variant-numeric:tabular-nums}
+.topbar nav{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.topbar nav a,.topbar nav button{
+  color:#e2e8f0;background:#1e293b;border:1px solid #334155;border-radius:6px;
+  padding:4px 10px;font-size:13px;text-decoration:none;cursor:pointer;font-weight:500;
+}
+.topbar nav a:hover,.topbar nav button:hover{background:var(--accent);border-color:var(--accent)}
+
+/* ── 티어 배지 ── */
+.tier{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:700;color:#fff}
+.tier.t1{background:var(--t1)} .tier.t2{background:var(--t2)} .tier.t3{background:var(--t3)}
+
+/* ── 레이아웃: TOC + 본문 ── */
+.layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:0;max-width:1200px;margin:0 auto}
+.toc{position:sticky;top:58px;align-self:start;height:calc(100vh - 58px);overflow:auto;padding:18px 12px;border-right:1px solid var(--line);font-size:13.5px}
+.toc h4{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.toc a{display:block;padding:3px 8px;color:var(--muted);text-decoration:none;border-radius:5px;border-left:2px solid transparent}
+.toc a:hover{background:var(--accent-soft);color:var(--accent)}
+.toc a.active{color:var(--accent);background:var(--accent-soft);border-left-color:var(--accent);font-weight:600}
+.toc a.lv3{padding-left:18px;font-size:12.5px}
+main{padding:26px 34px;max-width:var(--maxw)}
+main h1{font-size:26px;line-height:1.3;margin:0 0 6px}
+main h2{font-size:21px;margin:34px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--line);scroll-margin-top:64px}
+main h3{font-size:17px;margin:24px 0 10px;color:#0f172a;scroll-margin-top:64px}
+main h4{font-size:15px;margin:18px 0 8px;color:var(--muted)}
+main p{margin:10px 0}
+main a{color:var(--accent)}
+.anchor{margin-left:8px;color:var(--line);text-decoration:none;font-weight:400;font-size:.8em}
+main h2:hover .anchor,main h3:hover .anchor{color:var(--accent)}
+
+/* ── 표 ── */
+.table-wrap{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:7px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{background:#f8fafc;font-weight:700;position:sticky;top:0;border-bottom:2px solid var(--line)}
+tbody tr:nth-child(even){background:#fbfcfe}
+tbody tr:hover{background:var(--accent-soft)}
+
+/* ── 코드·칩 ── */
+:not(pre)>code{background:var(--code-bg);padding:1px 6px;border-radius:5px;font-size:.88em;color:#be185d}
+pre{background:#0f172a;color:#e2e8f0;padding:14px 16px;border-radius:8px;overflow-x:auto;font-size:13px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+.chip{display:inline-block;background:var(--accent-soft);color:var(--accent);border:1px solid #c7d2fe;border-radius:5px;padding:0 6px;font-size:.85em;font-weight:600}
+.chip.p0{background:var(--bad-bg);color:var(--bad);border-color:#fecaca}
+.chip.p1{background:var(--warn-bg);color:var(--warn);border-color:#fde68a}
+.chip.ok{background:var(--ok-bg);color:var(--ok);border-color:#a7f3d0}
+
+/* ── 콜아웃 ── */
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+.callout.warn{border-color:var(--warn);background:var(--warn-bg)}
+.callout.bad{border-color:var(--bad);background:var(--bad-bg)}
+.callout.ok{border-color:var(--ok);background:var(--ok-bg)}
+blockquote{border-left:4px solid var(--line);margin:14px 0;padding:4px 16px;color:var(--muted)}
+
+/* ── 인포그래픽 figure ── */
+figure.viz{margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:10px;background:#fcfdff;text-align:center}
+figure.viz svg{max-width:100%;height:auto;display:block;margin:0 auto}
+figure.viz figcaption{margin-top:10px;font-size:13px;color:var(--muted);text-align:center}
+.viz-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+details.raw{margin-top:8px;font-size:13px}
+details.raw summary{cursor:pointer;color:var(--muted);font-size:12.5px}
+details.raw pre{margin-top:6px}
+
+/* SVG 공통 텍스트 */
+svg text{font-family:-apple-system,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+.svg-node{fill:#fff;stroke:var(--accent);stroke-width:1.5}
+.svg-edge{stroke:var(--muted);stroke-width:1.5;fill:none}
+.svg-label{font-size:12px;fill:var(--fg)}
+.svg-accent{fill:var(--accent)} .svg-accent2{fill:var(--accent2)}
+
+/* 화면 mockup 프레임(20/21용) */
+.screen{border:2px solid #334155;border-radius:8px;background:#0f172a;color:#cbd5e1;font-family:"SF Mono",ui-monospace,monospace;font-size:12px;padding:0;overflow:hidden;text-align:left;margin:0 auto;max-width:560px}
+.screen .bar{background:#1e293b;color:#a5b4fc;padding:4px 8px;font-size:11px;border-bottom:1px solid #334155}
+.screen .body{padding:8px 10px;white-space:pre;overflow-x:auto;line-height:1.4}
+
+/* ── print ── */
+@media print{
+  .topbar,.toc,.anchor,details.raw summary{display:none!important}
+  .layout{grid-template-columns:1fr;max-width:none}
+  main{max-width:none;padding:0}
+  details.raw{display:none}
+  *{break-inside:avoid}
+  figure.viz{border:1px solid #ccc}
+}
+/* ── 반응형 ── */
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}
+  main{padding:18px}
+}
+
+/* ════════ 허브 전용(index.html) ════════ */
+.hub-main{max-width:1100px;margin:0 auto;padding:26px 34px}
+
+/* 히어로 */
+.hero{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 60%,#312e81 100%);color:#f8fafc;
+  border-radius:14px;padding:30px 32px;margin:6px 0 8px;border:1px solid #1e293b}
+.hero h1{font-size:30px;line-height:1.25;margin:0 0 8px;color:#fff}
+.hero h1 .mono{color:#a5b4fc}
+.hero .lead{font-size:16px;color:#dbeafe;margin:0 0 14px;max-width:760px}
+.hero .meta{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+.hero .meta .pill{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);
+  color:#e0e7ff;border-radius:99px;padding:3px 12px;font-size:13px;font-weight:600}
+.hero .actions{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:7px;text-decoration:none;font-weight:700;font-size:14px;
+  padding:10px 18px;border-radius:9px;cursor:pointer;border:1px solid transparent}
+.btn.primary{background:var(--accent2);color:#fff;border-color:#0f766e}
+.btn.primary:hover{background:#0f766e}
+.btn.ghost{background:rgba(255,255,255,.08);color:#e2e8f0;border-color:rgba(255,255,255,.25)}
+.btn.ghost:hover{background:rgba(255,255,255,.18)}
+
+/* 섹션 헤더 */
+.hub-main section{margin:38px 0}
+.hub-main section>h2{font-size:22px;margin:0 0 4px;padding-bottom:6px;border-bottom:2px solid var(--line);scroll-margin-top:64px}
+.sec-sub{color:var(--muted);font-size:14px;margin:6px 0 16px}
+
+/* 티어 */
+.tier-block{margin:18px 0}
+.tier-head{display:flex;align-items:center;gap:10px;margin:0 0 10px}
+.tier-head .tier{font-size:13px;padding:2px 11px}
+.tier-head .t-name{font-weight:800;font-size:16px}
+.tier-head .t-desc{color:var(--muted);font-size:13.5px}
+
+/* 카드 그리드 */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+a.doc-card{display:flex;flex-direction:column;gap:7px;text-decoration:none;color:inherit;
+  border:1px solid var(--line);border-left-width:5px;border-radius:11px;background:#fff;
+  padding:14px 16px;transition:box-shadow .12s,transform .12s,border-color .12s}
+a.doc-card:hover{box-shadow:0 6px 20px rgba(15,23,42,.10);transform:translateY(-2px);border-color:#c7d2fe}
+a.doc-card.b1{border-left-color:var(--t1)} a.doc-card.b2{border-left-color:var(--t2)} a.doc-card.b3{border-left-color:var(--t3)}
+.doc-card .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.doc-card .num{font-family:"SF Mono",ui-monospace,monospace;font-weight:800;font-size:13px;color:var(--muted);
+  background:var(--code-bg);border-radius:6px;padding:1px 8px}
+.doc-card .name{font-weight:800;font-size:16.5px;color:#0f172a;line-height:1.3}
+.doc-card .purpose{font-size:13.5px;color:#475569;line-height:1.55;margin:0}
+.doc-card .go{margin-top:auto;font-size:12.5px;color:var(--accent);font-weight:700}
+
+/* 작업 순서 */
+.flow-steps{list-style:none;counter-reset:step;margin:18px 0 0;padding:0;display:grid;gap:12px}
+.flow-steps>li{counter-increment:step;position:relative;border:1px solid var(--line);border-radius:11px;
+  padding:14px 16px 14px 58px;background:#fcfdff}
+.flow-steps>li::before{content:counter(step);position:absolute;left:14px;top:14px;width:30px;height:30px;
+  border-radius:50%;background:var(--accent);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:15px}
+.flow-steps .s-title{font-weight:800;font-size:15.5px;color:#0f172a;margin:0 0 6px}
+.flow-steps .s-title .stage{color:var(--accent2);font-weight:700;font-size:13px;margin-right:6px}
+.doclink{display:inline-flex;align-items:center;gap:4px;text-decoration:none;font-weight:700;font-size:13px;
+  background:var(--accent-soft);color:var(--accent);border:1px solid #c7d2fe;border-radius:7px;padding:2px 9px;margin:3px 6px 3px 0}
+.doclink:hover{background:#c7d2fe}
+.doclink .dn{font-family:"SF Mono",ui-monospace,monospace;font-size:11.5px;opacity:.8}
+.flow-arrow{color:var(--muted);font-weight:700;margin:0 1px}
+
+/* 역할 번들 */
+.role-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.role-card{border:1px solid var(--line);border-radius:11px;padding:15px 16px;background:#fff}
+.role-card h3{margin:0 0 4px;font-size:16px;display:flex;align-items:center;gap:8px}
+.role-card .r-tag{font-size:12px;color:var(--muted);font-weight:600}
+.role-card .r-row{margin:10px 0 0}
+.role-card .r-row .lbl{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.03em;
+  text-transform:uppercase;color:var(--muted);margin:0 0 4px}
+.role-card .r-row.req .lbl{color:var(--accent)}
+
+/* 최소 시작 세트 */
+.minset{border:2px solid var(--accent);border-radius:14px;background:var(--accent-soft);padding:20px 22px}
+.minset h2{border:none;margin:0 0 4px;color:var(--accent)}
+.minset .ms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:11px;margin:14px 0 0}
+a.ms-item{display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;background:#fff;
+  border:1px solid #c7d2fe;border-radius:10px;padding:11px 14px}
+a.ms-item:hover{border-color:var(--accent);box-shadow:0 4px 14px rgba(79,70,229,.12)}
+a.ms-item .seq{flex:0 0 auto;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#fff;
+  font-weight:800;display:flex;align-items:center;justify-content:center;font-size:14px}
+a.ms-item .mi-name{font-weight:800;font-size:14.5px;color:#0f172a}
+a.ms-item .mi-num{font-family:"SF Mono",ui-monospace,monospace;font-size:11px;color:var(--muted)}
+a.ms-item .mi-why{font-size:12.5px;color:#475569;margin-top:1px}
+
+footer.hub-foot{max-width:1100px;margin:30px auto 50px;padding:18px 34px;color:var(--muted);
+  font-size:13px;border-top:1px solid var(--line)}
+footer.hub-foot a{color:var(--accent)}
+
+@media (max-width:640px){
+  .hub-main{padding:18px}
+  .hero{padding:22px 20px}
+  .hero h1{font-size:24px}
+  .card-grid,.role-grid,.minset .ms-grid{grid-template-columns:1fr}
+}
+@media print{
+  .hero{background:#0f172a !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .btn,.actions{display:none !important}
+  a.doc-card:hover{box-shadow:none;transform:none}
+}
+</style></head>
+<body>
+
+<header class="topbar">
+  <span class="doc-no">HUB</span> · ntop 기획 패키지 안내 허브
+  <nav aria-label="허브 액션">
+    <a href="overview.html">📊 종합 대시보드</a>
+    <button onclick="window.print()" type="button">🖨 인쇄</button>
+  </nav>
+</header>
+
+<main class="hub-main">
+
+  <!-- ── 히어로 ── -->
+  <section class="hero" aria-label="개요">
+    <h1><span class="mono">ntop</span> — 기획 패키지 안내 허브</h1>
+    <p class="lead">여러 런타임(Node·Python·Java·Deno·Bun·Ruby·PHP·.NET)의 서버 프로세스를 한 화면에서
+      모니터링·종료하는 <strong>Rust TUI + CLI 단일 바이너리</strong>. 이 허브는 이미 동작하는 코드를
+      역설계해 정리한 16종 기획 문서를 <strong>중요도 티어·읽기 순서·역할별 번들·최소 시작 세트</strong>로
+      안내합니다.</p>
+    <div class="meta">
+      <span class="pill">📦 MIT OSS · v0.2.0</span>
+      <span class="pill">📑 문서 16종</span>
+      <span class="pill">🔄 역설계 기획 패키지</span>
+      <span class="pill">🖥 macOS · Linux · Windows</span>
+    </div>
+    <div class="actions">
+      <a class="btn primary" href="overview.html">📊 종합 다이어그램 대시보드 → overview.html</a>
+      <button class="btn ghost" onclick="window.print()" type="button">🖨 인쇄</button>
+    </div>
+  </section>
+
+  <!-- ── ① 중요도 3티어 ── -->
+  <section id="tiers" aria-label="중요도 3티어">
+    <h2>① 중요도 3티어 <a class="anchor" href="#tiers">#</a></h2>
+    <p class="sec-sub">판정 기준: 개발팀이 ntop을 이해·유지·확장하는 데 직접 필요한가. 안전(프로세스 종료)·프라이버시(env 마스킹)가
+      도구 정체성이라 <code>33-policy</code>를 T1로 승격했다.</p>
+
+    <!-- T1 -->
+    <div class="tier-block">
+      <div class="tier-head">
+        <span class="tier t1">🔴 T1</span>
+        <span class="t-name">필수</span>
+        <span class="t-desc">코어 정체성·구현 정본·안전 — 9종</span>
+      </div>
+      <div class="card-grid">
+        <a class="doc-card b1" href="01-service-plan.html">
+          <div class="top"><span class="num">01</span><span class="tier t1">T1</span></div>
+          <div class="name">서비스 기획</div>
+          <p class="purpose">핵심 가치·MVP 범위·성공지표·차별화 <strong>단일 출처</strong>. 모든 하위 문서가 참조하는 제품 정체성의 기준점.</p>
+          <span class="go">01-service-plan.html →</span>
+        </a>
+        <a class="doc-card b1" href="10-prd.html">
+          <div class="top"><span class="num">10</span><span class="tier t1">T1</span></div>
+          <div class="name">PRD</div>
+          <p class="purpose">기능 목록(F1~F21)·우선순위·기능↔문제 추적표·비기능 요구. 기능 ID 단일 출처이자 구현/QA의 출발점.</p>
+          <span class="go">10-prd.html →</span>
+        </a>
+        <a class="doc-card b1" href="13-user-flows.html">
+          <div class="top"><span class="num">13</span><span class="tier t1">T1</span></div>
+          <div class="name">유저 플로우</div>
+          <p class="purpose">유저 플로우·저니(종료 2-lane 상태기계 포함). kill 안전 흐름의 정본 시각화.</p>
+          <span class="go">13-user-flows.html →</span>
+        </a>
+        <a class="doc-card b1" href="21-screen-spec.html">
+          <div class="top"><span class="num">21</span><span class="tier t1">T1</span></div>
+          <div class="name">화면 명세</div>
+          <p class="purpose">화면 명세·스토리보드 + <strong>키 바인딩 정규 출처</strong>. TUI 상호작용 계약·화면 ID·키 단일 출처.</p>
+          <span class="go">21-screen-spec.html →</span>
+        </a>
+        <a class="doc-card b1" href="30-functional-spec.html">
+          <div class="top"><span class="num">30</span><span class="tier t1">T1</span></div>
+          <div class="name">기능 명세</div>
+          <p class="purpose">동작·알고리즘 <strong>단일 출처</strong>(스캔·분류·종료·CPU 측정). "코드가 실제로 무엇을 하나"의 구현 정본.</p>
+          <span class="go">30-functional-spec.html →</span>
+        </a>
+        <a class="doc-card b1" href="31-erd.html">
+          <div class="top"><span class="num">31</span><span class="tier t1">T1</span></div>
+          <div class="name">ERD / 도메인 모델</div>
+          <p class="purpose">인메모리 도메인 모델·구조체 + <strong>Config 기본값 단일 출처</strong>. 데이터 모델·설정값의 기준.</p>
+          <span class="go">31-erd.html →</span>
+        </a>
+        <a class="doc-card b1" href="32-api-spec.html">
+          <div class="top"><span class="num">32</span><span class="tier t1">T1</span></div>
+          <div class="name">API 명세</div>
+          <p class="purpose">외부 인터페이스 계약(CLI·JSON 스키마·FFI·시스템 명령). 인터페이스 계약 단일 출처.</p>
+          <span class="go">32-api-spec.html →</span>
+        </a>
+        <a class="doc-card b1" href="33-policy.html">
+          <div class="top"><span class="num">33</span><span class="tier t1">T1</span></div>
+          <div class="name">정책 (안전·프라이버시)</div>
+          <p class="purpose"><strong>안전·프라이버시 단일 출처</strong>(종료 정책·env 마스킹·권한). 파괴적 동작·민감값 보호 = 도구 정체성.</p>
+          <span class="go">33-policy.html →</span>
+        </a>
+        <a class="doc-card b1" href="40-backlog.html">
+          <div class="top"><span class="num">40</span><span class="tier t1">T1</span></div>
+          <div class="name">백로그 / 로드맵</div>
+          <p class="purpose">완료 백로그(v0.2.0) + 향후 로드맵 + <strong>정직 발견</strong>(버그·죽은 코드). 유지보수 진입점.</p>
+          <span class="go">40-backlog.html →</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- T2 -->
+    <div class="tier-block">
+      <div class="tier-head">
+        <span class="tier t2">🟠 T2</span>
+        <span class="t-name">조건부</span>
+        <span class="t-desc">검증·지속가능성 — 2종</span>
+      </div>
+      <div class="card-grid">
+        <a class="doc-card b2" href="41-qa-testcases.html">
+          <div class="top"><span class="num">41</span><span class="tier t2">T2</span></div>
+          <div class="name">QA 테스트케이스</div>
+          <p class="purpose">핵심 플로우·엣지/예외 테스트 케이스 + 테스트 모듈 매핑. QA·릴리스 시 필수, 일상 개발 시 참조.</p>
+          <span class="go">41-qa-testcases.html →</span>
+        </a>
+        <a class="doc-card b2" href="00-business-model.html">
+          <div class="top"><span class="num">00</span><span class="tier t2">T2</span></div>
+          <div class="name">비즈니스 모델</div>
+          <p class="purpose">OSS 채택·지속가능성(후원·기여 생태계). 후원/지속가능성 검토·기여자 설득 시.</p>
+          <span class="go">00-business-model.html →</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- T3 -->
+    <div class="tier-block">
+      <div class="tier-head">
+        <span class="tier t3">🟡 T3</span>
+        <span class="t-name">보조</span>
+        <span class="t-desc">정렬·온보딩·설득 — 5종</span>
+      </div>
+      <div class="card-grid">
+        <a class="doc-card b3" href="02-market-competition.html">
+          <div class="top"><span class="num">02</span><span class="tier t3">T3</span></div>
+          <div class="name">시장·경쟁</div>
+          <p class="purpose">시장·경쟁(htop/btop/pm2 등 10종)·생태계 분석. 차별화 근거·포지셔닝 설득.</p>
+          <span class="go">02-market-competition.html →</span>
+        </a>
+        <a class="doc-card b3" href="03-personas.html">
+          <div class="top"><span class="num">03</span><span class="tier t3">T3</span></div>
+          <div class="name">페르소나</div>
+          <p class="purpose">핵심 페르소나 P1(박서연)·P2(정태호)·P3(이준). 문제 공감·우선순위 정렬.</p>
+          <span class="go">03-personas.html →</span>
+        </a>
+        <a class="doc-card b3" href="11-user-stories.html">
+          <div class="top"><span class="num">11</span><span class="tier t3">T3</span></div>
+          <div class="name">유저 스토리</div>
+          <p class="purpose">유저 스토리·요구사항(US-n). 기능↔문제 연결 보강(10의 서사판).</p>
+          <span class="go">11-user-stories.html →</span>
+        </a>
+        <a class="doc-card b3" href="12-ia.html">
+          <div class="top"><span class="num">12</span><span class="tier t3">T3</span></div>
+          <div class="name">정보구조 (IA)</div>
+          <p class="purpose">정보구조 — TUI 레이아웃 계층 + CLI 명령 트리. 화면/명령 구조 온보딩.</p>
+          <span class="go">12-ia.html →</span>
+        </a>
+        <a class="doc-card b3" href="20-wireframes.html">
+          <div class="top"><span class="num">20</span><span class="tier t3">T3</span></div>
+          <div class="name">와이어프레임</div>
+          <p class="purpose">저충실도 TUI 화면 시안(W-1~W-12). 화면 감 잡기(명세 정본은 21).</p>
+          <span class="go">20-wireframes.html →</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ② 작업(읽기) 순서 ── -->
+  <section id="order" aria-label="작업 읽기 순서">
+    <h2>② 작업(읽기) 순서 — 의존 기반 <a class="anchor" href="#order">#</a></h2>
+    <p class="sec-sub">정체성 → 문제·맥락 → 구조 → 구현 정본 → 실행. 의존 흐름:
+      01→03→02→11→12→13→20→21→30→31→32→33→40→41 (00은 01과 함께).</p>
+
+    <figure class="viz" aria-label="읽기 순서 흐름도">
+      <svg viewBox="0 0 960 230" role="img" aria-label="5단계 읽기 순서 흐름도">
+        <defs>
+          <marker id="arr" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="#64748b"></path>
+          </marker>
+        </defs>
+        <!-- 단계 헤더 + 박스 -->
+        <!-- S1 -->
+        <rect x="14" y="34" width="160" height="28" rx="7" fill="#4f46e5"></rect>
+        <text x="94" y="52" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">정체성</text>
+        <rect x="14" y="70" width="160" height="120" rx="9" class="svg-node"></rect>
+        <text x="94" y="98" text-anchor="middle" font-size="14" font-weight="800" fill="#0f172a">01</text>
+        <text x="94" y="118" text-anchor="middle" font-size="11" fill="#64748b">서비스 기획</text>
+        <text x="94" y="150" text-anchor="middle" font-size="13" font-weight="700" fill="#0d9488">00</text>
+        <text x="94" y="168" text-anchor="middle" font-size="10.5" fill="#64748b">(지속가능성·동반)</text>
+        <!-- S2 -->
+        <rect x="200" y="34" width="160" height="28" rx="7" fill="#4f46e5"></rect>
+        <text x="280" y="52" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">문제·맥락</text>
+        <rect x="200" y="70" width="160" height="120" rx="9" class="svg-node"></rect>
+        <text x="280" y="100" text-anchor="middle" font-size="14" font-weight="800" fill="#0f172a">03 · 02 · 11</text>
+        <text x="280" y="124" text-anchor="middle" font-size="11" fill="#64748b">페르소나 · 경쟁</text>
+        <text x="280" y="142" text-anchor="middle" font-size="11" fill="#64748b">· 유저 스토리</text>
+        <!-- S3 -->
+        <rect x="386" y="34" width="160" height="28" rx="7" fill="#4f46e5"></rect>
+        <text x="466" y="52" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">구조</text>
+        <rect x="386" y="70" width="160" height="120" rx="9" class="svg-node"></rect>
+        <text x="466" y="100" text-anchor="middle" font-size="14" font-weight="800" fill="#0f172a">12 · 13 · 20 · 21</text>
+        <text x="466" y="124" text-anchor="middle" font-size="11" fill="#64748b">IA → 플로우</text>
+        <text x="466" y="142" text-anchor="middle" font-size="11" fill="#64748b">→ 시안 → 명세</text>
+        <!-- S4 -->
+        <rect x="572" y="34" width="160" height="28" rx="7" fill="#4f46e5"></rect>
+        <text x="652" y="52" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">구현 정본</text>
+        <rect x="572" y="70" width="160" height="120" rx="9" class="svg-node"></rect>
+        <text x="652" y="100" text-anchor="middle" font-size="14" font-weight="800" fill="#0f172a">30 · 31 · 32 · 33</text>
+        <text x="652" y="124" text-anchor="middle" font-size="11" fill="#64748b">동작 → 모델</text>
+        <text x="652" y="142" text-anchor="middle" font-size="11" fill="#64748b">→ 계약 → 정책</text>
+        <!-- S5 -->
+        <rect x="758" y="34" width="160" height="28" rx="7" fill="#0d9488"></rect>
+        <text x="838" y="52" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">실행</text>
+        <rect x="758" y="70" width="160" height="120" rx="9" class="svg-node"></rect>
+        <text x="838" y="100" text-anchor="middle" font-size="14" font-weight="800" fill="#0f172a">40 · 41</text>
+        <text x="838" y="124" text-anchor="middle" font-size="11" fill="#64748b">로드맵·정직발견</text>
+        <text x="838" y="142" text-anchor="middle" font-size="11" fill="#64748b">→ QA 검증</text>
+        <!-- 화살표 -->
+        <line x1="174" y1="130" x2="198" y2="130" class="svg-edge" marker-end="url(#arr)"></line>
+        <line x1="360" y1="130" x2="384" y2="130" class="svg-edge" marker-end="url(#arr)"></line>
+        <line x1="546" y1="130" x2="570" y2="130" class="svg-edge" marker-end="url(#arr)"></line>
+        <line x1="732" y1="130" x2="756" y2="130" class="svg-edge" marker-end="url(#arr)"></line>
+        <text x="466" y="216" text-anchor="middle" font-size="11.5" fill="#64748b">핵심 단일 출처: 01·10·30·31·32·33·21 — 나머지 문서는 이들을 참조하며 재정의하지 않는다(중복 정의 0).</text>
+      </svg>
+      <figcaption>5단계 의존 흐름 — 각 단계는 앞 단계를 전제로 읽는다.</figcaption>
+    </figure>
+
+    <ol class="flow-steps">
+      <li>
+        <p class="s-title"><span class="stage">정체성</span>무엇을 왜 만드는가 (가치·MVP·지표·차별화)</p>
+        <a class="doclink" href="01-service-plan.html"><span class="dn">01</span> 서비스 기획</a>
+        <a class="doclink" href="00-business-model.html"><span class="dn">00</span> 비즈니스 모델 (필요 시 동반)</a>
+      </li>
+      <li>
+        <p class="s-title"><span class="stage">문제·맥락</span>누구의 어떤 문제를, 경쟁 대비 어떻게</p>
+        <a class="doclink" href="03-personas.html"><span class="dn">03</span> 페르소나</a><span class="flow-arrow">→</span>
+        <a class="doclink" href="02-market-competition.html"><span class="dn">02</span> 시장·경쟁</a><span class="flow-arrow">→</span>
+        <a class="doclink" href="11-user-stories.html"><span class="dn">11</span> 유저 스토리</a>
+      </li>
+      <li>
+        <p class="s-title"><span class="stage">구조</span>구조·흐름·화면 (IA → 플로우 → 시안 → 명세)</p>
+        <a class="doclink" href="12-ia.html"><span class="dn">12</span> IA</a><span class="flow-arrow">→</span>
+        <a class="doclink" href="13-user-flows.html"><span class="dn">13</span> 유저 플로우</a><span class="flow-arrow">→</span>
+        <a class="doclink" href="20-wireframes.html"><span class="dn">20</span> 와이어프레임</a><span class="flow-arrow">→</span>
+        <a class="doclink" href="21-screen-spec.html"><span class="dn">21</span> 화면 명세</a>
+      </li>
+      <li>
+        <p class="s-title"><span class="stage">구현 정본</span>동작 정본 → 데이터 모델 → 인터페이스 계약 → 안전/정책</p>
+        <a class="doclink" href="30-functional-spec.html"><span class="dn">30</span> 기능 명세</a><span class="flow-arrow">→</span>
+        <a class="doclink" href="31-erd.html"><span class="dn">31</span> ERD</a><span class="flow-arrow">→</span>
+        <a class="doclink" href="32-api-spec.html"><span class="dn">32</span> API 명세</a><span class="flow-arrow">→</span>
+        <a class="doclink" href="33-policy.html"><span class="dn">33</span> 정책</a>
+      </li>
+      <li>
+        <p class="s-title"><span class="stage">실행</span>무엇이 남았나(로드맵·정직 발견) → 어떻게 검증하나(QA)</p>
+        <a class="doclink" href="40-backlog.html"><span class="dn">40</span> 백로그</a><span class="flow-arrow">→</span>
+        <a class="doclink" href="41-qa-testcases.html"><span class="dn">41</span> QA 테스트케이스</a>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ── ③ 역할별 번들 ── -->
+  <section id="roles" aria-label="역할별 번들">
+    <h2>③ 역할별 번들 <a class="anchor" href="#roles">#</a></h2>
+    <p class="sec-sub">그 역할이 먼저 볼 문서 — 필수(먼저) / 보조(필요 시).</p>
+    <div class="role-grid">
+
+      <div class="role-card">
+        <h3>👩‍💻 개발 <span class="r-tag">코어/기여자</span></h3>
+        <div class="r-row req"><span class="lbl">필수</span><br>
+          <a class="doclink" href="30-functional-spec.html"><span class="dn">30</span> 동작</a>
+          <a class="doclink" href="31-erd.html"><span class="dn">31</span> 모델/Config</a>
+          <a class="doclink" href="32-api-spec.html"><span class="dn">32</span> 계약</a>
+          <a class="doclink" href="10-prd.html"><span class="dn">10</span> 기능</a>
+          <a class="doclink" href="40-backlog.html"><span class="dn">40</span> 로드맵·정직발견</a>
+        </div>
+        <div class="r-row"><span class="lbl">보조</span><br>
+          <a class="doclink" href="01-service-plan.html"><span class="dn">01</span></a>
+          <a class="doclink" href="13-user-flows.html"><span class="dn">13</span></a>
+          <a class="doclink" href="33-policy.html"><span class="dn">33</span></a>
+        </div>
+      </div>
+
+      <div class="role-card">
+        <h3>🧪 QA</h3>
+        <div class="r-row req"><span class="lbl">필수</span><br>
+          <a class="doclink" href="41-qa-testcases.html"><span class="dn">41</span> 테스트케이스</a>
+          <a class="doclink" href="13-user-flows.html"><span class="dn">13</span> 플로우</a>
+          <a class="doclink" href="30-functional-spec.html"><span class="dn">30</span> 동작</a>
+          <a class="doclink" href="33-policy.html"><span class="dn">33</span> 정책(예외·권한)</a>
+        </div>
+        <div class="r-row"><span class="lbl">보조</span><br>
+          <a class="doclink" href="10-prd.html"><span class="dn">10</span> 추적표</a>
+          <a class="doclink" href="21-screen-spec.html"><span class="dn">21</span> 키</a>
+        </div>
+      </div>
+
+      <div class="role-card">
+        <h3>🎨 디자인 <span class="r-tag">TUI/UX</span></h3>
+        <div class="r-row req"><span class="lbl">필수</span><br>
+          <a class="doclink" href="21-screen-spec.html"><span class="dn">21</span> 화면명세·키</a>
+          <a class="doclink" href="20-wireframes.html"><span class="dn">20</span> 와이어프레임</a>
+          <a class="doclink" href="12-ia.html"><span class="dn">12</span> IA</a>
+          <a class="doclink" href="13-user-flows.html"><span class="dn">13</span> 플로우</a>
+        </div>
+        <div class="r-row"><span class="lbl">보조</span><br>
+          <a class="doclink" href="03-personas.html"><span class="dn">03</span> 페르소나</a>
+        </div>
+      </div>
+
+      <div class="role-card">
+        <h3>🧭 PO / 기획</h3>
+        <div class="r-row req"><span class="lbl">필수</span><br>
+          <a class="doclink" href="01-service-plan.html"><span class="dn">01</span> 가치·MVP·지표</a>
+          <a class="doclink" href="10-prd.html"><span class="dn">10</span> 우선순위</a>
+          <a class="doclink" href="02-market-competition.html"><span class="dn">02</span> 경쟁</a>
+          <a class="doclink" href="03-personas.html"><span class="dn">03</span> 페르소나</a>
+        </div>
+        <div class="r-row"><span class="lbl">보조</span><br>
+          <a class="doclink" href="00-business-model.html"><span class="dn">00</span></a>
+          <a class="doclink" href="40-backlog.html"><span class="dn">40</span></a>
+        </div>
+      </div>
+
+      <div class="role-card">
+        <h3>🛠 메인테이너 <span class="r-tag">후원검토</span></h3>
+        <div class="r-row req"><span class="lbl">필수</span><br>
+          <a class="doclink" href="40-backlog.html"><span class="dn">40</span> 로드맵·정직발견</a>
+          <a class="doclink" href="33-policy.html"><span class="dn">33</span> 안전/프라이버시</a>
+          <a class="doclink" href="00-business-model.html"><span class="dn">00</span> 지속가능성</a>
+        </div>
+        <div class="r-row"><span class="lbl">보조</span><br>
+          <a class="doclink" href="01-service-plan.html"><span class="dn">01</span></a>
+          <a class="doclink" href="30-functional-spec.html"><span class="dn">30</span></a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── ④ 최소 시작 세트 ── -->
+  <section id="minimal" aria-label="최소 시작 세트">
+    <div class="minset">
+      <h2>④ 최소 시작 세트 — 처음 6개만</h2>
+      <p class="sec-sub">ntop을 빠르게 파악하려면 이 6개로 충분하다. 나머지는 필요할 때 펼친다.</p>
+      <div class="ms-grid">
+        <a class="ms-item" href="01-service-plan.html">
+          <span class="seq">1</span>
+          <span><span class="mi-name">서비스 기획</span> <span class="mi-num">01-service-plan</span>
+            <div class="mi-why">무엇을 왜 (가치·MVP·지표·차별화)</div></span>
+        </a>
+        <a class="ms-item" href="10-prd.html">
+          <span class="seq">2</span>
+          <span><span class="mi-name">PRD</span> <span class="mi-num">10-prd</span>
+            <div class="mi-why">기능 목록·우선순위·문제 추적</div></span>
+        </a>
+        <a class="ms-item" href="30-functional-spec.html">
+          <span class="seq">3</span>
+          <span><span class="mi-name">기능 명세</span> <span class="mi-num">30-functional-spec</span>
+            <div class="mi-why">실제 동작·알고리즘 정본</div></span>
+        </a>
+        <a class="ms-item" href="31-erd.html">
+          <span class="seq">4</span>
+          <span><span class="mi-name">ERD</span> <span class="mi-num">31-erd</span>
+            <div class="mi-why">데이터 모델·Config 기본값</div></span>
+        </a>
+        <a class="ms-item" href="21-screen-spec.html">
+          <span class="seq">5</span>
+          <span><span class="mi-name">화면 명세</span> <span class="mi-num">21-screen-spec</span>
+            <div class="mi-why">화면·키 바인딩(상호작용 계약)</div></span>
+        </a>
+        <a class="ms-item" href="40-backlog.html">
+          <span class="seq">6</span>
+          <span><span class="mi-name">백로그</span> <span class="mi-num">40-backlog</span>
+            <div class="mi-why">현 상태·다음 작업·정직 발견</div></span>
+        </a>
+      </div>
+      <div class="callout warn" style="margin-top:18px">
+        <strong>핵심 안전 1줄</strong> — <strong>TUI 종료 = SIGTERM 1회</strong> 직접 전송(폴링·자동 강제승격 없음),
+        <strong>자동 graceful→force 에스컬레이션은 CLI <code>ntop kill</code> 단건 전용</strong>(정본 30 · 정책 33).
+        이 구분을 먼저 이해하면 종료 관련 문서가 모두 일관되게 읽힌다.
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="hub-foot">
+  원본 기획(16종) <code>docs/NN-name.md</code> · 읽기용 HTML <code>docs/NN-name.html</code> ·
+  종합 대시보드 <a href="overview.html">overview.html</a> · 본 허브는 <code>docs/INDEX.md</code>의
+  티어·순서·역할·최소세트를 시각화한다(신규 내용 없음).
+</footer>
+
+</body></html>

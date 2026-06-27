@@ -1,0 +1,817 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 시장·경쟁·생태계 분석 · ntop</title>
+<style>
+/* ntop 기획 패키지 — 공통 디자인 시스템 (자체완결: 각 NN-name.html <style>에 인라인 복제) */
+/* 외부 의존 0 — CDN/웹폰트/Mermaid 금지. 시스템 폰트만. */
+:root{
+  --accent:#4f46e5;        /* indigo */
+  --accent2:#0d9488;       /* teal */
+  --accent-soft:#eef2ff;
+  --bg:#ffffff;
+  --fg:#1e293b;
+  --muted:#64748b;
+  --line:#e2e8f0;
+  --code-bg:#f1f5f9;
+  --warn:#d97706; --warn-bg:#fffbeb;
+  --bad:#dc2626;  --bad-bg:#fef2f2;
+  --ok:#059669;   --ok-bg:#ecfdf5;
+  --t1:#dc2626; --t2:#d97706; --t3:#ca8a04;
+  --maxw:860px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;color:var(--fg);background:var(--bg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  line-height:1.7;font-size:16px;
+}
+code,pre,.mono{font-family:"SF Mono",SFMono-Regular,ui-monospace,Menlo,Consolas,"D2Coding",monospace}
+
+/* ── 상단바 ── */
+.topbar{
+  position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  padding:10px 18px;background:#0f172a;color:#f8fafc;font-weight:600;font-size:15px;
+  border-bottom:3px solid var(--accent);
+}
+.topbar .doc-no{color:#a5b4fc;font-variant-numeric:tabular-nums}
+.topbar nav{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.topbar nav a,.topbar nav button{
+  color:#e2e8f0;background:#1e293b;border:1px solid #334155;border-radius:6px;
+  padding:4px 10px;font-size:13px;text-decoration:none;cursor:pointer;font-weight:500;
+}
+.topbar nav a:hover,.topbar nav button:hover{background:var(--accent);border-color:var(--accent)}
+
+/* ── 티어 배지 ── */
+.tier{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:700;color:#fff}
+.tier.t1{background:var(--t1)} .tier.t2{background:var(--t2)} .tier.t3{background:var(--t3)}
+
+/* ── 레이아웃: TOC + 본문 ── */
+.layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:0;max-width:1200px;margin:0 auto}
+.toc{position:sticky;top:58px;align-self:start;height:calc(100vh - 58px);overflow:auto;padding:18px 12px;border-right:1px solid var(--line);font-size:13.5px}
+.toc h4{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.toc a{display:block;padding:3px 8px;color:var(--muted);text-decoration:none;border-radius:5px;border-left:2px solid transparent}
+.toc a:hover{background:var(--accent-soft);color:var(--accent)}
+.toc a.active{color:var(--accent);background:var(--accent-soft);border-left-color:var(--accent);font-weight:600}
+.toc a.lv3{padding-left:18px;font-size:12.5px}
+main{padding:26px 34px;max-width:var(--maxw)}
+main h1{font-size:26px;line-height:1.3;margin:0 0 6px}
+main h2{font-size:21px;margin:34px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--line);scroll-margin-top:64px}
+main h3{font-size:17px;margin:24px 0 10px;color:#0f172a;scroll-margin-top:64px}
+main h4{font-size:15px;margin:18px 0 8px;color:var(--muted)}
+main p{margin:10px 0}
+main a{color:var(--accent)}
+.anchor{margin-left:8px;color:var(--line);text-decoration:none;font-weight:400;font-size:.8em}
+main h2:hover .anchor,main h3:hover .anchor{color:var(--accent)}
+
+/* ── 표 ── */
+.table-wrap{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:7px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{background:#f8fafc;font-weight:700;position:sticky;top:0;border-bottom:2px solid var(--line)}
+tbody tr:nth-child(even){background:#fbfcfe}
+tbody tr:hover{background:var(--accent-soft)}
+
+/* ── 코드·칩 ── */
+:not(pre)>code{background:var(--code-bg);padding:1px 6px;border-radius:5px;font-size:.88em;color:#be185d}
+pre{background:#0f172a;color:#e2e8f0;padding:14px 16px;border-radius:8px;overflow-x:auto;font-size:13px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+.chip{display:inline-block;background:var(--accent-soft);color:var(--accent);border:1px solid #c7d2fe;border-radius:5px;padding:0 6px;font-size:.85em;font-weight:600}
+.chip.p0{background:var(--bad-bg);color:var(--bad);border-color:#fecaca}
+.chip.p1{background:var(--warn-bg);color:var(--warn);border-color:#fde68a}
+.chip.ok{background:var(--ok-bg);color:var(--ok);border-color:#a7f3d0}
+
+/* ── 콜아웃 ── */
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+.callout.warn{border-color:var(--warn);background:var(--warn-bg)}
+.callout.bad{border-color:var(--bad);background:var(--bad-bg)}
+.callout.ok{border-color:var(--ok);background:var(--ok-bg)}
+blockquote{border-left:4px solid var(--line);margin:14px 0;padding:4px 16px;color:var(--muted)}
+
+/* ── 인포그래픽 figure ── */
+figure.viz{margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:10px;background:#fcfdff;text-align:center}
+figure.viz svg{max-width:100%;height:auto;display:block;margin:0 auto}
+figure.viz figcaption{margin-top:10px;font-size:13px;color:var(--muted);text-align:center}
+.viz-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+details.raw{margin-top:8px;font-size:13px}
+details.raw summary{cursor:pointer;color:var(--muted);font-size:12.5px}
+details.raw pre{margin-top:6px}
+
+/* SVG 공통 텍스트 */
+svg text{font-family:-apple-system,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+.svg-node{fill:#fff;stroke:var(--accent);stroke-width:1.5}
+.svg-edge{stroke:var(--muted);stroke-width:1.5;fill:none}
+.svg-label{font-size:12px;fill:var(--fg)}
+.svg-accent{fill:var(--accent)} .svg-accent2{fill:var(--accent2)}
+
+/* 화면 mockup 프레임(20/21용) */
+.screen{border:2px solid #334155;border-radius:8px;background:#0f172a;color:#cbd5e1;font-family:"SF Mono",ui-monospace,monospace;font-size:12px;padding:0;overflow:hidden;text-align:left;margin:0 auto;max-width:560px}
+.screen .bar{background:#1e293b;color:#a5b4fc;padding:4px 8px;font-size:11px;border-bottom:1px solid #334155}
+.screen .body{padding:8px 10px;white-space:pre;overflow-x:auto;line-height:1.4}
+
+/* ── print ── */
+@media print{
+  .topbar,.toc,.anchor,details.raw summary{display:none!important}
+  .layout{grid-template-columns:1fr;max-width:none}
+  main{max-width:none;padding:0}
+  details.raw{display:none}
+  *{break-inside:avoid}
+  figure.viz{border:1px solid #ccc}
+}
+/* ── 반응형 ── */
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}
+  main{padding:18px}
+}
+
+/* ===== 02 페이지 전용 추가 스타일 ===== */
+.legend{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;font-size:12.5px;color:var(--muted);margin:8px 0 2px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:13px;height:13px;border-radius:3px;display:inline-block;border:1px solid var(--line)}
+/* 경쟁 매트릭스 히트맵(CSS) */
+.matrix-wrap{overflow-x:auto;margin:8px 0}
+table.matrix{border-collapse:separate;border-spacing:4px;font-size:13px;margin:0 auto;width:auto}
+table.matrix th{background:#f1f5f9;font-weight:700;padding:6px 8px;text-align:center;border:none;font-size:12px;position:static}
+table.matrix th.tool,table.matrix td.tool{text-align:left;white-space:nowrap;background:#f8fafc;font-weight:600;padding:6px 10px}
+table.matrix td.v{width:44px;height:34px;text-align:center;font-weight:800;border-radius:6px;border:none;font-size:15px}
+.v-yes{background:#ecfdf5;color:#059669}
+.v-part{background:#fffbeb;color:#d97706}
+.v-no{background:#fef2f2;color:#dc2626}
+table.matrix td.scope{text-align:left;font-size:12px;color:var(--muted);white-space:nowrap;background:#fff;padding:6px 10px}
+table.matrix tr.ntop td.tool{background:var(--accent-soft);color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+table.matrix tr.ntop td.v{box-shadow:inset 0 0 0 2px var(--accent)}
+table.matrix tbody tr:hover{background:none}
+</style></head>
+<body>
+<header class="topbar"><span class="doc-no">02</span> <span class="tier t3">T3</span> · 시장·경쟁·생태계 분석
+  <nav><a href="index.html">← 목록</a> <a href="01-service-plan.html">← 이전</a> <a href="03-personas.html">다음 →</a>
+  <button onclick="window.print()">🖨 인쇄</button></nav></header>
+<div class="layout">
+<nav class="toc"><h4>목차</h4>
+  <a href="#sc">Sprint Contract</a>
+  <a href="#s0">0. 한눈에 보는 결론</a>
+  <a href="#s1">1. 생태계(가치 네트워크) 분석</a>
+  <a class="lv3" href="#s1-2">└ 수요측</a>
+  <a class="lv3" href="#s1-7">└ 후원·배포 인프라</a>
+  <a href="#s2">2. 생태계 맵</a>
+  <a href="#s3">3. 실명 경쟁자 비교 매트릭스</a>
+  <a class="lv3" href="#s3-1">└ 비교 축 정의</a>
+  <a class="lv3" href="#s3-2">└ 매트릭스</a>
+  <a class="lv3" href="#s3-3">└ 버전 주석</a>
+  <a href="#s4">4. 포지셔닝 쿼드런트</a>
+  <a href="#s5">5. 시장 / 사용자 맥락</a>
+  <a class="lv3" href="#s5-2">└ 채택 세그먼트</a>
+  <a href="#s6">6. 갭 / 기회</a>
+  <a href="#s7">7. 모방난이도(해자/moat)</a>
+  <a href="#sverify">자체 검증</a>
+</nav>
+<main>
+<h1>02 — 시장·경쟁·생태계 분석 <span style="font-size:15px;color:var(--muted)">(market-competition)</span></h1>
+
+<div class="callout">
+<p>이 문서는 ntop의 <strong>경쟁/생태계 단일 출처(single source of truth)</strong>다. 다른 문서(<code>00-business-model</code>·<code>01-service-plan</code>)는 여기를 <strong>참조</strong>할 뿐 경쟁자 비교·생태계 맵을 중복 정의하지 않는다(spec §4-3).</p>
+<p>ntop은 <strong>이미 v0.2.0까지 구현된 MIT 오픈소스(OSS) 도구</strong>다. 따라서 이 문서는 신규 아이디어 검증이 아니라 <strong>이미 만들어진 도구를 시장·경쟁·생태계 좌표에 위치시키는 역설계 정리</strong>다. ntop에 대한 모든 주장은 <code>docs/_harness/codebase-facts.md</code>(이하 "도시에")와 실제 코드로 역추적 가능하다. 경쟁자 사실은 널리 알려진 실재 도구의 공개 동작이며, 버전별로 달라질 수 있는 세부 기능은 <strong>보수적으로(없는/제한적인 쪽으로) 표기</strong>했다(§3 버전 주석 참조).</p>
+<p><strong>용어 풀이(첫 등장):</strong></p>
+<ul>
+<li><strong>TUI(Text User Interface)</strong> = 터미널 안에서 키보드로 조작하는 전체화면 텍스트 UI.</li>
+<li><strong>CLI(Command Line Interface)</strong> = 명령 한 줄로 실행해 결과를 출력하는 방식.</li>
+<li><strong>런타임(runtime)</strong> = 코드를 실행하는 엔진(Node·Python·Java 등).</li>
+<li><strong>프레임워크(framework)</strong> = 그 런타임 위에서 서버를 만드는 틀(Next.js·FastAPI·Spring Boot 등).</li>
+<li><strong>생태계(ecosystem) / 가치 네트워크</strong> = 한 제품을 둘러싼 모든 참여자와, 그들이 서로 주고받는 가치(코드·피드백·후원·배포 등)의 그물.</li>
+<li><strong>해자(moat)</strong> = 경쟁자가 쉽게 따라 하지 못하게 막아 주는 구조적 차별점.</li>
+</ul>
+</div>
+
+<h2 id="sc">Sprint Contract (self-proposed checks)</h2>
+<p>이 문서가 충족시키는 <strong>관찰 가능한 체크</strong>(spec §5·§6·§8, playbook S4-g1 02 바에서 도출):</p>
+<div class="table-wrap"><table>
+<thead><tr><th>#</th><th>체크</th><th>본문 위치</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">M-1</span></td><td><strong>생태계 전 참여자</strong> + 역할·인센티브·가치교환·의존 (공급/수요/플랫폼·중개/보완재/대체재/제도/후원·배포 7범주)</td><td>§1</td></tr>
+<tr><td><span class="chip">M-2</span></td><td><strong>생태계 맵</strong>(이해관계자/가치 네트워크 노드-엣지 다이어그램, 외부 렌더러 0)</td><td>§2</td></tr>
+<tr><td><span class="chip">M-3</span></td><td><strong>실명 경쟁자 ≥3</strong> 비교 매트릭스(✓/△/✗), ntop 행 강조, 9축 + 탐지 범위</td><td>§3</td></tr>
+<tr><td><span class="chip">M-4</span></td><td>경쟁자 <strong>버전 주석</strong>(검증성 보강 — htop 3.x, btop++ 1.x 등)</td><td>§3-3</td></tr>
+<tr><td><span class="chip">M-5</span></td><td><strong>포지셔닝 쿼드런트</strong>(의미 인지 × 제어 깊이, 2축 ASCII 산점도)</td><td>§4</td></tr>
+<tr><td><span class="chip">M-6</span></td><td><strong>시장/사용자 맥락</strong>(폴리글랏 로컬 개발) + <strong>채택 가능 세그먼트</strong>(매출 산정 0, 정성 추정)</td><td>§5</td></tr>
+<tr><td><span class="chip">M-7</span></td><td><strong>갭/기회</strong> + 차별화 <strong>모방난이도(moat) 논거</strong> (데이터 주도 규칙 테이블 + 프로세스-로컬 전용 탐지 + 복리 확장구조)</td><td>§6, §7</td></tr>
+</tbody></table></div>
+<blockquote>게이트 공급: <strong>G-c</strong>(실명 경쟁자 명시 비교)·<strong>G-g</strong>(인포그래픽 우선, 외부 렌더러 0). 출처: <code>research-s1.md</code> 전체를 본 문서로 승계하고, 평가자 비고(S1-비고1: 버전 주석)를 §3-3에 반영했다.</blockquote>
+
+<h2 id="s0">0. 한눈에 보는 결론 (Executive snapshot)</h2>
+<p>ntop은 범용 시스템 모니터(htop·btop·top·glances·gotop·Activity Monitor)와 <strong>다른 평면</strong>에 있다. 범용 모니터는 모든 프로세스를 <strong>익명의 PID·CPU·메모리</strong>로 보여주지만, "이 <code>node</code>가 <strong>어느 프레임워크의, 어느 포트의, 어느 프로젝트</strong> 서버인가"는 모른다. ntop은 그 <strong>의미 격차(semantic gap)</strong>를 <strong>런타임/프레임워크 인지 분류</strong>로 메우고, 그 자리에서 <strong>포트 확인 + 안전한 종료(정상 종료 요청 → 안 죽으면 강제 종료, 트리 단위 종료)</strong>까지 끝낸다.</p>
+
+<figure class="viz">
+<svg viewBox="0 0 820 300" role="img" aria-label="ntop이 이기는 축과 약한 축 비교">
+  <!-- 왼쪽: 이기는 축 -->
+  <rect x="20" y="14" width="378" height="210" rx="10" fill="#ecfdf5" stroke="#a7f3d0"/>
+  <rect x="20" y="14" width="378" height="34" rx="10" fill="#059669"/>
+  <text x="209" y="37" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">ntop이 이기는 축</text>
+  <g font-size="13" fill="#065f46">
+    <text x="40" y="76">▸ 런타임 인지 (8종)</text>
+    <text x="40" y="106">▸ 프레임워크 식별 (독점)</text>
+    <text x="40" y="136">▸ 포트 → 프로세스 매핑 내장</text>
+    <text x="40" y="166">▸ 안전한 종료 (graceful → force · tree)</text>
+    <text x="40" y="196">▸ 크로스플랫폼 + 단일 바이너리 + TUI/CLI 동시</text>
+  </g>
+  <!-- 오른쪽: 약한 축 -->
+  <rect x="422" y="14" width="378" height="210" rx="10" fill="#fffbeb" stroke="#fde68a"/>
+  <rect x="422" y="14" width="378" height="34" rx="10" fill="#d97706"/>
+  <text x="611" y="37" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">ntop이 약한 축</text>
+  <g font-size="13" fill="#92400e">
+    <text x="442" y="76">▸ 시스템 전역 그래프·실시간 이력</text>
+    <text x="458" y="96" font-size="11.5" fill="#a16207">(btop·glances·gotop 우위)</text>
+    <text x="442" y="126">▸ 외부 명령(lsof/netstat) 의존</text>
+    <text x="442" y="156">▸ 프로세스 감독·자동 재시작 없음</text>
+    <text x="458" y="176" font-size="11.5" fill="#a16207">(pm2·systemd 우위)</text>
+    <text x="442" y="206">▸ "죽이는 도구"이지 "살려두는 도구" 아님</text>
+  </g>
+  <!-- 하단 해자 배너 -->
+  <rect x="20" y="240" width="780" height="46" rx="9" fill="#eef2ff" stroke="#c7d2fe"/>
+  <text x="410" y="269" text-anchor="middle" font-size="13.5" font-weight="600" fill="#4f46e5">해자(moat) = ① 데이터 주도 규칙 테이블 × ② 프로세스-로컬 전용 탐지 × ③ 복리 확장구조 (→ §7)</text>
+</svg>
+<figcaption>ntop의 강·약 축 한눈 비교 — 강점은 "의미 인지 + 안전 종료", 약점은 "전역 모니터링·프로세스 감독" 영역에 몰린다.</figcaption>
+</figure>
+
+<details class="raw"><summary>원본(텍스트) 한눈 비교 다이어그램</summary>
+<pre>  ┌────────────────────────────────────────────────────────────────────┐
+  │  ntop이 이기는 축                ntop이 약한 축                       │
+  │  ─────────────────              ─────────────────                    │
+  │  · 런타임 인지(8종)             · 시스템 전역 그래프·실시간 이력      │
+  │  · 프레임워크 식별(독점)          (btop·glances·gotop 우위)          │
+  │  · 포트→프로세스 매핑 내장       · 외부 명령(lsof/netstat) 의존       │
+  │  · 안전한 종료(graceful→force·   · 프로세스 감독·자동 재시작 없음     │
+  │    tree)                          (pm2·systemd 우위 — ntop은         │
+  │  · 크로스플랫폼 + 단일 바이너리    "죽이는 도구"이지 "살려두는        │
+  │    + TUI/CLI 동시                  도구"가 아님)                      │
+  └────────────────────────────────────────────────────────────────────┘
+   해자(moat) = ① 데이터 주도 규칙 테이블 × ② 프로세스-로컬 전용 탐지 × ③ 복리 확장구조 (→ §7)</pre>
+</details>
+
+<h2 id="s1">1. 생태계(가치 네트워크) 분석 <span class="chip">M-1</span></h2>
+<blockquote>한 제품은 혼자 존재하지 않는다. ntop을 둘러싼 <strong>모든 참여자</strong>를 7범주로 식별하고, 각자의 <strong>역할 / 인센티브(왜 참여하나) / 가치 교환(무엇을 주고받나) / 의존(무엇에 기대나)</strong>을 정리한다. ntop은 무료 OSS 도구이므로 "결제/정산 파트너"는 없으며 <strong>후원/배포 인프라로 해석</strong>한다(spec §6).</blockquote>
+
+<figure class="viz">
+<svg viewBox="0 0 820 150" role="img" aria-label="생태계 7범주 분류">
+  <g font-size="12.5">
+    <rect x="14" y="20" width="150" height="50" rx="8" fill="#eef2ff" stroke="#c7d2fe"/><text x="89" y="42" text-anchor="middle" font-weight="700" fill="#4f46e5">① 공급측</text><text x="89" y="60" text-anchor="middle" font-size="11" fill="#64748b">메인테이너·기여자</text>
+    <rect x="174" y="20" width="150" height="50" rx="8" fill="#ecfdf5" stroke="#a7f3d0"/><text x="249" y="42" text-anchor="middle" font-weight="700" fill="#059669">② 수요측</text><text x="249" y="60" text-anchor="middle" font-size="11" fill="#64748b">개발자·운영자·팀리드</text>
+    <rect x="334" y="20" width="150" height="50" rx="8" fill="#f0fdfa" stroke="#99f6e4"/><text x="409" y="42" text-anchor="middle" font-weight="700" fill="#0d9488">③ 플랫폼·중개</text><text x="409" y="60" text-anchor="middle" font-size="11" fill="#64748b">GitHub·crates.io·Homebrew</text>
+    <rect x="494" y="20" width="150" height="50" rx="8" fill="#fefce8" stroke="#fde68a"/><text x="569" y="42" text-anchor="middle" font-weight="700" fill="#ca8a04">④ 보완재</text><text x="569" y="60" text-anchor="middle" font-size="11" fill="#64748b">런타임·FW·크레이트·명령</text>
+    <rect x="654" y="20" width="152" height="50" rx="8" fill="#fef2f2" stroke="#fecaca"/><text x="730" y="42" text-anchor="middle" font-weight="700" fill="#dc2626">⑤ 대체재</text><text x="730" y="60" text-anchor="middle" font-size="11" fill="#64748b">htop·btop·pm2·systemd…</text>
+    <rect x="174" y="84" width="230" height="48" rx="8" fill="#f8fafc" stroke="#e2e8f0"/><text x="289" y="104" text-anchor="middle" font-weight="700" fill="#475569">⑥ 제도·규범</text><text x="289" y="122" text-anchor="middle" font-size="11" fill="#64748b">MIT/OSI · Rust 관행 · SemVer</text>
+    <rect x="414" y="84" width="230" height="48" rx="8" fill="#f8fafc" stroke="#e2e8f0"/><text x="529" y="104" text-anchor="middle" font-weight="700" fill="#475569">⑦ 후원·배포 인프라</text><text x="529" y="122" text-anchor="middle" font-size="11" fill="#64748b">Sponsors · CI · 레지스트리</text>
+  </g>
+</svg>
+<figcaption>생태계 7범주 — "결제 파트너" 자리에는 무료 OSS답게 <strong>후원·배포 인프라</strong>가 들어간다.</figcaption>
+</figure>
+
+<h3 id="s1-1">1-1. 공급측 (Supply) — 가치를 만드는 쪽</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>참여자</th><th>역할</th><th>인센티브(왜 참여하나)</th><th>가치 교환</th><th>의존</th></tr></thead>
+<tbody>
+<tr><td><strong>메인테이너 (greeun)</strong></td><td>코드·릴리스·이슈 분류(트리아지)·방향 결정</td><td>자기 문제 해결(직접 쓰는 도구 = dogfooding), 평판, 학습</td><td>코드/릴리스 제공 ↔ 피드백·기여·후원 수령</td><td>crates.io·GitHub·CI·의존 크레이트</td></tr>
+<tr><td><strong>기여자 (contributors)</strong></td><td>PR(특히 새 규칙/런타임 추가), 버그 리포트, 문서</td><td>필요 기능 직접 추가, 포트폴리오·학습, OSS 기여 이력</td><td>코드/패치 제공 ↔ 머지·크레딧 수령</td><td>규칙 테이블 확장 구조(도시에 §2: <code>Rule</code> 1개 + enum variant 1개)</td></tr>
+</tbody></table></div>
+
+<h3 id="s1-2">1-2. 수요측 (Demand) — 가치를 쓰는 쪽</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>참여자</th><th>역할</th><th>인센티브</th><th>가치 교환</th><th>의존</th></tr></thead>
+<tbody>
+<tr><td><strong>개발자(채택자)</strong></td><td>일상 사용: 식별·포트·안전 종료</td><td>의미 격차 해소, 문맥 전환 제거, 오kill(엉뚱한 프로세스 종료) 방지</td><td>사용 ↔ 이슈/Stars/입소문 제공</td><td>단일 바이너리·터미널·대상 런타임</td></tr>
+<tr><td><strong>운영자</strong></td><td>다수 서비스 프로세스 점검·정리</td><td>빠른 점검, 안전한 종료, CLI 자동화</td><td>사용 + 자동화 스크립트 ↔ 피드백</td><td>CLI <code>list --json</code>/<code>kill</code> 계약(도시에 §7)</td></tr>
+<tr><td><strong>팀 리드/도입 검토자</strong></td><td>팀 도구 채택 판단</td><td>검증된 안전성·크로스플랫폼</td><td>채택 결정 ↔ 조직 단위 사용</td><td>안전·프라이버시 정책(→ <code>33-policy</code>)</td></tr>
+</tbody></table></div>
+
+<h3 id="s1-3">1-3. 플랫폼 / 중개 (Platform / Intermediary)</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>참여자</th><th>역할</th><th>가치 교환</th><th>의존 관계</th></tr></thead>
+<tbody>
+<tr><td><strong>GitHub</strong></td><td>코드 호스팅·이슈·Stars·Sponsors·Releases</td><td>메인테이너↔기여자↔사용자 협업/배포 허브</td><td>ntop 저장소가 여기에 존재(repo: github.com/greeun/ntop)</td></tr>
+<tr><td><strong>crates.io</strong></td><td>Rust 패키지 레지스트리(<code>cargo install</code>)</td><td>빌드 가능한 소스 배포</td><td>의존 크레이트도 여기서 해소</td></tr>
+<tr><td><strong>Homebrew</strong></td><td>macOS/Linux 패키지 배포 채널</td><td><code>brew install</code>로 손쉬운 설치</td><td>릴리스 아티팩트/포뮬러</td></tr>
+<tr><td><strong>GitHub Releases(릴리스 바이너리)</strong></td><td>사전 빌드 단일 바이너리 배포</td><td>빌드 없이 설치하는 경로</td><td>CI(GitHub Actions)가 산출</td></tr>
+</tbody></table></div>
+
+<h3 id="s1-4">1-4. 보완재 (Complements) — ntop의 가치를 키우는 것</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>보완재</th><th>역할/관계</th><th>의존 방향</th></tr></thead>
+<tbody>
+<tr><td><strong>대상 런타임 8종</strong> (Node·Python·Java·Deno·Bun·Ruby·PHP·.NET)</td><td>이들이 많이 쓰일수록 ntop의 식별 가치↑</td><td>ntop이 이들을 <strong>인지</strong>(RUNTIME_RULES, 도시에 §2)</td></tr>
+<tr><td><strong>대상 프레임워크</strong> (Next.js·Nuxt·NestJs·Django·Flask·FastAPI·Spring Boot·Rails·Laravel·ASP.NET)</td><td>프레임워크 식별 = ntop의 핵심 가치</td><td>FRAMEWORK_RULES에 규칙 등록(도시에 §2)</td></tr>
+<tr><td><strong>터미널 에뮬레이터</strong> (iTerm·Terminal·Windows Terminal 등)</td><td>ntop의 TUI 렌더 무대</td><td>crossterm/ratatui 통해 의존</td></tr>
+<tr><td><strong>의존 크레이트</strong></td><td>ntop을 구성하는 빌딩블록</td><td>ntop → 이들에 <strong>빌드/런타임 의존</strong></td></tr>
+<tr><td>└ sysinfo 0.33</td><td>프로세스 열거·CPU delta·메모리</td><td>코어 스캔(도시에 §4)</td></tr>
+<tr><td>└ ratatui 0.29 / crossterm 0.28</td><td>TUI 위젯 / 터미널 제어</td><td>렌더·이벤트</td></tr>
+<tr><td>└ clap 4</td><td>CLI 파싱(서브커맨드/플래그)</td><td>CLI 계약</td></tr>
+<tr><td>└ tokio 1</td><td>async 이벤트 루프(tick/key/resize)</td><td>TUI 루프</td></tr>
+<tr><td>└ nix 0.29 (Unix) / windows-sys 0.59 (Win)</td><td>시그널·OS FFI(저수준 OS 호출)</td><td>종료·플랫폼 FFI</td></tr>
+<tr><td><strong>의존 시스템 명령</strong> (lsof·netstat·taskkill)</td><td>포트 매핑·Windows 종료</td><td>ntop이 <strong>외부 호출</strong>(없으면 빈 결과 — 도시에 §12)</td></tr>
+</tbody></table></div>
+
+<h3 id="s1-5">1-5. 대체재 (Substitutes) — 미채택 시의 대안</h3>
+<p>§3의 경쟁자 전부 = htop·btop·top·glances·gotop·Activity Monitor·ctop·pm2·systemd·launchd, 그리고 수동 baseline(<code>lsof</code>/<code>ps | grep</code>/<code>kill</code>). 이들은 ntop을 안 쓸 때의 대안이며, <strong>의미 인지 축이 비어 있다는 점</strong>이 공통 약점(§3·§4).</p>
+
+<h3 id="s1-6">1-6. 제도 / 규범 (Institutions)</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>제도</th><th>역할/영향</th></tr></thead>
+<tbody>
+<tr><td><strong>MIT 라이선스(OSI 승인)</strong></td><td>자유로운 사용·수정·포크·상업적 채택 허용 → 채택 장벽 0, 신뢰 형성</td></tr>
+<tr><td><strong>Rust 생태계 관행</strong></td><td><code>cargo fmt</code>/<code>clippy</code>-clean · <code>develop→main</code> 브랜치 · SemVer 버전(도시에 §10) → 기여 일관성</td></tr>
+<tr><td><strong>의존 크레이트 메인테이너</strong></td><td>상류(upstream) 업데이트·보안 패치 → ntop 지속성에 간접 영향</td></tr>
+</tbody></table></div>
+
+<h3 id="s1-7">1-7. 후원 / 배포 인프라 (Sponsorship / Distribution — "결제 파트너" 치환)</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>인프라</th><th>역할</th><th>비고</th></tr></thead>
+<tbody>
+<tr><td><strong>GitHub Sponsors</strong></td><td>메인테이너 후원 경로(<strong>가설적</strong> 수익화)</td><td>정산/take-rate 아님 — <strong>후원 흐름</strong></td></tr>
+<tr><td><strong>GitHub Actions (CI)</strong></td><td>빌드·테스트(테스트 10모듈)·릴리스 자동화</td><td>품질 게이트·바이너리 산출</td></tr>
+<tr><td><strong>crates.io 레지스트리</strong></td><td>배포·의존 해소 인프라</td><td>§1-3과 중첩(중개+인프라)</td></tr>
+</tbody></table></div>
+<blockquote>수익화(GitHub Sponsors·기업 후원·향후 Pro/Team 기능)는 전부 <strong>"가설"</strong>이며 그 단일 출처는 <code>00-business-model</code>이다. 본 문서는 생태계 좌표만 정리한다 — 정산/take-rate는 ntop에 <strong>없다</strong>.</blockquote>
+
+<h2 id="s2">2. 생태계 맵 <span class="chip">M-2</span> — 이해관계자 / 가치 네트워크 다이어그램</h2>
+<blockquote>노드-엣지 다이어그램. 화살표 = <strong>가치 흐름</strong>. 범례: <code>코드</code>=코드/패치, <code>피드백</code>=이슈/Stars/입소문, <code>후원</code>=GitHub Sponsors 흐름, <code>배포</code>=설치 아티팩트, <code>의존</code>=빌드/런타임 의존, <code>호출</code>=외부 명령 호출. (외부 렌더러 0 — Mermaid 미사용, 순수 인라인 SVG.)</blockquote>
+
+<div class="legend">
+  <span><i style="background:#0d9488"></i>플랫폼 허브(GitHub repo)</span>
+  <span><i style="background:#fff;border-color:#4f46e5"></i>참여자 노드</span>
+  <span><svg width="34" height="10"><line x1="0" y1="5" x2="30" y2="5" stroke="#64748b" stroke-width="1.5" marker-end="url(#lgah)"/><defs><marker id="lgah" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#64748b"/></marker></defs></svg>가치 흐름</span>
+  <span><svg width="34" height="10"><line x1="0" y1="5" x2="30" y2="5" stroke="#0d9488" stroke-width="1.5" stroke-dasharray="4 3"/></svg>후원/제도(간접)</span>
+</div>
+
+<figure class="viz">
+<svg viewBox="0 0 1040 700" role="img" aria-label="ntop 생태계 가치 네트워크 맵">
+<defs>
+  <marker id="ah" markerWidth="10" markerHeight="10" refX="7.5" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7.5,3 L0,6 Z" fill="#64748b"/></marker>
+  <marker id="aht" markerWidth="10" markerHeight="10" refX="7.5" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7.5,3 L0,6 Z" fill="#0d9488"/></marker>
+</defs>
+<!-- ===== 엣지(먼저 그려 노드 뒤로) ===== -->
+<g fill="none">
+  <path d="M235,90 L438,302" stroke="#64748b" stroke-width="1.6" marker-end="url(#ah)"/>
+  <path d="M220,175 L423,315" stroke="#64748b" stroke-width="1.6" marker-end="url(#ah)"/>
+  <path d="M525,290 L530,102" stroke="#64748b" stroke-width="1.6" marker-end="url(#ah)"/>
+  <path d="M630,69 L826,82" stroke="#64748b" stroke-width="1.6" marker-end="url(#ah)"/>
+  <path d="M925,128 L934,248" stroke="#64748b" stroke-width="1.6" marker-end="url(#ah)"/>
+  <path d="M840,290 C740,310 690,320 634,324" stroke="#64748b" stroke-width="1.6" marker-end="url(#ah)"/>
+  <path d="M905,324 C740,470 560,478 432,455" stroke="#0d9488" stroke-width="1.6" marker-end="url(#aht)"/>
+  <path d="M250,453 C150,430 145,230 152,102" stroke="#0d9488" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#aht)"/>
+  <path d="M430,358 C350,400 310,432 244,440" stroke="#64748b" stroke-width="1.6" marker-end="url(#ah)"/>
+  <path d="M420,342 C340,332 300,330 234,329" stroke="#64748b" stroke-width="1.6" marker-end="url(#ah)"/>
+  <path d="M955,324 C922,400 896,440 888,468" stroke="#64748b" stroke-width="1.6" marker-end="url(#ah)"/>
+  <path d="M700,592 C800,560 882,430 906,330" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah)"/>
+  <path d="M240,585 C360,560 420,420 446,366" stroke="#94a3b8" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#ah)"/>
+</g>
+<!-- 엣지 라벨 -->
+<g font-size="11.5" fill="#475569">
+  <rect x="276" y="150" width="78" height="17" fill="#fcfdff"/><text x="280" y="163">코드/릴리스</text>
+  <rect x="262" y="232" width="34" height="17" fill="#fcfdff"/><text x="266" y="245">코드</text>
+  <rect x="535" y="188" width="64" height="17" fill="#fcfdff"/><text x="539" y="201">소스/릴리스</text>
+  <rect x="700" y="42" width="32" height="17" fill="#fcfdff"/><text x="704" y="55">배포</text>
+  <rect x="940" y="182" width="32" height="17" fill="#fcfdff"/><text x="944" y="195">설치</text>
+  <rect x="668" y="284" width="120" height="17" fill="#fcfdff"/><text x="672" y="297">피드백·Stars·입소문</text>
+  <rect x="618" y="424" width="32" height="17" fill="#fcfdff" stroke="none"/><text x="622" y="437" fill="#0d9488">후원</text>
+  <rect x="84" y="290" width="98" height="17" fill="#fcfdff"/><text x="88" y="303" fill="#0d9488">GitHub Sponsors</text>
+  <rect x="320" y="392" width="62" height="17" fill="#fcfdff"/><text x="324" y="405">빌드 의존</text>
+  <rect x="318" y="312" width="32" height="17" fill="#fcfdff"/><text x="322" y="325">호출</text>
+  <rect x="928" y="392" width="92" height="17" fill="#fcfdff"/><text x="932" y="405">모니터링 대상</text>
+  <rect x="760" y="510" width="98" height="17" fill="#fcfdff"/><text x="764" y="523" fill="#dc2626">미채택 시 대안</text>
+  <rect x="296" y="492" width="72" height="17" fill="#fcfdff"/><text x="300" y="505">채택장벽↓</text>
+</g>
+<!-- ===== 노드 ===== -->
+<g font-size="12.5">
+  <!-- 공급측 -->
+  <rect x="60" y="40" width="180" height="58" rx="9" class="svg-node"/><text x="150" y="64" text-anchor="middle" font-weight="700">메인테이너</text><text x="150" y="82" text-anchor="middle" font-size="11.5" fill="#64748b">greeun · 코드·릴리스·트리아지</text>
+  <rect x="60" y="150" width="160" height="50" rx="9" class="svg-node"/><text x="140" y="172" text-anchor="middle" font-weight="700">기여자</text><text x="140" y="189" text-anchor="middle" font-size="11.5" fill="#64748b">PR·규칙 추가·버그</text>
+  <!-- 보완재 -->
+  <rect x="40" y="300" width="190" height="56" rx="9" fill="#fefce8" stroke="#fde68a"/><text x="135" y="322" text-anchor="middle" font-weight="700" fill="#a16207">보완재: 시스템 명령</text><text x="135" y="340" text-anchor="middle" font-size="11.5" fill="#a16207">lsof · netstat · taskkill</text>
+  <rect x="40" y="420" width="200" height="78" rx="9" fill="#fefce8" stroke="#fde68a"/><text x="140" y="441" text-anchor="middle" font-weight="700" fill="#a16207">보완재: 의존 크레이트</text><text x="140" y="459" text-anchor="middle" font-size="11" fill="#a16207">sysinfo·ratatui·crossterm</text><text x="140" y="475" text-anchor="middle" font-size="11" fill="#a16207">clap·tokio·nix·windows-sys</text>
+  <!-- 제도 -->
+  <rect x="40" y="560" width="200" height="60" rx="9" fill="#f8fafc" stroke="#e2e8f0"/><text x="140" y="582" text-anchor="middle" font-weight="700" fill="#475569">제도·규범</text><text x="140" y="600" text-anchor="middle" font-size="11" fill="#64748b">MIT/OSI · Rust 관행 · SemVer</text>
+  <!-- 허브 -->
+  <rect x="420" y="290" width="210" height="80" rx="11" fill="#f0fdfa" stroke="#0d9488" stroke-width="2"/><text x="525" y="316" text-anchor="middle" font-size="11" fill="#0d9488">플랫폼·중개 (ntop 코드 위치)</text><text x="525" y="338" text-anchor="middle" font-weight="700" fill="#0f766e">GitHub repo · greeun/ntop</text><text x="525" y="357" text-anchor="middle" font-size="11" fill="#0d9488">Issues · Stars · Releases</text>
+  <!-- CI -->
+  <rect x="430" y="40" width="200" height="58" rx="9" class="svg-node"/><text x="530" y="64" text-anchor="middle" font-weight="700">CI: GitHub Actions</text><text x="530" y="82" text-anchor="middle" font-size="11.5" fill="#64748b">build · test · release</text>
+  <!-- 배포 -->
+  <rect x="830" y="40" width="190" height="86" rx="9" class="svg-node"/><text x="925" y="62" text-anchor="middle" font-weight="700">배포 채널</text><text x="925" y="80" text-anchor="middle" font-size="11.5" fill="#64748b">crates.io · Homebrew</text><text x="925" y="97" text-anchor="middle" font-size="11.5" fill="#64748b">릴리스 바이너리</text>
+  <!-- 수요측 -->
+  <rect x="840" y="250" width="190" height="74" rx="9" fill="#ecfdf5" stroke="#059669" stroke-width="1.6"/><text x="935" y="280" text-anchor="middle" font-weight="700" fill="#059669">수요측 (Demand)</text><text x="935" y="299" text-anchor="middle" font-size="11.5" fill="#047857">개발자 · 운영자</text><text x="935" y="316" text-anchor="middle" font-size="11.5" fill="#047857">· 팀 리드</text>
+  <!-- 대상 -->
+  <rect x="760" y="470" width="240" height="96" rx="9" fill="#fefce8" stroke="#fde68a"/><text x="880" y="494" text-anchor="middle" font-weight="700" fill="#a16207">대상 런타임/프레임워크</text><text x="880" y="513" text-anchor="middle" font-size="11" fill="#a16207">Node·Python·Java·Deno·Bun</text><text x="880" y="529" text-anchor="middle" font-size="11" fill="#a16207">Ruby·PHP·.NET</text><text x="880" y="548" text-anchor="middle" font-size="11" fill="#a16207">+ Next.js·FastAPI·…</text>
+  <!-- 대체재 -->
+  <rect x="380" y="560" width="320" height="74" rx="9" fill="#fef2f2" stroke="#fecaca"/><text x="540" y="584" text-anchor="middle" font-weight="700" fill="#dc2626">대체재 (Substitutes)</text><text x="540" y="602" text-anchor="middle" font-size="11" fill="#b91c1c">htop·btop·top·glances·gotop·Activity Monitor</text><text x="540" y="618" text-anchor="middle" font-size="11" fill="#b91c1c">ctop·pm2·systemd·launchd · lsof|ps|grep</text>
+  <!-- Sponsors -->
+  <rect x="250" y="430" width="180" height="46" rx="9" fill="#f0fdfa" stroke="#99f6e4"/><text x="340" y="450" text-anchor="middle" font-weight="700" fill="#0d9488">GitHub Sponsors</text><text x="340" y="467" text-anchor="middle" font-size="11" fill="#0d9488">(후원 흐름·결제 아님)</text>
+</g>
+</svg>
+<figcaption>가치 순환 — 공급(메인테이너·기여자) → repo → CI → 배포 → 수요(개발자)로 <strong>코드가 흐르고</strong>, 수요 → repo로 <strong>피드백·후원이 돌아온다</strong>. ntop은 크레이트에 <strong>의존</strong>·시스템 명령을 <strong>호출</strong>하며, 대상 런타임/FW를 <strong>모니터링</strong>한다. 대체재는 같은 사용자를 두고 순환 밖에서 경쟁(의미 인지 축이 빔).</figcaption>
+</figure>
+
+<p><strong>맵이 보여주는 가치 순환(요약):</strong></p>
+<ul>
+<li><strong>코드 흐름:</strong> 메인테이너·기여자 → GitHub repo → CI → 배포 채널 → 개발자(설치).</li>
+<li><strong>피드백/후원 흐름:</strong> 개발자 → (피드백·Stars·입소문) → repo → 메인테이너; 개발자/후원자 → (GitHub Sponsors 후원) → 메인테이너. <strong>둘 다 무료 OSS 순환이며 결제·정산은 없다.</strong></li>
+<li><strong>의존 흐름:</strong> ntop → 의존 크레이트(빌드 의존) + 시스템 명령(런타임 호출). 이 외부 명령 의존이 §6의 약점이기도 하다.</li>
+<li><strong>보완재↔대상:</strong> 대상 런타임/프레임워크가 ntop의 모니터링 대상이자 가치 증폭기. 대체재는 이 순환 밖에서 동일 사용자를 두고 경쟁한다(의미 인지 축 부재).</li>
+</ul>
+
+<details class="raw"><summary>원본(텍스트) 생태계 맵 ASCII</summary>
+<pre>                          ┌──────────────────────────┐
+        코드/릴리스        │      플랫폼 / 중개        │      배포(설치)
+   ┌────────────────────▶ │  GitHub repo (greeun/ntop)│ ──────────────────┐
+   │                       │  Issues · Stars · Releases│                   │
+   │                       └───────────┬──────────────┘                   │
+   │                                   │ 소스/릴리스                       ▼
+┌──┴───────────────┐                   ▼                          ┌─────────────────┐
+│   공급측(Supply) │        ┌───────────────────────┐   배포      │  배포 채널       │
+│  ┌────────────┐  │        │  CI: GitHub Actions    │──────────▶ │  crates.io       │
+│  │ 메인테이너  │  │        │  (build·test·release)  │            │  Homebrew        │
+│  │  greeun     │◀─┼─후원── └───────────────────────┘            │  릴리스 바이너리 │
+│  └─────┬──────┘  │        ▲ GitHub Sponsors                     └────────┬────────┘
+│        │ 트리아지 │        │ (후원 흐름, 결제 아님)                        │ 설치
+│        ▼         │        │                                              ▼
+│  ┌────────────┐  │        │                                   ┌──────────────────┐
+│  │  기여자     │──┼─코드──▶(repo)                              │  수요측(Demand)  │
+│  │contributors │  │                                            │  개발자·운영자   │
+│  └────────────┘  │◀───────────────────피드백/Stars/입소문─────│  ·팀 리드        │
+└──────────────────┘                                            └───┬──────────┬───┘
+        ▲ 코드 재사용(의존)                                         │ 사용     │ 모니터링/종료
+        │                                                           │          ▼
+┌───────┴───────────────────────────┐                              │   ┌─────────────────────┐
+│  보완재: 의존 크레이트            │                              │   │ 대상 런타임/프레임워크│
+│  sysinfo·ratatui·crossterm·clap   │                              │   │ Node·Python·Java·Deno │
+│  tokio·nix·windows-sys            │                              │   │ Bun·Ruby·PHP·.NET +   │
+└───────────────────────────────────┘                              │   │ Next.js·FastAPI·…     │
+        ▲ 호출(런타임 의존)                                         │   └──────────▲──────────┘
+        │                                                           │              │ (이들이 ntop이
+┌───────┴───────────────────────────┐                              │              │  모니터링하는 대상)
+│  보완재: 의존 시스템 명령         │◀─────────────────────────────┘              │
+│  lsof · netstat · taskkill        │   (ntop이 포트/종료 위해 호출)               │
+└───────────────────────────────────┘                                             │
+                                                                                   │
+┌───────────────────────────────────┐      ┌──────────────────────────────────┐  │
+│  제도/규범                        │      │  대체재(Substitutes)             │  │
+│  MIT/OSI · Rust 관행 · SemVer     │      │  htop·btop·top·glances·gotop·    │◀─┘
+│  (채택 장벽↓·기여 일관성)         │      │  Activity Monitor·ctop·pm2·      │  (미채택 시 대안:
+└───────────────────────────────────┘      │  systemd·launchd · lsof|ps|grep  │   의미 인지 축이 빔)
+                                            └──────────────────────────────────┘</pre>
+</details>
+
+<h2 id="s3">3. 실명 경쟁자 비교 매트릭스 <span class="chip">M-3</span></h2>
+
+<h3 id="s3-1">3-1. 비교 축 정의 (무엇을 비교하는가)</h3>
+<p>각 축은 "그 도구가 <strong>하는가 / 안 하는가</strong>"를 가른다(spec §6).</p>
+<div class="table-wrap"><table>
+<thead><tr><th>축 코드</th><th>축 이름</th><th>의미(쉬운 설명)</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">RT</span></td><td>런타임 인지</td><td>프로세스 이름 문자열을 넘어 "이건 Node/Python/Java 런타임이다"를 <strong>의미로</strong> 분류하는가</td></tr>
+<tr><td><span class="chip">FW</span></td><td>프레임워크 식별</td><td>"Next.js/FastAPI/Spring Boot 서버다"까지 식별하는가</td></tr>
+<tr><td><span class="chip">PORT</span></td><td>포트→프로세스 매핑</td><td>"이 프로세스가 포트 3000에서 듣고 있다"를 그 자리에서 보여주는가</td></tr>
+<tr><td><span class="chip">KILL</span></td><td>시그널/graceful 종료 관리</td><td>임의 시그널 전송 + 정상 종료→강제 종료 자동 단계 + 트리(부모-자식) 종료</td></tr>
+<tr><td><span class="chip">TREE</span></td><td>트리 뷰</td><td>프로세스 부모-자식 계층을 트리로 보여주는가</td></tr>
+<tr><td><span class="chip">XPLAT</span></td><td>크로스플랫폼</td><td>macOS·Linux·<strong>Windows</strong> 세 곳 모두 동작하는가</td></tr>
+<tr><td><span class="chip">T+C</span></td><td>TUI+CLI 둘 다</td><td>대화형 TUI <strong>와</strong> 스크립트용 일회성 CLI를 <strong>둘 다</strong> 제공하는가</td></tr>
+<tr><td><span class="chip">BIN</span></td><td>단일 바이너리 설치</td><td>인터프리터/런타임 VM 없이 단일 실행파일로 간편 설치되는가</td></tr>
+<tr><td><span class="chip">탐지 범위</span></td><td>scope</td><td>무엇을 보는가 — 시스템 전체 / 컨테이너 / 자기 실행분 / 서버 선별</td></tr>
+</tbody></table></div>
+<blockquote><strong>탐지 범위(scope) 보충:</strong> 범용 모니터(htop·btop·top·glances·gotop·Activity Monitor)는 <strong>시스템 전체 프로세스</strong>, <code>ctop</code>은 <strong>컨테이너만</strong>, <code>pm2</code>/<code>systemd</code>/<code>launchd</code>는 <strong>자신이 실행/구성한 것만</strong> 본다. ntop은 <strong>여러 런타임의 "서버 프로세스"만 선별</strong>해 본다(규칙에 안 맞는 프로세스는 표시하지 않음 — 도시에 §2). 이 범위 차이가 포지셔닝의 핵심이다(§4).</blockquote>
+
+<h3 id="s3-2">3-2. 매트릭스 (✓ 한다 / △ 부분·조건부 / ✗ 안 한다)</h3>
+<div class="legend">
+  <span><i class="v-yes" style="border-color:#a7f3d0"></i><strong style="color:#059669">✓</strong> 한다</span>
+  <span><i class="v-part" style="border-color:#fde68a"></i><strong style="color:#d97706">△</strong> 부분·조건부</span>
+  <span><i class="v-no" style="border-color:#fecaca"></i><strong style="color:#dc2626">✗</strong> 안 한다</span>
+</div>
+<figure class="viz" style="text-align:left;padding:14px">
+<div class="matrix-wrap"><table class="matrix">
+<thead><tr><th class="tool">도구</th><th>RT</th><th>FW</th><th>PORT</th><th>KILL</th><th>TREE</th><th>XPLAT</th><th>T+C</th><th>BIN</th><th class="scope">탐지 범위</th></tr></thead>
+<tbody>
+<tr class="ntop"><td class="tool">▶ ntop</td><td class="v v-yes">✓</td><td class="v v-yes">✓</td><td class="v v-yes">✓</td><td class="v v-yes">✓</td><td class="v v-yes">✓</td><td class="v v-yes">✓</td><td class="v v-yes">✓</td><td class="v v-yes">✓</td><td class="scope">서버 프로세스(선별)</td></tr>
+<tr><td class="tool">htop</td><td class="v v-no">✗</td><td class="v v-no">✗</td><td class="v v-no">✗</td><td class="v v-part">△</td><td class="v v-yes">✓</td><td class="v v-part">△</td><td class="v v-no">✗</td><td class="v v-yes">✓</td><td class="scope">시스템 전체</td></tr>
+<tr><td class="tool">btop</td><td class="v v-no">✗</td><td class="v v-no">✗</td><td class="v v-no">✗</td><td class="v v-part">△</td><td class="v v-yes">✓</td><td class="v v-part">△</td><td class="v v-no">✗</td><td class="v v-yes">✓</td><td class="scope">시스템 전체</td></tr>
+<tr><td class="tool">top</td><td class="v v-no">✗</td><td class="v v-no">✗</td><td class="v v-no">✗</td><td class="v v-part">△</td><td class="v v-part">△</td><td class="v v-part">△</td><td class="v v-part">△</td><td class="v v-yes">✓</td><td class="scope">시스템 전체</td></tr>
+<tr><td class="tool">glances</td><td class="v v-no">✗</td><td class="v v-no">✗</td><td class="v v-no">✗</td><td class="v v-part">△</td><td class="v v-no">✗</td><td class="v v-yes">✓</td><td class="v v-yes">✓</td><td class="v v-no">✗</td><td class="scope">시스템 전체</td></tr>
+<tr><td class="tool">gotop</td><td class="v v-no">✗</td><td class="v v-no">✗</td><td class="v v-no">✗</td><td class="v v-part">△</td><td class="v v-no">✗</td><td class="v v-part">△</td><td class="v v-no">✗</td><td class="v v-yes">✓</td><td class="scope">시스템 전체</td></tr>
+<tr><td class="tool">Activity Monitor</td><td class="v v-no">✗</td><td class="v v-no">✗</td><td class="v v-no">✗</td><td class="v v-part">△</td><td class="v v-yes">✓</td><td class="v v-no">✗</td><td class="v v-no">✗</td><td class="v v-yes">✓</td><td class="scope">시스템 전체(GUI)</td></tr>
+<tr><td class="tool">ctop</td><td class="v v-no">✗</td><td class="v v-no">✗</td><td class="v v-part">△</td><td class="v v-part">△</td><td class="v v-no">✗</td><td class="v v-part">△</td><td class="v v-no">✗</td><td class="v v-yes">✓</td><td class="scope">컨테이너만</td></tr>
+<tr><td class="tool">pm2</td><td class="v v-part">△</td><td class="v v-no">✗</td><td class="v v-no">✗</td><td class="v v-yes">✓</td><td class="v v-no">✗</td><td class="v v-yes">✓</td><td class="v v-yes">✓</td><td class="v v-no">✗</td><td class="scope">자신이 실행한 앱</td></tr>
+<tr><td class="tool">systemd</td><td class="v v-no">✗</td><td class="v v-no">✗</td><td class="v v-no">✗</td><td class="v v-yes">✓</td><td class="v v-part">△</td><td class="v v-no">✗</td><td class="v v-part">△</td><td class="v v-part">△</td><td class="scope">구성된 유닛(Linux)</td></tr>
+<tr><td class="tool">launchd</td><td class="v v-no">✗</td><td class="v v-no">✗</td><td class="v v-no">✗</td><td class="v v-part">△</td><td class="v v-no">✗</td><td class="v v-no">✗</td><td class="v v-no">✗</td><td class="v v-part">△</td><td class="scope">구성된 잡(macOS)</td></tr>
+</tbody></table></div>
+</figure>
+<p><strong>RT·FW·PORT 세 열이 동시에 ✓인 도구는 ntop뿐</strong> — 히트맵에서 ntop 행만 전 열이 초록이다.</p>
+
+<p><strong>셀 판정 근거(주요 △/✗ 설명):</strong></p>
+<ul>
+<li><code>htop/btop/top/gotop/glances/Activity Monitor</code> <strong>RT·FW = ✗</strong>: 프로세스 이름 문자열만 보여줄 뿐 "Node 런타임의 Next.js 서버"라는 <strong>의미 분류가 없다</strong>. 이것이 §4 포지셔닝의 가로축 격차다.</li>
+<li><span class="chip">KILL</span>: htop/btop/top/gotop/glances/launchd = <strong>△</strong>(시그널은 보내지만 <strong>정상→강제 자동 에스컬레이션·트리 종료가 없거나 제한적</strong>). Activity Monitor = △(Quit/Force Quit 2종만). ctop = △(컨테이너 stop/kill). <strong>pm2/systemd = ✓</strong>(정상→강제 에스컬레이션·라이프사이클 제어가 강함, 단 범위가 좁음). <strong>ntop = ✓</strong>(임의 시그널 6종[Unix]/3종[Win] + <code>graceful_kill</code> 자동 에스컬레이션 + <code>kill_tree</code> 역순 종료 — 도시에 §5).</li>
+<li><span class="chip">PORT</span>: ctop = △(컨테이너 published 포트만). 나머지 범용 모니터 = ✗. <strong>ntop = ✓</strong>(<code>NetworkInspector</code>로 LISTEN 포트를 PID별 매핑 — 도시에 §4-1).</li>
+<li><span class="chip">XPLAT</span>: glances·pm2 = ✓(Win 포함), htop·btop·top·gotop·ctop = △(Win 네이티브 미흡/WSL 필요), Activity Monitor·launchd = ✗(macOS 전용), systemd = ✗(Linux 전용). <strong>ntop = ✓</strong>(mac·Linux·Win, <code>platform.rs</code> + <code>windows-sys</code> — 도시에 §4-2).</li>
+<li><span class="chip">T+C</span>: top = △(배치 모드 <code>top -b</code>), systemd = △(CLI 강력 + <code>systemd-cgtop</code> 별도 도구). glances·pm2 = ✓. <strong>ntop = ✓</strong>(TUI 기본 + <code>list</code>/<code>kill</code>/<code>info</code>/<code>log</code>/<code>config</code> 서브커맨드, <code>--json</code>/<code>--format csv</code> — 도시에 §7).</li>
+<li><span class="chip">BIN</span>: glances·pm2 = ✗(파이썬/Node 런타임 필요). systemd·launchd = △(OS 구성요소라 "설치" 개념이 아님). <strong>ntop = ✓</strong>(Rust 단일 바이너리: <code>cargo install</code>/Homebrew/릴리스 바이너리 — 도시에 §11).</li>
+<li><code>pm2 RT = △</code>: Node 전제로 동작하나 임의 프로세스를 발견·분류하진 않는다.</li>
+</ul>
+<div class="callout ok"><strong>매트릭스가 말하는 것:</strong> <strong>RT·FW·PORT 세 열이 동시에 ✓인 도구는 ntop뿐이다.</strong> 범용 모니터는 RT·FW·PORT가 모두 ✗, 매니저(pm2/systemd)는 KILL은 강하지만 RT·FW·PORT가 비어 있고 범위가 좁다.</div>
+
+<details class="raw"><summary>원본(텍스트) 매트릭스 ASCII</summary>
+<pre>도구                | RT  | FW  | PORT| KILL| TREE|XPLAT| T+C | BIN |  탐지 범위
+--------------------+-----+-----+-----+-----+-----+-----+-----+-----+-----------------
+▶ ntop              |  ✓  |  ✓  |  ✓  |  ✓  |  ✓  |  ✓  |  ✓  |  ✓  | 서버 프로세스(선별)
+--------------------+-----+-----+-----+-----+-----+-----+-----+-----+-----------------
+htop                |  ✗  |  ✗  |  ✗  |  △  |  ✓  |  △  |  ✗  |  ✓  | 시스템 전체
+btop                |  ✗  |  ✗  |  ✗  |  △  |  ✓  |  △  |  ✗  |  ✓  | 시스템 전체
+top                 |  ✗  |  ✗  |  ✗  |  △  |  △  |  △  |  △  |  ✓  | 시스템 전체
+glances             |  ✗  |  ✗  |  ✗  |  △  |  ✗  |  ✓  |  ✓  |  ✗  | 시스템 전체
+gotop               |  ✗  |  ✗  |  ✗  |  △  |  ✗  |  △  |  ✗  |  ✓  | 시스템 전체
+Activity Monitor    |  ✗  |  ✗  |  ✗  |  △  |  ✓  |  ✗  |  ✗  |  ✓  | 시스템 전체(GUI)
+ctop                |  ✗  |  ✗  |  △  |  △  |  ✗  |  △  |  ✗  |  ✓  | 컨테이너만
+pm2                 |  △  |  ✗  |  ✗  |  ✓  |  ✗  |  ✓  |  ✓  |  ✗  | 자신이 실행한 앱
+systemd             |  ✗  |  ✗  |  ✗  |  ✓  |  △  |  ✗  |  △  |  △  | 구성된 유닛(Linux)
+launchd             |  ✗  |  ✗  |  ✗  |  △  |  ✗  |  ✗  |  ✗  |  △  | 구성된 잡(macOS)</pre>
+</details>
+
+<h3 id="s3-3">3-3. 경쟁자 버전 주석 <span class="chip">M-4</span> — 검증성 보강</h3>
+<blockquote>평가자 비고(S1-비고1)를 반영해 <strong>판정 기준이 된 대략적 도구 계열</strong>을 부기한다. 외부 도구 사실은 도시에로 역추적할 수 없으므로, 세부 기능은 <strong>보수적으로(없는/제한적인 쪽으로)</strong> 판정했다. 버전은 "대략/계열" 표기이며, 실제 동작은 버전·빌드·OS에 따라 달라질 수 있다.</blockquote>
+<div class="table-wrap"><table>
+<thead><tr><th>도구</th><th>판정 기준 버전(대략)</th><th>비고</th></tr></thead>
+<tbody>
+<tr><td><strong>htop</strong></td><td>3.x 계열</td><td>F5 트리·F9 시그널 메뉴 기준. 자동 에스컬레이션은 없음(△).</td></tr>
+<tr><td><strong>btop (btop++)</strong></td><td>1.x 계열(C++ 재작성판)</td><td>실시간 그래프 강점. Windows 지원은 비교적 최근/제한적이라 XPLAT=△.</td></tr>
+<tr><td><strong>top</strong></td><td>Linux <code>procps-ng</code> 4.x / macOS BSD <code>top</code></td><td>트리·kill 동작이 OS마다 들쭉날쭉(macOS top은 트리·kill 없음) → TREE=△.</td></tr>
+<tr><td><strong>glances</strong></td><td>3.x~4.x 계열(Python)</td><td>크로스플랫폼·웹/REST·익스포트는 강하나 단일 바이너리 아님(BIN=✗).</td></tr>
+<tr><td><strong>gotop</strong></td><td>4.x 계열(현재 유지보수 중심)</td><td>단일 바이너리(Go)이나 포트 매핑·트리 없음.</td></tr>
+<tr><td><strong>Activity Monitor</strong></td><td>macOS 번들(버전=OS 버전)</td><td>GUI 전용·macOS 전용. ntop의 <code>phys_footprint</code> 메모리가 이 값과 일치(도시에 §4-2).</td></tr>
+<tr><td><strong>ctop</strong></td><td>0.7.x 계열</td><td>컨테이너 범위. published 포트만 표시(PORT=△).</td></tr>
+<tr><td><strong>pm2</strong></td><td>5.x 계열(Node)</td><td>graceful + kill_timeout 에스컬레이션·자동 재시작 강점, 단 자기 실행 앱만.</td></tr>
+<tr><td><strong>systemd</strong></td><td>250+ 계열(주요 배포판)</td><td>cgroup 트리 종료·자동 에스컬레이션 강점, 단 구성 유닛만·Linux 전용.</td></tr>
+<tr><td><strong>launchd</strong></td><td>macOS 번들(버전=OS 버전)</td><td>구성 잡만·macOS 전용·통합 TUI 없음(CLI만).</td></tr>
+<tr class="ntop-row"><td><strong>▶ ntop</strong></td><td><strong>0.2.0</strong></td><td>본 패키지의 역설계 대상. 모든 셀은 도시에/코드로 역추적 가능.</td></tr>
+</tbody></table></div>
+
+<h2 id="s4">4. 포지셔닝 쿼드런트 <span class="chip">M-5</span></h2>
+<p>두 축으로 도구들을 배치한다.</p>
+<ul>
+<li><strong>가로축(X) = 런타임/프레임워크 "의미 인지"</strong>: 프로세스를 PID·이름으로만 보는가(왼쪽) → "어느 런타임의 어느 프레임워크 서버"로 이해하는가(오른쪽).</li>
+<li><strong>세로축(Y) = 프로세스 "제어 깊이"</strong>: 보기만 하는가(아래) → 임의 시그널·정상/강제·트리·라이프사이클 제어까지 하는가(위).</li>
+</ul>
+
+<figure class="viz">
+<svg viewBox="0 0 760 540" role="img" aria-label="포지셔닝 쿼드런트: 의미 인지 × 제어 깊이">
+<defs><marker id="axh" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#475569"/></marker></defs>
+<!-- 우상단 사분면 강조 -->
+<rect x="410" y="60" width="290" height="200" fill="#eef2ff" opacity="0.7"/>
+<text x="555" y="84" text-anchor="middle" font-size="12" fill="#4f46e5" font-weight="700">고-의미인지 × 고-제어</text>
+<text x="555" y="102" text-anchor="middle" font-size="11.5" fill="#6366f1">→ ntop 거의 독점</text>
+<!-- 사분면 점선 -->
+<line x1="410" y1="60" x2="410" y2="460" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 4"/>
+<line x1="120" y1="260" x2="700" y2="260" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 4"/>
+<!-- 축 -->
+<line x1="120" y1="460" x2="712" y2="460" stroke="#475569" stroke-width="1.5" marker-end="url(#axh)"/>
+<line x1="120" y1="460" x2="120" y2="52" stroke="#475569" stroke-width="1.5" marker-end="url(#axh)"/>
+<text x="420" y="498" text-anchor="middle" font-size="13" font-weight="600" fill="#334155">런타임/프레임워크 의미 인지 →</text>
+<text x="150" y="486" font-size="11" fill="#64748b">낮음 · "익명 PID·이름만"</text>
+<text x="640" y="486" text-anchor="end" font-size="11" fill="#64748b">"Next.js/FastAPI 식별" · 높음</text>
+<text x="64" y="260" font-size="13" font-weight="600" fill="#334155" transform="rotate(-90 64 260)" text-anchor="middle">제어 깊이 →</text>
+<text x="108" y="74" text-anchor="end" font-size="11" fill="#64748b">높음</text>
+<text x="108" y="452" text-anchor="end" font-size="11" fill="#64748b">낮음</text>
+<!-- 점 -->
+<g font-size="11.5">
+  <circle cx="642" cy="92" r="9" fill="#4f46e5"/><text x="628" y="96" text-anchor="end" font-weight="700" fill="#4f46e5">▶ ntop</text>
+  <circle cx="190" cy="120" r="6" fill="#64748b"/><text x="202" y="124" fill="#334155">systemd</text>
+  <circle cx="282" cy="116" r="6" fill="#64748b"/><text x="294" y="120" fill="#334155">pm2</text>
+  <circle cx="213" cy="252" r="6" fill="#64748b"/><text x="225" y="256" fill="#334155">launchd</text>
+  <circle cx="201" cy="316" r="6" fill="#64748b"/><text x="160" y="320" text-anchor="end" fill="#334155">htop</text>
+  <circle cx="259" cy="324" r="6" fill="#64748b"/><text x="271" y="328" fill="#334155">btop</text>
+  <circle cx="329" cy="340" r="6" fill="#fff" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3 2"/><text x="341" y="344" fill="#64748b">ctop (다른 평면)</text>
+  <circle cx="178" cy="364" r="6" fill="#64748b"/><text x="166" y="378" text-anchor="end" fill="#334155">Activity Monitor</text>
+  <circle cx="190" cy="392" r="6" fill="#64748b"/><text x="178" y="404" text-anchor="end" fill="#334155">gotop</text>
+  <circle cx="248" cy="392" r="6" fill="#64748b"/><text x="260" y="404" fill="#334155">glances</text>
+  <circle cx="195" cy="424" r="6" fill="#64748b"/><text x="207" y="436" fill="#334155">top</text>
+</g>
+</svg>
+<figcaption>경쟁자들은 모두 <strong>가로축 왼쪽</strong>(의미 인지 낮음)에 몰려 있다. ntop만 오른쪽 위(의미 인지·제어 모두 높음)를 차지한다 — "더 편리"가 아니라 <strong>축이 다르다</strong>.</figcaption>
+</figure>
+
+<p><strong>읽는 법:</strong></p>
+<ul>
+<li><strong>오른쪽 위(고-의미인지 × 고-제어) = ntop이 거의 독점.</strong> 의미를 알면서(오른쪽) 동시에 안전하게 제어(위)하는 도구가 ntop이다.</li>
+<li><strong>왼쪽 위 = pm2·systemd·launchd</strong>: 제어는 깊지만 의미 인지는 낮고(런타임 분류·프레임워크 식별 없음) <strong>범위가 좁다</strong>(자신이 관리/구성한 것만).</li>
+<li><strong>왼쪽 가운데~아래 = 범용 모니터(htop·btop·top·glances·gotop·Activity Monitor)</strong>: 의미 인지가 거의 없고 제어도 시그널 전송 수준에 머문다.</li>
+<li><strong>ctop</strong>은 사실상 <strong>다른 평면(컨테이너)</strong>에 있어 좌표상 한 점으로 두지만 직접 경쟁이 아니다.</li>
+</ul>
+<div class="callout"><strong>핵심 통찰:</strong> 경쟁자들은 모두 <strong>가로축 왼쪽</strong>(의미 인지 낮음)에 몰려 있다. ntop의 차별화는 이 <strong>가로축(의미 인지)을 오른쪽으로 끌고 가면서 세로축(제어)도 높게 유지</strong>한 데 있다. "더 편리"가 아니라 <strong>축이 다르다.</strong></div>
+
+<details class="raw"><summary>원본(텍스트) 포지셔닝 ASCII</summary>
+<pre>제어 깊이
+(높음)
+  ▲
+  │  systemd            pm2                          ▶ ntop
+  │  (구성 유닛/         (Node 앱/                   (시그널6·graceful
+  │   cgroup 트리,       graceful reload,             →force·tree kill,
+  │   graceful→force)    감독·재시작)                 8런타임·FW식별)
+  │
+  │                          launchd
+  │  ──────────────────────────(구성 잡)─────────────────────────────
+  │       htop          btop
+  │     (F9 시그널,    (시그널,
+  │      트리 F5)       이력 그래프)        ctop
+  │                                        (컨테이너 stop/kill,
+  │   Activity Monitor                      published 포트)
+  │   (Quit/Force,
+  │    계층 보기)
+  │      gotop      glances
+  │     (kill)     (k kill, 웹/API)
+  │       top
+  │     (k/ V)
+  └────────────────────────────────────────────────────────────────────▶
+   (낮음)        런타임/프레임워크 의미 인지              (높음)
+   "익명 PID·이름만"                              "Next.js/FastAPI 수준 식별"</pre>
+</details>
+
+<h2 id="s5">5. 시장 / 사용자 맥락 <span class="chip">M-6</span> (정성)</h2>
+<blockquote>ntop은 <strong>무료 OSS 도구</strong>이므로 매출 기반 시장 규모(TAM/SAM/SOM 금액)를 산정하지 않는다. 대신 spec/playbook 지시에 따라 <strong>"채택 가능 사용자 모집단/세그먼트"를 정성적으로</strong> 추정한다.</blockquote>
+
+<h3 id="s5-1">5-1. 시장 흐름 — 왜 지금 이 도구가 의미 있나</h3>
+<ol>
+<li><strong>폴리글랏(polyglot, 한 프로젝트에 여러 언어) 로컬 개발의 일상화.</strong> 프런트엔드는 Node(Next.js/Nuxt), 백엔드는 Python(FastAPI/Django)·Java(Spring Boot)·.NET, 거기에 워커·큐·캐시까지 — 한 개발자가 <strong>한 머신에서 여러 런타임의 서버를 동시에</strong> 띄우는 것이 표준이 됐다.</li>
+<li><strong>한 머신에 동종 프로세스 더미.</strong> 특히 <code>node</code> 프로세스는 dev 서버·번들러·LSP(에디터 자동완성 서버)·MCP 서버·CLI 도구가 모두 같은 이름으로 떠 있어, 범용 모니터에서는 <strong>구분이 불가능한 익명 더미</strong>가 된다.</li>
+<li><strong>AI 도구·MCP 서버의 폭증.</strong> npx로 띄우는 MCP(AI 비서가 외부 도구에 붙는 표준 연결)/도구 프로세스가 늘면서, "건드리면 안 되는 도구 프로세스 vs 죽여도 되는 dev 서버"를 가려야 할 필요가 커졌다. (ntop의 프로세스-로컬 전용 탐지 원칙은 바로 이 오분류를 막기 위한 설계 — 도시에 §2.)</li>
+<li><strong>터미널 우선·키보드 중심 워크플로의 부활.</strong> TUI 모니터(htop·btop)의 인기가 보여주듯, 개발자는 GUI보다 터미널에서 빠르게 점검·조치하길 원한다. ntop은 이 흐름 위에 <strong>의미 인지</strong>를 얹었다.</li>
+</ol>
+
+<h3 id="s5-2">5-2. 채택 가능 사용자 모집단/세그먼트 (정성, 깔때기형)</h3>
+<figure class="viz">
+<svg viewBox="0 0 760 380" role="img" aria-label="채택 가능 세그먼트 깔때기">
+  <polygon points="60,20 700,20 638,84 122,84" fill="#eef2ff" stroke="#c7d2fe"/>
+  <text x="380" y="46" text-anchor="middle" font-size="13.5" font-weight="700" fill="#4f46e5">모집단 — 터미널을 쓰는 모든 개발자</text>
+  <text x="380" y="68" text-anchor="middle" font-size="11.5" fill="#6366f1">(htop/top을 한 번이라도 써 본 사람)</text>
+  <text x="380" y="108" text-anchor="middle" font-size="11.5" fill="#64748b">↓ 좁힘: "한 머신에서 여러 런타임 서버를 띄운다"</text>
+  <polygon points="132,122 628,122 562,214 198,214" fill="#e0f2fe" stroke="#bae6fd"/>
+  <text x="380" y="146" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0369a1">핵심 세그먼트</text>
+  <text x="380" y="167" text-anchor="middle" font-size="11.5" fill="#075985">① 폴리글랏 풀스택 — Node 프런트 + Python/Java 백 동시</text>
+  <text x="380" y="186" text-anchor="middle" font-size="11.5" fill="#075985">② 마이크로서비스 로컬 — 한 머신 여러 서비스</text>
+  <text x="380" y="205" text-anchor="middle" font-size="11.5" fill="#075985">③ AI/도구 개발자 — npx/MCP·CLI 다수(오분류 회피 중요)</text>
+  <text x="380" y="240" text-anchor="middle" font-size="11.5" fill="#64748b">↓ 좁힘: "익명 프로세스 더미 / 엉뚱한 kill에 데인 경험"</text>
+  <polygon points="208,254 552,254 486,342 274,342" fill="#ecfdf5" stroke="#a7f3d0"/>
+  <text x="380" y="280" text-anchor="middle" font-size="12.5" font-weight="700" fill="#059669">1차 채택자 (early adopter)</text>
+  <text x="380" y="301" text-anchor="middle" font-size="11.5" fill="#047857">④ Rust·TUI 선호 개발자 — 단일 바이너리·키보드 애호</text>
+  <text x="380" y="320" text-anchor="middle" font-size="11.5" fill="#047857">⑤ 다수 서비스 점검 운영자 — 식별·안전 종료 잦음</text>
+</svg>
+<figcaption>모집단에서 "다중 런타임 × 익명 더미 통증 × 엉뚱한 kill 경험"으로 좁혀 1차 채택자에 도달하는 정성 깔때기. 금액 산정 없음.</figcaption>
+</figure>
+
+<ul>
+<li><strong>세그먼트 우선순위 근거:</strong> ①·③이 "의미 격차" 통증이 가장 크고 빈도가 높다(매일·세션마다 발생). 이들이 <code>03-personas</code>의 P1(폴리글랏)·P3(AI 도구) 페르소나에 대응한다.</li>
+<li><strong>모집단 추정의 성격:</strong> 금액이 아니라 <strong>"폴리글랏 로컬 개발 × 터미널 사용 × 다중 런타임"의 교집합</strong>으로 좁힌 정성 추정이다. 수치 목표(Stars/다운로드 등)는 <code>00-business-model</code>/<code>10-prd</code>에서 <strong>"가설"로</strong> 다룬다(여기서 산정하지 않음).</li>
+</ul>
+
+<details class="raw"><summary>원본(텍스트) 세그먼트 깔때기 ASCII</summary>
+<pre>[ 모집단 — 넓음 ]
+ 터미널을 쓰는 모든 개발자 (htop/top을 한 번이라도 써 본 사람)
+        │  ↓ 좁힘: "한 머신에서 여러 런타임 서버를 띄운다"
+[ 핵심 세그먼트 ]
+ ① 폴리글랏 풀스택 개발자  — Node 프런트 + Python/Java 백 동시 구동
+ ② 마이크로서비스 로컬 개발자 — 한 머신에서 여러 서비스 프로세스
+ ③ AI/도구 개발자          — npx/MCP·CLI 프로세스를 다수 구동(오분류 회피가 중요)
+        │  ↓ 좁힘: "익명 프로세스 더미 / 엉뚱한 kill에 데인 경험"
+[ 1차 채택자 (early adopter) ]
+ ④ Rust·TUI 선호 개발자    — 단일 바이너리·키보드 워크플로 애호
+ ⑤ 다수 서비스 점검 운영자  — 빠른 식별·안전 종료가 잦은 작업</pre>
+</details>
+
+<h2 id="s6">6. 갭 / 기회 <span class="chip">M-7</span> 전반부</h2>
+
+<h3 id="s6-1">6-1. ntop이 이기는 지점 (기회)</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>강점</th><th>근거(도시에)</th><th>어느 경쟁자 대비</th></tr></thead>
+<tbody>
+<tr><td><strong>런타임 인지 분류</strong>(8종)</td><td>§2 RUNTIME_RULES, Runtime enum</td><td>범용 모니터 전부(RT=✗)</td></tr>
+<tr><td><strong>프레임워크 식별</strong></td><td>§2 FRAMEWORK_RULES(Next/FastAPI/Spring Boot…)</td><td><strong>모든 경쟁자(FW=✗)</strong> — ntop 독점</td></tr>
+<tr><td><strong>포트→프로세스 매핑 내장</strong></td><td>§4-1 NetworkInspector(LISTEN)</td><td>범용 모니터(PORT=✗)</td></tr>
+<tr><td><strong>안전한 종료 관리</strong></td><td>§5 KillSignal·graceful_kill·kill_tree</td><td>htop/btop/top/glances(△, 에스컬레이션·트리 약함)</td></tr>
+<tr><td><strong>크로스플랫폼 + 단일 바이너리 + TUI/CLI 동시</strong></td><td>§7·§11, Cargo.toml</td><td>어느 한 도구도 셋을 동시 충족 못 함</td></tr>
+<tr><td><strong>정확한 메모리(macOS phys_footprint)</strong></td><td>§4-2 (Activity Monitor 일치)</td><td>sysinfo RSS 과소보고 회피</td></tr>
+</tbody></table></div>
+
+<h3 id="s6-2">6-2. ntop이 약한/비어 있는 지점 (한계)</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>약점</th><th>근거(도시에)</th><th>우위 경쟁자</th></tr></thead>
+<tbody>
+<tr><td><strong>시스템 전역 그래프·실시간 이력 없음</strong></td><td>프로세스 선별 중심, 이력 차트 모듈 없음</td><td>btop·glances·gotop</td></tr>
+<tr><td><strong>프로세스 감독/재시작/데몬화 없음</strong></td><td>ntop은 죽이는 도구(killer.rs), 살려두는 supervisor 아님</td><td><strong>pm2·systemd</strong>(자동 재시작)</td></tr>
+<tr><td><strong>외부 명령 의존</strong></td><td>§12 lsof/netstat 없으면 포트 빈 결과</td><td>(자체 구현 도구 대비 취약)</td></tr>
+<tr><td><strong>Windows 시그널 제한</strong></td><td>§12 HUP/USR1/USR2 없음(Win 3종)</td><td>(Unix 환경에선 비문제)</td></tr>
+<tr><td><strong>로그 캡처 한계</strong></td><td>§12 cwd glob + Linux <code>/proc/&lt;pid&gt;/fd/1</code> fallback만</td><td>pm2(통합 로그 관리)</td></tr>
+<tr><td><strong>프레임워크 규칙 공백</strong></td><td>§12 Express/Fastify/Koa/Hapi enum만 있고 규칙 미등록</td><td>(로드맵 근거 — <code>40-backlog</code>)</td></tr>
+<tr><td><strong>컨테이너 비대상</strong></td><td>호스트 프로세스 범위</td><td>ctop(컨테이너)</td></tr>
+<tr><td><strong>GUI 아님</strong></td><td>터미널 전용</td><td>Activity Monitor(GUI 선호자)</td></tr>
+</tbody></table></div>
+<blockquote>이 한계들은 <strong>로드맵 근거</strong>이자(<code>40-backlog</code>, 도시에 §12), 동시에 <strong>포지셔닝의 선택</strong>이다 — ntop은 "전역 모니터"가 아니라 "<strong>서버 의미 인지 + 안전 종료</strong>"에 집중한 도구다.</blockquote>
+
+<h2 id="s7">7. 차별화 모방난이도(해자/moat) 논거 <span class="chip">M-7</span> 후반부</h2>
+<blockquote>spec/playbook은 "더 편리/더 빠름" 같은 일반론을 <strong>실패</strong>로 규정한다. 따라서 차별화는 <strong>실명 경쟁자 대비 명시 축 + 모방난이도 논거</strong>로 제시한다. 이 §7은 <code>01-service-plan</code> 차별화 섹션의 <strong>단일 출처</strong>다.</blockquote>
+<p><strong>명시 비교 한 줄 정리:</strong> <em>htop·btop·top·glances·gotop·Activity Monitor</em>는 <strong>RT·FW·PORT 축이 모두 ✗</strong>이고, <em>pm2·systemd·launchd</em>는 <strong>KILL은 ✓지만 RT/FW/PORT가 비고 범위가 좁다.</strong> <strong>세 축(RT·FW·PORT)이 동시에 ✓인 도구는 ntop뿐이다</strong>(§3 매트릭스).</p>
+<p>이 차별점이 <strong>쉽게 복제되지 않는</strong> 이유 — 모방난이도 3가지:</p>
+
+<figure class="viz">
+<svg viewBox="0 0 820 380" role="img" aria-label="ntop 해자 = ① × ② × ③">
+<defs><marker id="mh" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#4f46e5"/></marker></defs>
+<rect x="40" y="18" width="740" height="44" rx="9" fill="#eef2ff" stroke="#c7d2fe"/>
+<text x="410" y="46" text-anchor="middle" font-size="14.5" font-weight="700" fill="#4f46e5">ntop의 해자 = ① × ② × ③ &nbsp;(단일 기능 아님 — 설계 결정의 곱)</text>
+<!-- 박스 ① -->
+<rect x="50" y="86" width="340" height="120" rx="10" fill="#fff" stroke="#4f46e5" stroke-width="1.6"/>
+<text x="220" y="112" text-anchor="middle" font-size="13.5" font-weight="700" fill="#4f46e5">① 데이터 주도 규칙 테이블</text>
+<text x="220" y="131" text-anchor="middle" font-size="11.5" fill="#64748b">(축적된 경험 사전)</text>
+<text x="220" y="155" text-anchor="middle" font-size="11" fill="#475569">node_modules/.bin/next · -m flask</text>
+<text x="220" y="173" text-anchor="middle" font-size="11" fill="#475569">bin/rails · org.springframework</text>
+<text x="220" y="191" text-anchor="middle" font-size="11" fill="#475569">normalize_name(comm 16자) …</text>
+<!-- 박스 ② -->
+<rect x="430" y="86" width="340" height="120" rx="10" fill="#fff" stroke="#4f46e5" stroke-width="1.6"/>
+<text x="600" y="112" text-anchor="middle" font-size="13.5" font-weight="700" fill="#4f46e5">② 프로세스-로컬 전용 탐지</text>
+<text x="600" y="131" text-anchor="middle" font-size="11.5" fill="#64748b">(비자명한 설계 결정)</text>
+<text x="600" y="155" text-anchor="middle" font-size="11" fill="#475569">이름+커맨드라인만 본다.</text>
+<text x="600" y="173" text-anchor="middle" font-size="11" fill="#475569">package.json을 절대 안 읽음 →</text>
+<text x="600" y="191" text-anchor="middle" font-size="11" fill="#475569">npx 전역 도구 cwd 오분류 회피</text>
+<!-- 수렴 화살표 -->
+<path d="M220,206 C220,240 360,250 405,262" fill="none" stroke="#4f46e5" stroke-width="1.6" marker-end="url(#mh)"/>
+<path d="M600,206 C600,240 460,250 415,262" fill="none" stroke="#4f46e5" stroke-width="1.6" marker-end="url(#mh)"/>
+<text x="410" y="238" text-anchor="middle" font-size="13" font-weight="700" fill="#0d9488">×</text>
+<!-- 박스 ③ -->
+<rect x="170" y="266" width="480" height="100" rx="10" fill="#f0fdfa" stroke="#0d9488" stroke-width="2"/>
+<text x="410" y="292" text-anchor="middle" font-size="13.5" font-weight="700" fill="#0f766e">③ 복리로 커지는 확장 구조</text>
+<text x="410" y="314" text-anchor="middle" font-size="11.5" fill="#0d9488">새 런타임/FW = <tspan font-weight="700">Rule 1개 + enum variant 1개</tspan></text>
+<text x="410" y="333" text-anchor="middle" font-size="11.5" fill="#0d9488">→ 기여가 쌓일수록 사전이 복리로 성장</text>
+<text x="410" y="352" text-anchor="middle" font-size="11.5" fill="#0d9488">→ 후발 복제자는 "움직이는 목표"를 상대</text>
+</svg>
+<figcaption>해자는 단일 기능이 아니라 ① 경험 사전 × ② 비자명한 탐지 원칙 × ③ 복리 확장 구조의 <strong>곱</strong>이다.</figcaption>
+</figure>
+
+<ol>
+<li><strong>데이터 주도 규칙 테이블 = 축적된 경험 사전.</strong> <code>FRAMEWORK_RULES</code>/<code>RUNTIME_RULES</code>는 "각 프레임워크/런타임이 <strong>프로세스 이름·커맨드라인에 드러나는 방식</strong>"을 수집한 사전이다 — <code>node_modules/.bin/next</code>, <code>-m flask</code>, <code>bin/rails</code>, <code>org.springframework</code>, macOS의 <code>comm</code> 16자 절단을 푸는 <code>normalize_name</code>(도시에 §2)… 이건 기능 하나가 아니라 <strong>현장에서 하나씩 검증해 쌓은 경험치</strong>다. 범용 모니터가 이를 "한 번에 추가"할 수 없는 이유다.</li>
+<li><strong>프로세스-로컬 전용 탐지 원칙 = 비자명한 설계 결정.</strong> ntop은 분류에 <strong>파일시스템(<code>package.json</code>)을 절대 읽지 않는다</strong>(도시에 §2). 순진하게 복제하려는 쪽은 당연히 cwd의 <code>package.json</code>을 읽으려 하고, 그 순간 <strong>전역 실행 프로세스(npx MCP 서버, CLI 도구)를 상속된 cwd로 오분류</strong>하는 함정에 빠진다. ntop의 정확성은 이 함정을 <strong>의도적으로 피한</strong> 결과이며, 같은 통찰 없이는 재현하기 어렵다. (그래서 spec은 fs 기반 탐지 제안 자체를 금지한다.)</li>
+<li><strong>확장 구조가 해자를 시간에 따라 키운다.</strong> 새 런타임/프레임워크는 <strong><code>Rule</code> 1개 + enum variant 1개</strong>만 추가하면 되고 다른 코드 변경이 불필요하다(도시에 §2). 즉 기여가 쌓일수록 사전이 <strong>복리로</strong> 커진다 — 후발 복제자는 매번 격차를 따라잡아야 하는 움직이는 목표를 상대하게 된다.</li>
+</ol>
+<div class="callout ok"><strong>결론:</strong> ntop의 해자는 "단일 기능"이 아니라 <strong>① 경험이 응축된 데이터 사전 × ② 비자명한 탐지 설계 원칙 × ③ 복리로 커지는 확장 구조</strong>의 결합이다. 이는 범용 모니터가 분류 계층 없이 흉내 낼 수 없고, 프로세스 매니저가 발견·분류 범위를 넓히지 않고는 도달할 수 없는 위치다.</div>
+
+<details class="raw"><summary>원본(텍스트) 해자 다이어그램 ASCII</summary>
+<pre>   ┌──────────────────────────────────────────────────────────────────────┐
+   │  ntop의 해자 = ① × ② × ③ (단일 기능 아님 — 설계 결정의 곱)            │
+   ├──────────────────────────────────────────────────────────────────────┤
+   │  ① 데이터 주도 규칙 테이블      ② 프로세스-로컬 전용 탐지              │
+   │     (축적된 경험 사전)             (비자명한 설계 결정)                │
+   │     node_modules/.bin/next,       이름+커맨드라인만 본다.             │
+   │     -m flask, bin/rails,          package.json을 절대 안 읽음 →       │
+   │     org.springframework,          npx 전역 도구의 cwd 오분류 함정     │
+   │     normalize_name(comm 16자)…    을 의도적으로 회피                  │
+   │            │                              │                           │
+   │            └──────────────┬───────────────┘                           │
+   │                           ▼                                           │
+   │            ③ 복리로 커지는 확장 구조                                  │
+   │               새 런타임/FW = `Rule` 1개 + enum variant 1개            │
+   │               → 기여가 쌓일수록 사전이 복리로 성장                    │
+   │               → 후발 복제자는 "움직이는 목표"를 상대                  │
+   └──────────────────────────────────────────────────────────────────────┘</pre>
+</details>
+
+<h2 id="sverify">자체 검증 (Self-verification)</h2>
+<p>Sprint Contract의 각 체크를 실제 산출물에 비추어 확인한다.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>#</th><th>체크</th><th>결과</th><th>어디서 충족</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">M-1</span></td><td>생태계 전 참여자 + 역할·인센티브·가치교환·의존 (7범주)</td><td><span class="chip ok">PASS</span> — 공급/수요/플랫폼·중개/보완재/대체재/제도/후원·배포 7범주 표</td><td>§1</td></tr>
+<tr><td><span class="chip">M-2</span></td><td>생태계 맵(노드-엣지, 외부 렌더러 0)</td><td><span class="chip ok">PASS</span> — 인라인 SVG 가치 네트워크, Mermaid 미사용</td><td>§2</td></tr>
+<tr><td><span class="chip">M-3</span></td><td>실명 경쟁자 ≥3 비교 매트릭스(✓/△/✗), ntop 행 강조</td><td><span class="chip ok">PASS</span> — 10개 실명 × 8축 + 탐지 범위, ▶ ntop 강조, △ 판정 근거</td><td>§3-1·§3-2</td></tr>
+<tr><td><span class="chip">M-4</span></td><td>경쟁자 버전 주석</td><td><span class="chip ok">PASS</span> — htop 3.x·btop++ 1.x·glances 3~4.x 등 11행 버전 계열 표</td><td>§3-3</td></tr>
+<tr><td><span class="chip">M-5</span></td><td>포지셔닝 쿼드런트(2축)</td><td><span class="chip ok">PASS</span> — 의미 인지 × 제어 깊이, 전 도구 배치</td><td>§4</td></tr>
+<tr><td><span class="chip">M-6</span></td><td>시장/사용자 맥락 + 채택 세그먼트(매출 산정 0)</td><td><span class="chip ok">PASS</span> — 흐름 4개 + 깔때기형 세그먼트, 금액 산정 없음</td><td>§5</td></tr>
+<tr><td><span class="chip">M-7</span></td><td>갭/기회 + 모방난이도(moat) 논거</td><td><span class="chip ok">PASS</span> — 강점/약점 표 + 해자 3논거(규칙 테이블·프로세스-로컬·확장 구조) + 다이어그램</td><td>§6, §7</td></tr>
+</tbody></table></div>
+
+<p><strong>추가 게이트/원칙 자체 점검:</strong></p>
+<ul>
+<li><strong>G-c(실명 경쟁자 명시 비교):</strong> §3 매트릭스 + §7 "RT·FW·PORT 동시 ✓는 ntop뿐"이 명시 비교를 충족. 일반론("더 편리") 미사용.</li>
+<li><strong>G-g(인포그래픽 우선, 외부 렌더러 0):</strong> 생태계 맵·비교 매트릭스·포지셔닝 쿼드런트·세그먼트 깔때기·해자 다이어그램 모두 인라인 SVG/CSS. Mermaid 등 외부 렌더러 미사용, 빈 다이어그램 0.</li>
+<li><strong>사실 역추적성:</strong> ntop 관련 모든 셀/주장에 도시에 §번호 부기(§2·§4·§5·§7·§11·§12). 경쟁자 사실은 공개 동작이며 불확실 항목은 보수적으로 표기(§3-3 버전 주석 명시).</li>
+<li><strong>창작 금지 준수:</strong> 결제/정산/take-rate/DB/REST 엔드포인트 언급 0. 수익화는 "가설"로만 §1-7에 표기하고 단일 출처를 <code>00-business-model</code>로 회부, 산정 없음.</li>
+<li><strong>단일 출처 준수:</strong> 경쟁/생태계는 본 문서가 소유(00·01이 참조). 페르소나는 다루지 않음(→ <code>03-personas</code>). 수익화 수치 정의는 <code>00-business-model</code>에 위임.</li>
+</ul>
+<p><strong>알려진 한계(후속에서 보완):</strong></p>
+<ul>
+<li>일부 경쟁자 세부 기능(예: glances 포트 플러그인 동작, btop Windows 성숙도)은 버전별 차이가 있어 <strong>보수적으로(없는/제한적인 쪽으로)</strong> 판정했다(§3-3). 더 엄격한 값이 필요하면 버전을 고정해 보강 가능.</li>
+<li>본 문서는 경쟁·생태계 범위에 한정한다. 페르소나는 <code>03-personas</code>, 기능↔문제 추적은 <code>10-prd</code>.</li>
+</ul>
+</main></div>
+<script>
+(function(){
+  var links=[].slice.call(document.querySelectorAll('.toc a'));
+  var map={};links.forEach(function(a){map[a.getAttribute('href').slice(1)]=a;});
+  var obs=new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ links.forEach(function(l){l.classList.remove('active');}); var a=map[e.target.id]; if(a)a.classList.add('active'); }});
+  },{rootMargin:'-64px 0px -70% 0px',threshold:0});
+  document.querySelectorAll('main h2[id],main h3[id]').forEach(function(h){obs.observe(h);
+    var a=document.createElement('a');a.className='anchor';a.href='#'+h.id;a.textContent='§';h.appendChild(a);
+  });
+})();
+</script>
+</body></html>

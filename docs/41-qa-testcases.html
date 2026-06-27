@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>41 · QA 테스트 케이스 — 핵심 플로우 + 엣지/예외 + 테스트 모듈 매핑 (ntop)</title>
+<style>
+/* ntop 기획 패키지 — 공통 디자인 시스템 (자체완결: 각 NN-name.html <style>에 인라인 복제) */
+/* 외부 의존 0 — CDN/웹폰트/Mermaid 금지. 시스템 폰트만. */
+:root{
+  --accent:#4f46e5;        /* indigo */
+  --accent2:#0d9488;       /* teal */
+  --accent-soft:#eef2ff;
+  --bg:#ffffff;
+  --fg:#1e293b;
+  --muted:#64748b;
+  --line:#e2e8f0;
+  --code-bg:#f1f5f9;
+  --warn:#d97706; --warn-bg:#fffbeb;
+  --bad:#dc2626;  --bad-bg:#fef2f2;
+  --ok:#059669;   --ok-bg:#ecfdf5;
+  --t1:#dc2626; --t2:#d97706; --t3:#ca8a04;
+  --maxw:860px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;color:var(--fg);background:var(--bg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  line-height:1.7;font-size:16px;
+}
+code,pre,.mono{font-family:"SF Mono",SFMono-Regular,ui-monospace,Menlo,Consolas,"D2Coding",monospace}
+
+/* ── 상단바 ── */
+.topbar{
+  position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  padding:10px 18px;background:#0f172a;color:#f8fafc;font-weight:600;font-size:15px;
+  border-bottom:3px solid var(--accent);
+}
+.topbar .doc-no{color:#a5b4fc;font-variant-numeric:tabular-nums}
+.topbar nav{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.topbar nav a,.topbar nav button{
+  color:#e2e8f0;background:#1e293b;border:1px solid #334155;border-radius:6px;
+  padding:4px 10px;font-size:13px;text-decoration:none;cursor:pointer;font-weight:500;
+}
+.topbar nav a:hover,.topbar nav button:hover{background:var(--accent);border-color:var(--accent)}
+
+/* ── 티어 배지 ── */
+.tier{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:700;color:#fff}
+.tier.t1{background:var(--t1)} .tier.t2{background:var(--t2)} .tier.t3{background:var(--t3)}
+
+/* ── 레이아웃: TOC + 본문 ── */
+.layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:0;max-width:1200px;margin:0 auto}
+.toc{position:sticky;top:58px;align-self:start;height:calc(100vh - 58px);overflow:auto;padding:18px 12px;border-right:1px solid var(--line);font-size:13.5px}
+.toc h4{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.toc a{display:block;padding:3px 8px;color:var(--muted);text-decoration:none;border-radius:5px;border-left:2px solid transparent}
+.toc a:hover{background:var(--accent-soft);color:var(--accent)}
+.toc a.active{color:var(--accent);background:var(--accent-soft);border-left-color:var(--accent);font-weight:600}
+.toc a.lv3{padding-left:18px;font-size:12.5px}
+main{padding:26px 34px;max-width:var(--maxw)}
+main h1{font-size:26px;line-height:1.3;margin:0 0 6px}
+main h2{font-size:21px;margin:34px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--line);scroll-margin-top:64px}
+main h3{font-size:17px;margin:24px 0 10px;color:#0f172a;scroll-margin-top:64px}
+main h4{font-size:15px;margin:18px 0 8px;color:var(--muted)}
+main p{margin:10px 0}
+main a{color:var(--accent)}
+.anchor{margin-left:8px;color:var(--line);text-decoration:none;font-weight:400;font-size:.8em}
+main h2:hover .anchor,main h3:hover .anchor{color:var(--accent)}
+
+/* ── 표 ── */
+.table-wrap{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:7px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{background:#f8fafc;font-weight:700;position:sticky;top:0;border-bottom:2px solid var(--line)}
+tbody tr:nth-child(even){background:#fbfcfe}
+tbody tr:hover{background:var(--accent-soft)}
+
+/* ── 코드·칩 ── */
+:not(pre)>code{background:var(--code-bg);padding:1px 6px;border-radius:5px;font-size:.88em;color:#be185d}
+pre{background:#0f172a;color:#e2e8f0;padding:14px 16px;border-radius:8px;overflow-x:auto;font-size:13px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+.chip{display:inline-block;background:var(--accent-soft);color:var(--accent);border:1px solid #c7d2fe;border-radius:5px;padding:0 6px;font-size:.85em;font-weight:600}
+.chip.p0{background:var(--bad-bg);color:var(--bad);border-color:#fecaca}
+.chip.p1{background:var(--warn-bg);color:var(--warn);border-color:#fde68a}
+.chip.ok{background:var(--ok-bg);color:var(--ok);border-color:#a7f3d0}
+
+/* ── 콜아웃 ── */
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+.callout.warn{border-color:var(--warn);background:var(--warn-bg)}
+.callout.bad{border-color:var(--bad);background:var(--bad-bg)}
+.callout.ok{border-color:var(--ok);background:var(--ok-bg)}
+blockquote{border-left:4px solid var(--line);margin:14px 0;padding:4px 16px;color:var(--muted)}
+
+/* ── 인포그래픽 figure ── */
+figure.viz{margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:10px;background:#fcfdff;text-align:center}
+figure.viz svg{max-width:100%;height:auto;display:block;margin:0 auto}
+figure.viz figcaption{margin-top:10px;font-size:13px;color:var(--muted);text-align:center}
+.viz-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+details.raw{margin-top:8px;font-size:13px}
+details.raw summary{cursor:pointer;color:var(--muted);font-size:12.5px}
+details.raw pre{margin-top:6px}
+
+/* SVG 공통 텍스트 */
+svg text{font-family:-apple-system,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+.svg-node{fill:#fff;stroke:var(--accent);stroke-width:1.5}
+.svg-edge{stroke:var(--muted);stroke-width:1.5;fill:none}
+.svg-label{font-size:12px;fill:var(--fg)}
+.svg-accent{fill:var(--accent)} .svg-accent2{fill:var(--accent2)}
+
+/* 화면 mockup 프레임(20/21용) */
+.screen{border:2px solid #334155;border-radius:8px;background:#0f172a;color:#cbd5e1;font-family:"SF Mono",ui-monospace,monospace;font-size:12px;padding:0;overflow:hidden;text-align:left;margin:0 auto;max-width:560px}
+.screen .bar{background:#1e293b;color:#a5b4fc;padding:4px 8px;font-size:11px;border-bottom:1px solid #334155}
+.screen .body{padding:8px 10px;white-space:pre;overflow-x:auto;line-height:1.4}
+
+/* ── print ── */
+@media print{
+  .topbar,.toc,.anchor,details.raw summary{display:none!important}
+  .layout{grid-template-columns:1fr;max-width:none}
+  main{max-width:none;padding:0}
+  details.raw{display:none}
+  *{break-inside:avoid}
+  figure.viz{border:1px solid #ccc}
+}
+/* ── 반응형 ── */
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}
+  main{padding:18px}
+}
+
+/* ── 41 페이지 전용 추가 ── */
+.chip.lo{background:#f1f5f9;color:#475569;border-color:#e2e8f0}
+.cardgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:16px 0}
+.card{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:#fff}
+.card h5{margin:0 0 6px;font-size:14px;color:#0f172a}
+.card .meta{font-size:12px;color:var(--muted);margin:2px 0}
+.card.gap{border-left:4px solid var(--warn)}
+.card.full{border-left:4px solid var(--ok)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;font-size:12px;color:var(--muted);margin-top:8px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block;border:1px solid rgba(0,0,0,.12)}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <span class="doc-no">41</span>
+  <span class="tier t2">T2</span>
+  · QA 테스트 케이스 — 핵심 플로우 + 엣지/예외 + 테스트 모듈 매핑
+  <nav>
+    <a href="index.html">← 목록</a>
+    <a href="40-backlog.html">← 이전</a>
+    <a href="index.html">다음 →</a>
+    <button onclick="window.print()">🖨 인쇄</button>
+  </nav>
+</header>
+
+<div class="layout">
+<nav class="toc">
+  <h4>목차</h4>
+  <a href="#sprint-contract">Sprint Contract</a>
+  <a href="#s0">0. 표기 규약</a>
+  <a href="#s1">1. 이 문서가 답하는 것</a>
+  <a href="#s2">2. 핵심 플로우별 케이스</a>
+  <a href="#s2-1" class="lv3">2-1. UF-1 기동→점검→종료</a>
+  <a href="#s2-2" class="lv3">2-2. UF-2 필터/정렬/Node-only</a>
+  <a href="#s2-3" class="lv3">2-3. UF-3 kill 단건</a>
+  <a href="#s2-4" class="lv3">2-4. UF-4 kill 트리</a>
+  <a href="#s2-5" class="lv3">2-5. UF-5 SignalPicker</a>
+  <a href="#s2-6" class="lv3">2-6. UF-6 CLI 자동화</a>
+  <a href="#s3">3. 핵심 기능별 케이스</a>
+  <a href="#s3-1" class="lv3">3-1. 분류</a>
+  <a href="#s3-2" class="lv3">3-2. 네트워크 파싱</a>
+  <a href="#s3-3" class="lv3">3-3. 로그 스트리밍</a>
+  <a href="#s3-4" class="lv3">3-4. 설정</a>
+  <a href="#s3-5" class="lv3">3-5. health / 타입</a>
+  <a href="#s4">4. 엣지 / 예외 케이스</a>
+  <a href="#s5">5. 테스트 모듈 10종 매핑</a>
+  <a href="#s5-1" class="lv3">5-1. 모듈 → 기능/플로우</a>
+  <a href="#s5-2" class="lv3">5-2. 커버리지 갭</a>
+  <a href="#s6">6. 시각화</a>
+  <a href="#s6-1" class="lv3">6-1. 테스트 커버리지 맵</a>
+  <a href="#s6-2" class="lv3">6-2. 우선순위 분포</a>
+  <a href="#s6-3" class="lv3">6-3. 갭 한눈 매트릭스</a>
+  <a href="#selfcheck">자체 검증</a>
+</nav>
+
+<main>
+<h1>41 · QA 테스트 케이스 — 핵심 플로우 + 엣지/예외 + 테스트 모듈 매핑 (ntop)</h1>
+
+<div class="callout">
+<p>이 문서는 QA 케이스의 <strong>단일 출처(single source)</strong>다. ntop의 <strong>핵심 플로우(UF-1~UF-6)·핵심 기능(F1~F21)·엣지/예외</strong>를 (전제 / 입력 / 기대결과 / 우선순위) 형식의 테스트 케이스로 정리하고, <strong>실제로 존재하는 테스트 모듈 10종</strong>(codebase-facts <span class="chip">§9</span>)에 매핑한다. 커버리지 <strong>갭</strong>(어디가 단위 테스트로 안 덮였는가)도 정직하게 기록한다.</p>
+<p><strong>참조(재정의 0):</strong> 기능 ID(F1~F21)·우선순위는 <strong><code>10-prd</code></strong>, 플로우(UF-1~6)는 <strong><code>13-user-flows</code></strong>, 문제(PRB-1~8)는 <strong><code>research-s2</code>(→03)</strong>, 화면/키는 <strong><code>21-screen-spec</code></strong>, 알고리즘은 <strong><code>30-functional-spec</code></strong>, 구조체/enum/Config 값은 <strong><code>31-erd</code></strong>, 외부 계약은 <strong><code>32-api-spec</code></strong>, 안전·프라이버시 정책은 <strong><code>33-policy</code></strong>, 로드맵(미구현·버그)은 <strong><code>40-backlog</code></strong> 가 단일 출처다. 본 문서는 그 위에 <strong>검증 케이스</strong>만 얹는다.</p>
+<p><strong>전제:</strong> ntop은 <strong>이미 v0.2.0까지 구현된 MIT 오픈소스 도구</strong>다(codebase-facts §0). 따라서 본 QA는 "앞으로 검증할 기능 설계"가 아니라 <strong>이미 존재하는 동작과 이미 존재하는 테스트</strong>를 역설계해 케이스로 정리한 것이다. 테스트 모듈·함수명은 실제 <code>tests/*.rs</code>에서 그대로 가져왔다(창작 0).</p>
+<p><strong>용어 풀이(첫 등장):</strong> <strong>테스트 케이스(test case)</strong> = "이 상황에서 이렇게 하면 이래야 한다"를 적은 검증 단위 / <strong>전제(precondition)</strong> = 케이스 시작 전 갖춰져야 할 상태 / <strong>단위 테스트(unit test)</strong> = 함수 하나의 입출력을 코드로 자동 검증 / <strong>통합/E2E</strong> = 빌드된 바이너리를 실제로 돌려 검증(여기선 <code>assert_cmd</code>) / <strong>커버리지 갭(coverage gap)</strong> = 자동 테스트가 닿지 않아 수동/시각 검수에 맡겨진 영역 / <strong>EPERM</strong> = 권한 부족 오류(Operation not PERMitted) / <strong>고아 프로세스</strong> = 부모가 먼저 죽어 떠도는 자식 / <strong>comm 16자 절단</strong> = macOS가 프로세스 이름(comm)을 16자로 잘라 주는 OS 특성.</p>
+</div>
+
+<h2 id="sprint-contract">Sprint Contract (self-proposed checks) <a class="anchor" href="#sprint-contract">#</a></h2>
+<p>이 문서(g5의 <code>41-qa-testcases</code>)가 만족시킬 <strong>관찰 가능한 체크</strong>(playbook §S4-g5 관찰 바 "41=핵심 플로우별 케이스(전제/입력/기대/우선) + 엣지 + 테스트 모듈 10종 매핑 + 커버리지 맵" + spec §5(41행)·§8에서 도출).</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>#</th><th>체크</th><th>어떻게 충족하나</th><th>본문 위치</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">T-1</span></td><td><strong>핵심 플로우별 케이스(UF-1~6)</strong> — 전제/입력/기대결과/우선순위</td><td>§2 UF-1~UF-6 케이스 표</td><td>§2</td></tr>
+<tr><td><span class="chip">T-2</span></td><td><strong>핵심 기능별 케이스(분류·네트워크·로그·설정·health)</strong></td><td>§3 기능별 케이스 표</td><td>§3</td></tr>
+<tr><td><span class="chip">T-3</span></td><td><strong>엣지/예외 케이스</strong> — EPERM·lsof/netstat 부재·좀비/고아·comm 절단·npx 오분류·버퍼 상한·부분 설정</td><td>§4 엣지/예외 표</td><td>§4</td></tr>
+<tr><td><span class="chip">T-4</span></td><td><strong>★ 실제 테스트 모듈 10종 매핑</strong> — framework/scanner/tree/killer/network/log/cli/config/filter/types</td><td>§5-1 모듈 매핑 표(함수명·커버 F#/UF#)</td><td>§5-1</td></tr>
+<tr><td><span class="chip">T-5</span></td><td><strong>커버리지 갭 명시</strong> — TUI 렌더·실제 종료 동작·platform FFI·env 마스킹 등 미테스트 영역</td><td>§5-2 갭 표 + §6-3</td><td>§5-2·§6-3</td></tr>
+<tr><td><span class="chip">T-6</span></td><td><strong>시각화(G-g)</strong> — 테스트 커버리지 맵(마인드맵: 기능군→테스트모듈) + 케이스 우선순위 분포 (외부 렌더러 0)</td><td>§6-1 커버리지 맵 + §6-2 우선순위 분포</td><td>§6</td></tr>
+<tr><td><span class="chip">T-7</span></td><td><strong>단일 출처 준수</strong> — 기능=10·플로우=13·키=21·값=31·정책=33·로드맵=40 참조</td><td>본문 곳곳 참조 표기</td><td>전체</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="s0">0. 표기 규약 <a class="anchor" href="#s0">#</a></h2>
+
+<figure class="viz">
+<svg viewBox="0 0 760 220" role="img" aria-label="우선순위·테스트 종류 표기 규약">
+  <text x="20" y="24" font-size="13" font-weight="700" fill="#0f172a">우선순위 (= 기능 우선순위 10-prd × 리스크)</text>
+  <circle cx="32" cy="48" r="7" fill="#dc2626"/><text x="48" y="52" font-size="12.5" fill="#1e293b">● 높음 : 가치 루프 척추(P0) 또는 파괴적/안전 관련(kill·권한·오분류) — 실패 시 치명</text>
+  <circle cx="32" cy="74" r="7" fill="#d97706"/><text x="48" y="78" font-size="12.5" fill="#1e293b">◐ 중간 : 코어 보조(P1) — 실패 시 사용성 저하</text>
+  <circle cx="32" cy="100" r="7" fill="#94a3b8"/><text x="48" y="104" font-size="12.5" fill="#1e293b">○ 낮음 : 편의/표시(P2) 또는 보조 표시 — 실패 시 경미</text>
+
+  <text x="20" y="138" font-size="13" font-weight="700" fill="#0f172a">테스트 종류</text>
+  <rect x="24" y="150" width="34" height="20" rx="4" fill="#ecfdf5" stroke="#a7f3d0"/><text x="41" y="164" font-size="11.5" font-weight="700" fill="#059669" text-anchor="middle">U</text>
+  <text x="66" y="164" font-size="12.5" fill="#1e293b">단위(unit, #[test])</text>
+  <rect x="234" y="150" width="34" height="20" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="251" y="164" font-size="11.5" font-weight="700" fill="#4f46e5" text-anchor="middle">E</text>
+  <text x="276" y="164" font-size="12.5" fill="#1e293b">E2E(assert_cmd, cli_test)</text>
+  <rect x="494" y="150" width="34" height="20" rx="4" fill="#fffbeb" stroke="#fde68a"/><text x="511" y="164" font-size="11.5" font-weight="700" fill="#d97706" text-anchor="middle">M</text>
+  <text x="536" y="164" font-size="12.5" fill="#1e293b">수동/시각/통합(자동 없음 = 갭)</text>
+
+  <text x="20" y="198" font-size="11.5" fill="#64748b">모듈 표기: framework·scanner·tree·killer·network·log·cli·config·filter·types (codebase-facts §9, 실제 tests/*.rs)</text>
+</svg>
+<figcaption>우선순위 3단계(●높음/◐중간/○낮음)와 테스트 종류 3종([U] 단위 / [E] E2E / [M] 갭·수동) 표기 규약.</figcaption>
+</figure>
+
+<details class="raw"><summary>원본 ASCII 보기</summary>
+<pre><code> 우선순위 (= 기능 우선순위 10-prd × 리스크):
+   ● 높음 : 가치 루프 척추(P0) 또는 파괴적/안전 관련(kill·권한·오분류) — 실패 시 치명
+   ◐ 중간 : 코어 보조(P1) — 실패 시 사용성 저하
+   ○ 낮음 : 편의/표시(P2) 또는 보조 표시 — 실패 시 경미
+
+ 테스트 종류:
+   [U] 단위(unit, #[test])   [E] E2E(assert_cmd, cli_test)   [M] 수동/시각/통합(자동 테스트 없음 = 갭)
+
+ 모듈 표기: framework=framework_test, scanner=scanner_test, tree=tree_test, killer=killer_test,
+            network=network_test, log=log_test, cli=cli_test, config=config_test, filter=filter_test,
+            types=types_test  (codebase-facts §9, 실제 tests/*.rs)</code></pre>
+</details>
+
+<h2 id="s1">1. 이 문서가 답하는 것 <a class="anchor" href="#s1">#</a></h2>
+
+<figure class="viz">
+<svg viewBox="0 0 760 230" role="img" aria-label="문서가 답하는 질문과 섹션 매핑">
+  <g font-size="12.5">
+    <rect x="14" y="18" width="330" height="30" rx="6" fill="#eef2ff" stroke="#c7d2fe"/><text x="26" y="38" fill="#1e293b">핵심 동선이 동작하나?</text>
+    <path d="M348 33 H420" stroke="#64748b" stroke-width="1.5" marker-end="url(#ar41a)"/>
+    <rect x="426" y="18" width="320" height="30" rx="6" fill="#ecfdf5" stroke="#a7f3d0"/><text x="438" y="38" fill="#065f46">§2 UF-1~UF-6 플로우 케이스</text>
+
+    <rect x="14" y="54" width="330" height="30" rx="6" fill="#eef2ff" stroke="#c7d2fe"/><text x="26" y="74" fill="#1e293b">각 기능이 규칙대로 동작하나?</text>
+    <path d="M348 69 H420" stroke="#64748b" stroke-width="1.5" marker-end="url(#ar41a)"/>
+    <rect x="426" y="54" width="320" height="30" rx="6" fill="#ecfdf5" stroke="#a7f3d0"/><text x="438" y="74" fill="#065f46">§3 분류·네트워크·로그·설정·health</text>
+
+    <rect x="14" y="90" width="330" height="30" rx="6" fill="#eef2ff" stroke="#c7d2fe"/><text x="26" y="110" fill="#1e293b">비정상 상황에서 안전한가?</text>
+    <path d="M348 105 H420" stroke="#64748b" stroke-width="1.5" marker-end="url(#ar41a)"/>
+    <rect x="426" y="90" width="320" height="30" rx="6" fill="#ecfdf5" stroke="#a7f3d0"/><text x="438" y="110" fill="#065f46">§4 엣지/예외(EPERM·명령부재·좀비·상한)</text>
+
+    <rect x="14" y="126" width="330" height="30" rx="6" fill="#eef2ff" stroke="#c7d2fe"/><text x="26" y="146" fill="#1e293b">실제 테스트가 무엇을 덮나?</text>
+    <path d="M348 141 H420" stroke="#64748b" stroke-width="1.5" marker-end="url(#ar41a)"/>
+    <rect x="426" y="126" width="320" height="30" rx="6" fill="#ecfdf5" stroke="#a7f3d0"/><text x="438" y="146" fill="#065f46">§5-1 테스트 모듈 10종 매핑</text>
+
+    <rect x="14" y="162" width="330" height="30" rx="6" fill="#eef2ff" stroke="#c7d2fe"/><text x="26" y="182" fill="#1e293b">무엇이 안 덮였나(갭)?</text>
+    <path d="M348 177 H420" stroke="#64748b" stroke-width="1.5" marker-end="url(#ar41a)"/>
+    <rect x="426" y="162" width="320" height="30" rx="6" fill="#fffbeb" stroke="#fde68a"/><text x="438" y="182" fill="#92400e">§5-2 커버리지 갭(TUI 렌더·실제 종료·FFI)</text>
+
+    <rect x="14" y="198" width="330" height="30" rx="6" fill="#eef2ff" stroke="#c7d2fe"/><text x="26" y="218" fill="#1e293b">전체를 한눈에?</text>
+    <path d="M348 213 H420" stroke="#64748b" stroke-width="1.5" marker-end="url(#ar41a)"/>
+    <rect x="426" y="198" width="320" height="30" rx="6" fill="#ecfdf5" stroke="#a7f3d0"/><text x="438" y="218" fill="#065f46">§6-1 커버리지 맵(마인드맵)</text>
+  </g>
+  <defs><marker id="ar41a" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 Z" fill="#64748b"/></marker></defs>
+</svg>
+<figcaption>이 문서가 답하는 6개 질문 → 답이 위치한 섹션. 갭 질문만 노랑(주의)으로 강조.</figcaption>
+</figure>
+
+<details class="raw"><summary>원본 ASCII 보기</summary>
+<pre><code> ┌── "핵심 동선이 동작하나?"       ──▶ §2 UF-1~UF-6 플로우 케이스
+ ├── "각 기능이 규칙대로 동작하나?" ──▶ §3 분류·네트워크·로그·설정·health 케이스
+ ├── "비정상 상황에서 안전한가?"   ──▶ §4 엣지/예외(EPERM·명령부재·좀비·오분류·상한)
+ ├── "실제 테스트가 무엇을 덮나?"   ──▶ §5-1 테스트 모듈 10종 매핑
+ ├── "무엇이 안 덮였나(갭)?"        ──▶ §5-2 커버리지 갭 (TUI 렌더·실제 종료·FFI 등)
+ └── "전체를 한눈에?"               ──▶ §6-1 커버리지 맵(마인드맵)</code></pre>
+</details>
+
+<h2 id="s2">2. 핵심 플로우별 테스트 케이스 (UF-1~UF-6) <a class="anchor" href="#s2">#</a></h2>
+
+<blockquote>플로우 정의·단계의 단일 출처는 <code>13-user-flows</code>. 각 케이스의 <code>모듈</code> 열은 그 케이스를 실제로 덮는 테스트 모듈(또는 <code>[M] 갭</code>).</blockquote>
+
+<figure class="viz">
+<svg viewBox="0 0 760 150" role="img" aria-label="6개 핵심 플로우 파이프라인과 케이스 수">
+  <g font-size="12">
+    <rect x="10" y="34" width="116" height="52" rx="8" fill="#eef2ff" stroke="#4f46e5"/><text x="68" y="56" text-anchor="middle" font-weight="700" fill="#3730a3">UF-1 점검</text><text x="68" y="74" text-anchor="middle" fill="#475569">8 케이스</text>
+    <rect x="134" y="34" width="116" height="52" rx="8" fill="#eef2ff" stroke="#4f46e5"/><text x="192" y="56" text-anchor="middle" font-weight="700" fill="#3730a3">UF-2 필터·정렬</text><text x="192" y="74" text-anchor="middle" fill="#475569">11 케이스</text>
+    <rect x="258" y="34" width="116" height="52" rx="8" fill="#fef2f2" stroke="#dc2626"/><text x="316" y="56" text-anchor="middle" font-weight="700" fill="#991b1b">UF-3 kill 단건</text><text x="316" y="74" text-anchor="middle" fill="#475569">11 (위험)</text>
+    <rect x="382" y="34" width="116" height="52" rx="8" fill="#fef2f2" stroke="#dc2626"/><text x="440" y="56" text-anchor="middle" font-weight="700" fill="#991b1b">UF-4 kill 트리</text><text x="440" y="74" text-anchor="middle" fill="#475569">7 케이스</text>
+    <rect x="506" y="34" width="116" height="52" rx="8" fill="#eef2ff" stroke="#4f46e5"/><text x="564" y="56" text-anchor="middle" font-weight="700" fill="#3730a3">UF-5 시그널선택</text><text x="564" y="74" text-anchor="middle" fill="#475569">3 케이스</text>
+    <rect x="630" y="34" width="120" height="52" rx="8" fill="#ecfdf5" stroke="#059669"/><text x="690" y="56" text-anchor="middle" font-weight="700" fill="#065f46">UF-6 CLI 자동화</text><text x="690" y="74" text-anchor="middle" fill="#475569">6 (전부 E2E)</text>
+  </g>
+  <text x="20" y="22" font-size="12.5" font-weight="700" fill="#0f172a">6개 핵심 동선 — 케이스 46건 (빨강=파괴적/안전, 초록=E2E 완전 커버)</text>
+  <text x="20" y="116" font-size="11.5" fill="#64748b">UF-3·UF-4는 시그널 메타·트리 입력은 단위 테스트로 덮이나, 실제 종료 동작·역순·EPERM은 갭(§5-2).</text>
+  <text x="20" y="134" font-size="11.5" fill="#64748b">UF-6(CLI)는 cli_test E2E가 디스패치를 전부 덮어 갭이 없다.</text>
+</svg>
+<figcaption>핵심 플로우 6종 파이프라인 — 케이스 수와 위험도. UF-3/UF-4(kill)가 가장 위험하고 갭이 있다.</figcaption>
+</figure>
+
+<div class="cardgrid">
+  <div class="card gap"><h5>UF-1 · 기동→스캔→점검→종료</h5><p class="meta">TC-1.1 ~ TC-1.8 (8)</p><p class="meta">덮음: scanner·types·cli</p><p class="meta"><span class="chip p1">갭</span> TC-1.4 V-EMPTY 렌더</p></div>
+  <div class="card gap"><h5>UF-2 · 필터/정렬/Node-only</h5><p class="meta">TC-2.1 ~ TC-2.11 (11)</p><p class="meta">덮음: filter_test 9</p><p class="meta"><span class="chip p1">갭</span> TC-2.10·2.11 키/정렬</p></div>
+  <div class="card gap"><h5>UF-3 · kill 단건 (가장 위험)</h5><p class="meta">TC-3.1 ~ TC-3.11 (11)</p><p class="meta">덮음: killer 메타·cli 디스패치</p><p class="meta"><span class="chip p0">갭</span> TC-3.8·3.11 실제 종료·EPERM</p></div>
+  <div class="card gap"><h5>UF-4 · kill 트리(역순)</h5><p class="meta">TC-4.1 ~ TC-4.7 (7)</p><p class="meta">덮음: tree_test 8</p><p class="meta"><span class="chip p0">갭</span> TC-4.7 역순 종료 동작</p></div>
+  <div class="card gap"><h5>UF-5 · SignalPicker</h5><p class="meta">TC-5.1 ~ TC-5.3 (3)</p><p class="meta">덮음: cli·killer all()</p><p class="meta"><span class="chip p1">갭</span> TC-5.3 picker 렌더/키</p></div>
+  <div class="card full"><h5>UF-6 · CLI 자동화</h5><p class="meta">TC-6.1 ~ TC-6.6 (6)</p><p class="meta">덮음: cli_test E2E (전부)</p><p class="meta"><span class="chip ok">갭 없음</span></p></div>
+</div>
+
+<h3 id="s2-1">2-1. UF-1 — 기동 → 스캔(2-pass) → 선택 → 상세 4탭 점검 → 종료 <a class="anchor" href="#s2-1">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>TC</th><th>전제</th><th>입력</th><th>기대결과</th><th>우선</th><th>종류·모듈</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">TC-1.1</span></td><td>바이너리 빌드됨</td><td><code>ntop</code>(서브커맨드 없음)</td><td>TUI 모드 진입(서브커맨드 없으면 run_tui)</td><td><span class="chip p0">●</span></td><td><span class="chip">E</span> cli <code>test_default_launches_tui</code></td></tr>
+<tr><td><span class="chip">TC-1.2</span></td><td>서버 프로세스 존재</td><td>스캔 1회</td><td><code>Vec&lt;ProcessInfo&gt;</code> 반환, 분류된 서버는 <code>runtime=Some</code></td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> scanner <code>test_scanner_returns_vec</code></td></tr>
+<tr><td><span class="chip">TC-1.3</span></td><td>동일 환경 2회 스캔</td><td>연속 스캔</td><td>분류 결과 일관(같은 프로세스 같은 분류)</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> scanner <code>test_scanner_runtime_classification_is_consistent</code></td></tr>
+<tr><td><span class="chip">TC-1.4</span></td><td>서버 0건</td><td>스캔 결과 빈 목록</td><td>V-EMPTY로 수렴(스피너 <code>⠹ Scanning…</code>), 크래시 0</td><td><span class="chip p1">◐</span></td><td><span class="chip p1">M</span> 갭(TUI 렌더 미테스트)</td></tr>
+<tr><td><span class="chip">TC-1.5</span></td><td>Next.js 서버 선택</td><td>상세 Info 탭 열기</td><td><code>Framework=Next.js</code>, <code>Version=-</code>(framework_version 미채움, 40 R7)</td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> types <code>test_framework_kind_display</code> + <span class="chip p1">M</span> 탭 렌더</td></tr>
+<tr><td><span class="chip">TC-1.6</span></td><td>RSS 값 보유 프로세스</td><td>Info 탭 메모리 표시</td><td><code>memory_display()</code>가 <code>128.0 MB</code>/<code>1.5 GB</code> 형식</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> types <code>test_process_info_memory_display</code></td></tr>
+<tr><td><span class="chip">TC-1.7</span></td><td>uptime 보유</td><td>Info 탭 uptime</td><td><code>uptime_display()</code>가 <code>1h 2m 5s</code> 형식</td><td><span class="chip lo">○</span></td><td><span class="chip ok">U</span> types <code>test_process_info_uptime_display</code></td></tr>
+<tr><td><span class="chip">TC-1.8</span></td><td>node_modules 툴/서브커맨드/스크립트/JSON블롭 커맨드</td><td>display_name 추출</td><td>사람이 읽을 이름(툴명·서브커맨드 채택, JSON 블롭에서 중단)</td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> types <code>test_display_name_*</code>(8케이스)</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="s2-2">2-2. UF-2 — 필터(<code>/</code>) / 정렬(<code>s</code>,<code>r</code>) / Node-only(<code>n</code>) <a class="anchor" href="#s2-2">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>TC</th><th>전제</th><th>입력</th><th>기대결과</th><th>우선</th><th>종류·모듈</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">TC-2.1</span></td><td>목록 다수</td><td>빈 필터</td><td>전부 매칭(필터 없음 = 전체)</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> filter <code>test_matches_filter_empty_matches_all</code></td></tr>
+<tr><td><span class="chip">TC-2.2</span></td><td>이름에 대문자 혼재</td><td>소문자 부분문자열</td><td>대소문자 무시 매칭</td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> filter <code>test_matches_filter_name_case_insensitive</code></td></tr>
+<tr><td><span class="chip">TC-2.3</span></td><td>커맨드라인 보유</td><td>커맨드 부분문자열</td><td>커맨드 매칭(대소문자 무시)</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> filter <code>test_matches_filter_command_case_insensitive</code></td></tr>
+<tr><td><span class="chip">TC-2.4</span></td><td>프레임워크 분류됨</td><td>"next" 등</td><td>프레임워크명 매칭</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> filter <code>test_matches_filter_framework_case_insensitive</code></td></tr>
+<tr><td><span class="chip">TC-2.5</span></td><td>PID 알려짐</td><td>PID 일부 문자열</td><td>PID 부분일치 매칭</td><td><span class="chip lo">○</span></td><td><span class="chip ok">U</span> filter <code>test_matches_filter_pid_substring</code></td></tr>
+<tr><td><span class="chip">TC-2.6</span></td><td>포트 보유</td><td>포트 일부 문자열</td><td>포트 부분일치 매칭</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> filter <code>test_matches_filter_ports_substring</code></td></tr>
+<tr><td><span class="chip">TC-2.7</span></td><td>runtime 분류됨</td><td>"node" 등</td><td>runtime Display 매칭</td><td><span class="chip lo">○</span></td><td><span class="chip ok">U</span> filter <code>test_matches_filter_runtime</code></td></tr>
+<tr><td><span class="chip">TC-2.8</span></td><td>매칭 없는 검색어</td><td>무관 문자열</td><td>빈 목록(매칭 0)</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> filter <code>test_matches_filter_no_match</code></td></tr>
+<tr><td><span class="chip">TC-2.9</span></td><td>Node+Deno+Bun 혼재</td><td><code>n</code>(Node-only)</td><td>Node 서버만 + 트리 부모(runtime None) 유지, Deno/Bun 숨김</td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> filter <code>test_node_only_toggle_hides_other_runtimes</code></td></tr>
+<tr><td><span class="chip">TC-2.10</span></td><td>필터 모드 활성</td><td><code>Enter</code> vs <code>Esc</code></td><td>Enter=필터 유지·Esc=필터 비움(분기)</td><td><span class="chip p1">◐</span></td><td><span class="chip p1">M</span> 갭(ui.rs 키 핸들 미테스트)</td></tr>
+<tr><td><span class="chip">TC-2.11</span></td><td>목록 정렬</td><td><code>s</code> 컬럼 순환·<code>r</code> 반전</td><td>9컬럼 순환·방향 반전, 트리 레벨별 정렬 유지</td><td><span class="chip p1">◐</span></td><td><span class="chip p1">M</span> 갭(정렬 비교자 단위 미테스트)</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="s2-3">2-3. UF-3 — kill 단건 (<code>x</code> → KillConfirm → SIGTERM → graceful → force) <a class="anchor" href="#s2-3">#</a></h3>
+<div class="callout warn">★ 가장 위험한 플로우. <strong>시그널 메타데이터는 killer_test가 덮지만, 실제 종료 동작(graceful_kill 폴링·force 에스컬레이션·EPERM)은 단위 테스트가 없다(§5-2 갭).</strong> CLI 디스패치는 cli_test가 덮는다.</div>
+<div class="table-wrap">
+<table>
+<thead><tr><th>TC</th><th>전제</th><th>입력</th><th>기대결과</th><th>우선</th><th>종류·모듈</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">TC-3.1</span></td><td>—</td><td>KillSignal 이름 조회</td><td><code>Term→SIGTERM</code>·<code>Kill→SIGKILL</code> 등 정확</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> killer <code>test_kill_signal_name</code></td></tr>
+<tr><td><span class="chip">TC-3.2</span></td><td>—</td><td>각 시그널 설명</td><td>설명 문자열 비어있지 않음</td><td><span class="chip lo">○</span></td><td><span class="chip ok">U</span> killer <code>test_kill_signal_description_non_empty</code></td></tr>
+<tr><td><span class="chip">TC-3.3</span></td><td>OS별</td><td><code>KillSignal::all()</code></td><td>Unix 6종/Windows 3종, 중복 없음</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> killer <code>test_kill_signal_all_no_duplicates</code></td></tr>
+<tr><td><span class="chip">TC-3.4</span></td><td>CLI <code>--signal</code></td><td><code>"SIGTERM"</code> 파싱</td><td>SIG 접두어 포함 파싱 성공</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> killer <code>test_kill_signal_from_str_with_sig_prefix</code></td></tr>
+<tr><td><span class="chip">TC-3.5</span></td><td>CLI <code>--signal</code></td><td><code>"TERM"</code> 파싱</td><td>접두어 없이도 파싱 성공</td><td><span class="chip lo">○</span></td><td><span class="chip ok">U</span> killer <code>test_kill_signal_from_str_without_prefix</code></td></tr>
+<tr><td><span class="chip">TC-3.6</span></td><td>CLI <code>--signal</code></td><td>대소문자 혼재</td><td>대소문자 무시 파싱</td><td><span class="chip lo">○</span></td><td><span class="chip ok">U</span> killer <code>test_kill_signal_from_str_case_insensitive</code></td></tr>
+<tr><td><span class="chip">TC-3.7</span></td><td>CLI <code>--signal</code></td><td>미지의 시그널명</td><td><code>None</code> 반환(→ SIGTERM 폴백, 32 계약)</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> killer <code>test_kill_signal_from_str_unknown_returns_none</code></td></tr>
+<tr><td><span class="chip">TC-3.8</span></td><td>SIGTERM 무시 프로세스 존재</td><td><code>graceful_kill(pid, 10s)</code></td><td>200ms 폴링 후 <code>TimedOut</code>, <strong>CLI 단건은 force_kill 자동 에스컬레이션</strong></td><td><span class="chip p0">●</span></td><td><span class="chip p1">M</span> 갭(실제 graceful_kill 미테스트)</td></tr>
+<tr><td><span class="chip">TC-3.9</span></td><td>종료 가능 PID</td><td><code>ntop kill &lt;PID&gt;</code></td><td>kill 디스패치(확인 게이트 경유)</td><td><span class="chip p0">●</span></td><td><span class="chip">E</span> cli <code>test_kill_command</code></td></tr>
+<tr><td><span class="chip">TC-3.10</span></td><td>—</td><td><code>ntop kill &lt;PID&gt; --no-confirm</code></td><td>확인 프롬프트 생략하고 진행</td><td><span class="chip p0">●</span></td><td><span class="chip">E</span> cli <code>test_no_confirm_flag</code></td></tr>
+<tr><td><span class="chip">TC-3.11</span></td><td>다른 사용자 소유 프로세스</td><td>kill 시도</td><td><code>KillResult::PermissionDenied</code>(EPERM), 크래시 0</td><td><span class="chip p0">●</span></td><td><span class="chip p1">M</span> 갭(EPERM 경로 미테스트)</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="s2-4">2-4. UF-4 — kill 트리 (<code>K</code>, 자식부터 역순) <a class="anchor" href="#s2-4">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>TC</th><th>전제</th><th>입력</th><th>기대결과</th><th>우선</th><th>종류·모듈</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">TC-4.1</span></td><td>부모-자식 flat 목록</td><td><code>TreeBuilder::build</code></td><td>부모-자식 트리 구성(중첩)</td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> tree <code>test_build_tree_simple</code></td></tr>
+<tr><td><span class="chip">TC-4.2</span></td><td>빈 입력</td><td>build</td><td>빈 결과(패닉 0)</td><td><span class="chip lo">○</span></td><td><span class="chip ok">U</span> tree <code>test_build_tree_no_processes</code></td></tr>
+<tr><td><span class="chip">TC-4.3</span></td><td>ppid 미존재만</td><td>build</td><td>전부 root</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> tree <code>test_build_tree_all_roots</code></td></tr>
+<tr><td><span class="chip">TC-4.4</span></td><td>트리 보유</td><td><code>flatten_with_depth</code></td><td>(참조, 깊이) DFS 평탄화</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> tree <code>test_flatten_tree</code></td></tr>
+<tr><td><span class="chip">TC-4.5</span></td><td>트리 노드</td><td><code>collect_pids</code></td><td>노드+모든 자손 PID 수집(kill_tree 입력)</td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> tree <code>test_collect_subtree_pids</code></td></tr>
+<tr><td><span class="chip">TC-4.6</span></td><td>트리 보유 PID</td><td><code>ntop kill &lt;PID&gt; --tree</code></td><td>트리 종료 디스패치</td><td><span class="chip p0">●</span></td><td><span class="chip">E</span> cli <code>test_kill_with_tree</code></td></tr>
+<tr><td><span class="chip">TC-4.7</span></td><td>부모+자식 생존</td><td><code>kill_tree(pids)</code></td><td><strong>자식부터 역순(<code>.rev()</code>)</strong> 종료 → 고아 0</td><td><span class="chip p0">●</span></td><td><span class="chip p1">M</span> 갭(역순 종료 동작 미테스트, collect_pids만 덮임)</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="s2-5">2-5. UF-5 — SignalPicker (<code>S</code>)로 임의 시그널 <a class="anchor" href="#s2-5">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>TC</th><th>전제</th><th>입력</th><th>기대결과</th><th>우선</th><th>종류·모듈</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">TC-5.1</span></td><td>종료 가능 PID</td><td><code>ntop kill &lt;PID&gt; --signal HUP</code></td><td>지정 시그널 전송 디스패치</td><td><span class="chip p1">◐</span></td><td><span class="chip">E</span> cli <code>test_kill_with_signal</code></td></tr>
+<tr><td><span class="chip">TC-5.2</span></td><td>OS별</td><td>SignalPicker 목록</td><td>Unix 6/Win 3 노출(HUP/USR1/USR2는 Unix만)</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> killer <code>all()</code> 계열(목록)</td></tr>
+<tr><td><span class="chip">TC-5.3</span></td><td>TUI SignalPicker 열림</td><td><code>Up/Down</code>→<code>Enter</code></td><td>선택 시그널 전송·<code>Esc</code> 취소</td><td><span class="chip p1">◐</span></td><td><span class="chip p1">M</span> 갭(signal_picker.rs 렌더/키 미테스트)</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="s2-6">2-6. UF-6 — CLI 자동화 (<code>list --json</code> → <code>kill --tree</code>) <a class="anchor" href="#s2-6">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>TC</th><th>전제</th><th>입력</th><th>기대결과</th><th>우선</th><th>종류·모듈</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">TC-6.1</span></td><td>서버 존재</td><td><code>ntop list</code></td><td>table 출력(7컬럼: PID/NAME/FRAMEWORK/PORT/CPU/MEM/UPTIME)</td><td><span class="chip p0">●</span></td><td><span class="chip">E</span> cli <code>test_list_command</code></td></tr>
+<tr><td><span class="chip">TC-6.2</span></td><td>—</td><td><code>ntop list --json</code></td><td>모든 필드 + depth JSON</td><td><span class="chip p0">●</span></td><td><span class="chip">E</span> cli <code>test_list_json</code></td></tr>
+<tr><td><span class="chip">TC-6.3</span></td><td>—</td><td><code>ntop list --format csv</code></td><td>CSV 9컬럼(PID/PPID/NAME/FRAMEWORK/PORTS/CPU/MEMORY/UPTIME/STATUS)</td><td><span class="chip p1">◐</span></td><td><span class="chip">E</span> cli <code>test_list_format_csv</code></td></tr>
+<tr><td><span class="chip">TC-6.4</span></td><td>유효 PID</td><td><code>ntop info &lt;PID&gt;</code></td><td>상세 출력(런타임·프레임워크·포트·메트릭·env·연결)</td><td><span class="chip p1">◐</span></td><td><span class="chip">E</span> cli <code>test_info_command</code></td></tr>
+<tr><td><span class="chip">TC-6.5</span></td><td>유효 PID</td><td><code>ntop log &lt;PID&gt;</code></td><td>로그 소스 감지·tail 시작</td><td><span class="chip p1">◐</span></td><td><span class="chip">E</span> cli <code>test_log_command</code></td></tr>
+<tr><td><span class="chip">TC-6.6</span></td><td>서버 다수</td><td><code>ntop kill --all</code></td><td>전체 서버 열거 후 일괄 kill 디스패치(확인 경유)</td><td><span class="chip p1">◐</span></td><td><span class="chip">E</span> cli <code>test_kill_all</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="s3">3. 핵심 기능별 테스트 케이스 (분류·네트워크·로그·설정·health) <a class="anchor" href="#s3">#</a></h2>
+
+<h3 id="s3-1">3-1. 분류 (F1·F3·F4) — <code>framework_test</code>(24케이스) <a class="anchor" href="#s3-1">#</a></h3>
+<blockquote>ntop의 핵심 추상화. <strong>2단계 분류 + fs 미독 오분류 회피 + macOS comm 절단 처리</strong>가 여기서 검증된다.</blockquote>
+<div class="table-wrap">
+<table>
+<thead><tr><th>TC</th><th>전제</th><th>입력</th><th>기대결과</th><th>우선</th><th>종류·모듈</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">TC-7.1</span></td><td>—</td><td><code>next-server</code> 이름</td><td>Next.js 분류(name_exact)</td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> framework <code>test_detect_nextjs_by_process_name</code></td></tr>
+<tr><td><span class="chip">TC-7.2</span></td><td>—</td><td><code>nuxt</code>/<code>nuxi</code> 이름</td><td>Nuxt.js 분류</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> framework <code>test_detect_nuxt_by_process_name</code></td></tr>
+<tr><td><span class="chip">TC-7.3</span></td><td>—</td><td>커맨드에 <code>node_modules/.bin/next</code> 등</td><td>커맨드 기반 분류(command_contains)</td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> framework <code>test_detect_framework_by_command</code></td></tr>
+<tr><td><span class="chip">TC-7.4</span></td><td>python 이름 + fastapi 커맨드</td><td>classify</td><td><strong>구체 FW가 맨몸 런타임을 이김</strong>(FastAPI &gt; python)</td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> framework <code>test_classify_fastapi_beats_python_name</code>·<code>test_detect_combined_priority</code></td></tr>
+<tr><td><span class="chip">TC-7.5</span></td><td>맨몸 <code>node</code></td><td>classify</td><td>(Node, Generic)</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> framework <code>test_classify_node_generic</code>·<code>test_detect_fallback_to_generic</code></td></tr>
+<tr><td><span class="chip">TC-7.6</span></td><td>★ Next.js cwd 안의 npx MCP 서버</td><td>classify</td><td><strong>Generic 유지</strong>(fs 미독 → cwd로 오분류 안 함, PRB-3)</td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> framework <code>test_detect_npx_mcp_server_is_generic_even_in_nextjs_cwd</code>·<code>test_classify_npx_mcp_in_nextjs_cwd_is_node_generic</code></td></tr>
+<tr><td><span class="chip">TC-7.7</span></td><td>★ macOS comm 16자 절단된 이름</td><td>classify</td><td><code>normalize_name</code>(첫 공백 토큰)으로 정상 분류</td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> framework <code>test_detect_nextjs_from_truncated_macos_comm</code></td></tr>
+<tr><td><span class="chip">TC-7.8</span></td><td>이름=<code>node</code>, 커맨드에 next</td><td>classify</td><td>command_binary로 Next.js 분류</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> framework <code>test_detect_nextjs_from_command_binary_when_name_is_node</code></td></tr>
+<tr><td><span class="chip">TC-7.9</span></td><td>비서버 프로세스</td><td>classify</td><td><code>None</code>(목록·집계에서 제외 = 미표시)</td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> framework <code>test_classify_non_server_is_none</code></td></tr>
+<tr><td><span class="chip">TC-7.10</span></td><td><code>tsx</code> dev runner</td><td>classify(include_tsx=false/true)</td><td>config 게이트(false면 None, true면 Node)</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> framework <code>test_classify_tsx_is_config_gated</code></td></tr>
+<tr><td><span class="chip">TC-7.11</span></td><td>Django/Flask/Rails/Spring/Laravel/.NET/Deno/Bun</td><td>classify</td><td>각 규칙대로 분류(Flask=<code>-m flask</code>·Rails=<code>bin/rails</code> 부분일치 포함)</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> framework <code>test_classify_django</code>·<code>_flask_via_module_flag</code>·<code>_rails_via_command_substring</code>·<code>_java_generic_and_spring</code>·<code>_php_and_laravel</code>·<code>_dotnet_deno_bun</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="s3-2">3-2. 네트워크 파싱 (F5·F6) — <code>network_test</code>(13케이스) <a class="anchor" href="#s3-2">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>TC</th><th>전제</th><th>입력</th><th>기대결과</th><th>우선</th><th>종류·모듈</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">TC-8.1</span></td><td>—</td><td><code>*:3000</code></td><td><code>0.0.0.0:3000</code>(IPv4 unspecified)</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> network <code>test_parse_addr_wildcard</code>·<code>_ipv4_unspecified</code></td></tr>
+<tr><td><span class="chip">TC-8.2</span></td><td>—</td><td><code>127.0.0.1:3000</code></td><td>IPv4 loopback 파싱</td><td><span class="chip lo">○</span></td><td><span class="chip ok">U</span> network <code>test_parse_addr_ipv4_loopback</code></td></tr>
+<tr><td><span class="chip">TC-8.3</span></td><td>—</td><td><code>[::1]:3000</code>/<code>[::]:3000</code></td><td>IPv6 loopback/unspecified 파싱</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> network <code>test_parse_addr_ipv6_loopback</code>·<code>_ipv6_unspecified</code></td></tr>
+<tr><td><span class="chip">TC-8.4</span></td><td>★ 견고성</td><td>잘못된 주소/포트</td><td><code>None</code> 반환(해당 항목 건너뜀, 크래시 0)</td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> network <code>test_parse_addr_invalid_returns_none</code>·<code>_invalid_port_returns_none</code></td></tr>
+<tr><td><span class="chip">TC-8.5</span></td><td>LISTEN 라인</td><td>parse_connection</td><td><code>state=LISTEN</code>, 로컬 주소 파싱</td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> network <code>test_parse_connection_listen</code>·<code>_wildcard_listen</code>·<code>_ipv6_listen</code></td></tr>
+<tr><td><span class="chip">TC-8.6</span></td><td><code>-&gt;</code> 포함 라인</td><td>parse_connection</td><td>로컬/원격 분리, <code>ESTABLISHED</code></td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> network <code>test_parse_connection_established_with_remote</code></td></tr>
+<tr><td><span class="chip">TC-8.7</span></td><td>상태 없는 라인</td><td>parse_connection</td><td>상태 기본값 <code>unknown</code></td><td><span class="chip lo">○</span></td><td><span class="chip ok">U</span> network <code>test_parse_connection_none_state_defaults_to_unknown</code></td></tr>
+<tr><td><span class="chip">TC-8.8</span></td><td>★ lsof/netstat 부재·실패</td><td><code>connections_by_pid()</code></td><td>빈 <code>HashMap</code> 반환(크래시 0, 포트/Net 탭만 빔)</td><td><span class="chip p0">●</span></td><td><span class="chip p1">M</span> 갭(부재 시나리오 직접 미테스트, 파싱만 덮임)</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="s3-3">3-3. 로그 스트리밍 (F16) — <code>log_test</code>(13케이스) <a class="anchor" href="#s3-3">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>TC</th><th>전제</th><th>입력</th><th>기대결과</th><th>우선</th><th>종류·모듈</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">TC-9.1</span></td><td>새 스트리머</td><td>생성 직후</td><td><code>has_source()=false</code></td><td><span class="chip lo">○</span></td><td><span class="chip ok">U</span> log <code>test_new_streamer_has_no_source</code></td></tr>
+<tr><td><span class="chip">TC-9.2</span></td><td>빈 디렉터리</td><td>find_log_file</td><td><code>None</code></td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> log <code>test_find_log_file_returns_none_for_empty_dir</code></td></tr>
+<tr><td><span class="chip">TC-9.3</span></td><td><code>.log</code>/<code>logs/*.log</code> 존재</td><td>find_log_file</td><td>해당 파일 발견</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> log <code>test_find_log_file_finds_dot_log_in_dir</code>·<code>_finds_log_in_logs_subdir</code></td></tr>
+<tr><td><span class="chip">TC-9.4</span></td><td>비-로그 파일 혼재</td><td>find_log_file</td><td>비-로그 무시(패턴만)</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> log <code>test_find_log_file_ignores_non_log_files</code></td></tr>
+<tr><td><span class="chip">TC-9.5</span></td><td>★ 여러 로그 파일</td><td>find_log_file</td><td><strong>가장 최근 수정 파일</strong> 선택</td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> log <code>test_find_log_file_picks_most_recently_modified</code></td></tr>
+<tr><td><span class="chip">TC-9.6</span></td><td>로그 파일 존재</td><td>detect_and_open</td><td>파일 열고 끝으로 seek(새 줄만)</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> log <code>test_detect_and_open_opens_log_file</code>·<code>_no_log_file</code></td></tr>
+<tr><td><span class="chip">TC-9.7</span></td><td>tail 중 새 줄 추가</td><td>poll_new_lines</td><td>추가분만 반환, 없으면 빈</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> log <code>test_poll_new_lines_reads_appended_content</code>·<code>_empty_when_no_new_content</code>·<code>_no_file_returns_empty</code></td></tr>
+<tr><td><span class="chip">TC-9.8</span></td><td>★ 1000줄 초과</td><td>다회 poll</td><td>버퍼 <code>MAX_BUFFER_LINES=1000</code> 상한(앞에서 폐기)</td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> log <code>test_buffer_capped_at_1000_lines</code>·<code>_accumulates_across_multiple_polls</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="s3-4">3-4. 설정 (F21) — <code>config_test</code>(5케이스) <a class="anchor" href="#s3-4">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>TC</th><th>전제</th><th>입력</th><th>기대결과</th><th>우선</th><th>종류·모듈</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">TC-10.1</span></td><td>설정 파일 없음</td><td><code>Config::default</code></td><td>기본값(refresh=3·SIGTERM·graceful=10·confirm=true·mask=true 등, 31 정규값)</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> config <code>test_default_config</code></td></tr>
+<tr><td><span class="chip">TC-10.2</span></td><td>완전한 TOML</td><td>파싱</td><td>모든 섹션 정상 로드</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> config <code>test_parse_toml_config</code></td></tr>
+<tr><td><span class="chip">TC-10.3</span></td><td>★ 일부 키만 있는 TOML</td><td>파싱</td><td>누락 키는 기본값(serde default — 부분/부재 안전)</td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> config <code>test_partial_toml_uses_defaults</code></td></tr>
+<tr><td><span class="chip">TC-10.4</span></td><td>refresh/graceful 설정</td><td>duration 변환</td><td><code>refresh_duration()</code>/<code>graceful_duration()</code> 정확</td><td><span class="chip lo">○</span></td><td><span class="chip ok">U</span> config <code>test_config_refresh_duration</code>·<code>_graceful_duration</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="s3-5">3-5. health / 타입 (F1·F2·F18) — <code>types_test</code>(23케이스) <a class="anchor" href="#s3-5">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>TC</th><th>전제</th><th>입력</th><th>기대결과</th><th>우선</th><th>종류·모듈</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">TC-11.1</span></td><td>CPU/MEM 값</td><td><code>from_cpu_mem</code></td><td>≥90→Critical·≥80→Warning·else Healthy</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> types <code>test_health_status_from_metrics</code>·<code>_high_cpu_is_warning</code>·<code>_very_high_cpu_is_critical</code></td></tr>
+<tr><td><span class="chip">TC-11.2</span></td><td>★ status="Zombie" + 낮은 리소스</td><td><code>health()</code></td><td><strong>Zombie/Dead가 리소스 무관 Critical 우선</strong></td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> types <code>test_health_status_zombie</code>·<code>test_health_zombie_status_overrides_healthy_metrics</code></td></tr>
+<tr><td><span class="chip">TC-11.3</span></td><td>정상 상태 + 낮은 리소스</td><td><code>health()</code></td><td>Healthy</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> types <code>test_health_running_with_low_resources_is_healthy</code></td></tr>
+<tr><td><span class="chip">TC-11.4</span></td><td>runtime/framework 보유</td><td>Display/직렬화</td><td>Node/Python…·Next.js… 표기·serde 직렬화 정확</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> types <code>test_runtime_display</code>·<code>_serialization</code>·<code>test_framework_kind_display</code>·<code>_serialization</code>·<code>test_new_framework_kind_display</code></td></tr>
+<tr><td><span class="chip">TC-11.5</span></td><td>기본 ProcessInfo</td><td>default</td><td>필드 기본값 정상</td><td><span class="chip lo">○</span></td><td><span class="chip ok">U</span> types <code>test_process_info_default</code></td></tr>
+<tr><td><span class="chip">TC-11.6</span></td><td>★ health 메모리 인자(코드 실상)</td><td><code>health()</code> 호출</td><td>현재 테스트는 <strong>CPU 기준만</strong> 검증 — 메모리 인자가 <code>%</code>가 아니라 <strong>RSS의 MB 환산값</strong>으로 넘어가는 버그(40 R6)는 <strong>검출 못 함</strong></td><td><span class="chip p0">●</span></td><td><span class="chip p1">M</span> 갭/주의(메모리 분기 단위 미검증)</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="s4">4. 엣지 / 예외 케이스 (안전·견고성) <a class="anchor" href="#s4">#</a></h2>
+<blockquote>playbook이 명시한 핵심 엣지: <strong>EPERM 권한거부·lsof/netstat 부재→빈결과·좀비/고아·macOS comm 16자 절단·npx 오분류 회피.</strong> 위 케이스와 교차 참조하고, 미테스트(갭)는 명확히 표기한다.</blockquote>
+<div class="table-wrap">
+<table>
+<thead><tr><th>TC</th><th>엣지/예외</th><th>전제</th><th>입력</th><th>기대결과</th><th>우선</th><th>종류·모듈</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">TC-E1</span></td><td><strong>EPERM 권한거부</strong></td><td>다른 사용자/루트 소유 프로세스</td><td>kill/signal 전송</td><td><code>PermissionDenied</code> 노출, 다른 PID 진행, 크래시 0</td><td><span class="chip p0">●</span></td><td><span class="chip p1">M</span> 갭(↔TC-3.11)</td></tr>
+<tr><td><span class="chip">TC-E2</span></td><td><strong>lsof/netstat 부재</strong></td><td>시스템에 명령 없음</td><td>포트 조회</td><td>빈 <code>HashMap</code>→포트/Net 탭 빔, "No active network connections", 크래시 0</td><td><span class="chip p0">●</span></td><td><span class="chip p1">M</span> 갭(↔TC-8.8)</td></tr>
+<tr><td><span class="chip">TC-E3</span></td><td><strong>좀비/죽은 프로세스</strong></td><td>status=Zombie/Dead</td><td>health 판정</td><td>리소스 무관 Critical(상태 우선)</td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> types(↔TC-11.2)</td></tr>
+<tr><td><span class="chip">TC-E4</span></td><td><strong>고아 방지(역순 종료)</strong></td><td>부모+자식 트리</td><td>kill_tree</td><td>자식부터 역순 → 고아 0 (실제 동작 미테스트)</td><td><span class="chip p0">●</span></td><td><span class="chip p1">M</span> 갭(↔TC-4.7) / collect_pids는 <span class="chip ok">U</span> tree</td></tr>
+<tr><td><span class="chip">TC-E5</span></td><td><strong>macOS comm 16자 절단</strong></td><td>이름이 16자로 잘림</td><td>classify</td><td>normalize_name으로 정상 분류</td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> framework(↔TC-7.7)</td></tr>
+<tr><td><span class="chip">TC-E6</span></td><td><strong>npx/전역 도구 오분류 회피</strong></td><td>npx MCP가 프레임워크 cwd에서 실행</td><td>classify</td><td>fs 미독 → Generic 유지(오분류 0)</td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> framework(↔TC-7.6)</td></tr>
+<tr><td><span class="chip">TC-E7</span></td><td><strong>잘못된 주소/포트 입력</strong></td><td>파싱 불가 주소</td><td>parse_addr</td><td><code>None</code>(항목 건너뜀, 크래시 0)</td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> network(↔TC-8.4)</td></tr>
+<tr><td><span class="chip">TC-E8</span></td><td><strong>부분/깨진 설정 파일</strong></td><td>일부 키만/파싱 실패</td><td>Config 로드</td><td>누락은 기본값(serde default), 크래시 0</td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> config(↔TC-10.3)</td></tr>
+<tr><td><span class="chip">TC-E9</span></td><td><strong>로그 소스 없음</strong></td><td>cwd에 로그 파일 0</td><td>log 탭/명령</td><td>"No log source detected"(Linux는 <code>/proc/&lt;pid&gt;/fd/1</code> fallback 시도)</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> log <code>test_detect_and_open_no_log_file</code> + <span class="chip p1">M</span> /proc fallback 갭</td></tr>
+<tr><td><span class="chip">TC-E10</span></td><td><strong>로그 버퍼 폭주</strong></td><td>1000줄 초과 출력</td><td>poll 반복</td><td>앞에서 폐기(메모리 상한 1000)</td><td><span class="chip p0">●</span></td><td><span class="chip ok">U</span> log(↔TC-9.8)</td></tr>
+<tr><td><span class="chip">TC-E11</span></td><td><strong>미지의 시그널명</strong></td><td>CLI <code>--signal FOO</code></td><td>from_str</td><td><code>None</code>→SIGTERM 폴백(크래시 0)</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> killer(↔TC-3.7)</td></tr>
+<tr><td><span class="chip">TC-E12</span></td><td><strong>빈 입력/0건 스캔</strong></td><td>프로세스 0</td><td>스캔·트리 빌드</td><td>빈 결과(패닉 0), V-EMPTY 수렴</td><td><span class="chip p1">◐</span></td><td><span class="chip ok">U</span> tree <code>test_build_tree_no_processes</code> + <span class="chip p1">M</span> TUI 갭</td></tr>
+<tr><td><span class="chip">TC-E13</span></td><td><strong>터미널 폭/높이 부족</strong></td><td>좁은 터미널</td><td>렌더</td><td>컬럼 축소/탭 콘텐츠 생략(크래시 0)</td><td><span class="chip lo">○</span></td><td><span class="chip p1">M</span> 갭(렌더 미테스트, STEP 7 수동)</td></tr>
+<tr><td><span class="chip">TC-E14</span></td><td><strong>CLI info env 평문 노출(코드 실상)</strong></td><td>민감 env 보유</td><td><code>ntop info &lt;PID&gt;</code></td><td>현재 <strong>평문 출력</strong>(TUI만 마스킹) — 프라이버시 갭(40 R8)</td><td><span class="chip p1">◐</span></td><td><span class="chip p1">M</span> 갭/주의(미마스킹 미검증)</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="s5">5. ★ 실제 테스트 모듈 10종 매핑 (codebase-facts §9) <a class="anchor" href="#s5">#</a></h2>
+
+<h3 id="s5-1">5-1. 모듈 → 기능/플로우 매핑 표 <a class="anchor" href="#s5-1">#</a></h3>
+<blockquote><code>tests/*.rs</code> 실제 파일. <strong>합계 115개 테스트</strong>(아래 수치는 <code>#[test]</code>/<code>#[tokio::test]</code> 카운트).</blockquote>
+<div class="table-wrap">
+<table>
+<thead><tr><th>모듈</th><th>테스트 수</th><th>종류</th><th>커버 기능(10)</th><th>커버 플로우(13)</th><th>무엇을 검증하나</th><th>대표 케이스</th></tr></thead>
+<tbody>
+<tr><td><strong>framework_test</strong></td><td>24</td><td><span class="chip ok">U</span></td><td>F1·F3·F4</td><td>UF-1(식별)</td><td>2단계 분류·매처 우선순위·fs 미독 오분류 회피·macOS comm 절단·config 게이트·8런타임/다수 FW</td><td>TC-7.* / TC-E5·E6</td></tr>
+<tr><td><strong>scanner_test</strong></td><td>2</td><td><span class="chip ok">U</span></td><td>F1·F10</td><td>UF-1(스캔)</td><td>스캔이 Vec 반환·분류 일관성(시스템 의존, 얇음)</td><td>TC-1.2·1.3</td></tr>
+<tr><td><strong>tree_test</strong></td><td>8</td><td><span class="chip ok">U</span></td><td>F8·F10</td><td>UF-1·UF-4</td><td>트리 빌드(root/child 분할)·평탄화·레벨별 정렬·collect_pids</td><td>TC-4.1~4.5</td></tr>
+<tr><td><strong>killer_test</strong></td><td>7</td><td><span class="chip ok">U</span></td><td>F9(·F7 일부)</td><td>UF-3·UF-5</td><td><strong>KillSignal 메타데이터</strong>(name/desc/all 중복0/from_str 4종) — ※실제 종료 동작은 안 덮음</td><td>TC-3.1~3.7</td></tr>
+<tr><td><strong>network_test</strong></td><td>13</td><td><span class="chip ok">U</span></td><td>F5·F6</td><td>UF-1(Net)·UF-6</td><td>parse_addr 3폼·parse_connection 상태/원격·잘못된 입력 None</td><td>TC-8.1~8.7 / TC-E7</td></tr>
+<tr><td><strong>log_test</strong></td><td>13</td><td><span class="chip ok">U</span></td><td>F16</td><td>UF-1(Log)</td><td>LOG_PATTERNS glob·최신 파일·seek end·poll·버퍼 1000 상한</td><td>TC-9.* / TC-E10</td></tr>
+<tr><td><strong>cli_test</strong></td><td>11</td><td><span class="chip">E</span></td><td>F19·F7·F8</td><td>UF-1·UF-3·UF-4·UF-6</td><td>빌드 바이너리 디스패치(list/json/csv·kill/tree/signal/all·info·log·no-confirm·기본=TUI)</td><td>TC-1.1 / TC-3.9·3.10 / TC-6.*</td></tr>
+<tr><td><strong>config_test</strong></td><td>5</td><td><span class="chip ok">U</span></td><td>F21</td><td>(설정)</td><td>기본값·TOML 파싱·부분 TOML 기본값 폴백·duration 변환</td><td>TC-10.* / TC-E8</td></tr>
+<tr><td><strong>filter_test</strong></td><td>9</td><td><span class="chip ok">U</span></td><td>F11·F12·F13</td><td>UF-2</td><td>matches_filter 6필드 대소문자 무시·매칭 0·Node-only 토글</td><td>TC-2.1~2.9</td></tr>
+<tr><td><strong>types_test</strong></td><td>23</td><td><span class="chip ok">U</span></td><td>F1·F2·F18</td><td>UF-1</td><td>FrameworkKind/Runtime Display·직렬화·HealthStatus(metrics/zombie override)·display_name 8케이스·memory/uptime 표시</td><td>TC-1.5~1.8 / TC-11.*</td></tr>
+</tbody>
+</table>
+</div>
+
+<figure class="viz">
+<svg viewBox="0 0 760 300" role="img" aria-label="모듈별 테스트 수 분포 — 총 115">
+  <text x="20" y="22" font-size="13" font-weight="700" fill="#0f172a">모듈 테스트 수 분포 (총 115)</text>
+  <g font-size="12">
+    <text x="20" y="50" fill="#1e293b">framework_test</text><rect x="150" y="38" width="432" height="16" rx="3" fill="#4f46e5"/><text x="590" y="51" fill="#0f172a" font-weight="700">24</text><text x="618" y="51" font-size="10.5" fill="#94a3b8">핵심 추상화에 가장 두텁게</text>
+    <text x="20" y="74" fill="#1e293b">types_test</text><rect x="150" y="62" width="414" height="16" rx="3" fill="#4f46e5"/><text x="572" y="75" fill="#0f172a" font-weight="700">23</text><text x="600" y="75" font-size="10.5" fill="#94a3b8">표시·health·display_name</text>
+    <text x="20" y="98" fill="#1e293b">network_test</text><rect x="150" y="86" width="234" height="16" rx="3" fill="#0d9488"/><text x="392" y="99" fill="#0f172a" font-weight="700">13</text>
+    <text x="20" y="122" fill="#1e293b">log_test</text><rect x="150" y="110" width="234" height="16" rx="3" fill="#0d9488"/><text x="392" y="123" fill="#0f172a" font-weight="700">13</text>
+    <text x="20" y="146" fill="#1e293b">cli_test</text><rect x="150" y="134" width="198" height="16" rx="3" fill="#059669"/><text x="356" y="147" fill="#0f172a" font-weight="700">11</text><text x="384" y="147" font-size="10.5" fill="#94a3b8">유일한 E2E(assert_cmd)</text>
+    <text x="20" y="170" fill="#1e293b">filter_test</text><rect x="150" y="158" width="162" height="16" rx="3" fill="#0d9488"/><text x="320" y="171" fill="#0f172a" font-weight="700">9</text>
+    <text x="20" y="194" fill="#1e293b">tree_test</text><rect x="150" y="182" width="144" height="16" rx="3" fill="#0d9488"/><text x="302" y="195" fill="#0f172a" font-weight="700">8</text>
+    <text x="20" y="218" fill="#1e293b">killer_test</text><rect x="150" y="206" width="126" height="16" rx="3" fill="#d97706"/><text x="284" y="219" fill="#0f172a" font-weight="700">7</text><text x="312" y="219" font-size="10.5" fill="#92400e">단, 시그널 메타데이터뿐(아래 갭)</text>
+    <text x="20" y="242" fill="#1e293b">config_test</text><rect x="150" y="230" width="90" height="16" rx="3" fill="#0d9488"/><text x="248" y="243" fill="#0f172a" font-weight="700">5</text>
+    <text x="20" y="266" fill="#1e293b">scanner_test</text><rect x="150" y="254" width="36" height="16" rx="3" fill="#d97706"/><text x="194" y="267" fill="#0f172a" font-weight="700">2</text><text x="222" y="267" font-size="10.5" fill="#92400e">시스템 의존·얇음(아래 갭)</text>
+  </g>
+</svg>
+<figcaption>모듈별 테스트 수 분포(총 115). framework_test(24)·types_test(23)가 핵심 추상화·표시 로직에 가장 두텁고, killer_test(7)·scanner_test(2)는 얇아 갭과 연결된다.</figcaption>
+</figure>
+
+<details class="raw"><summary>원본 ASCII 보기</summary>
+<pre><code> 모듈 테스트 수 분포 (총 115)
+ framework_test ████████████████████████  24  ← 핵심 추상화에 가장 두텁게
+ types_test     ███████████████████████   23  ← 표시·health·display_name
+ network_test   █████████████             13
+ log_test       █████████████             13
+ cli_test       ███████████               11  ← 유일한 E2E(assert_cmd)
+ filter_test    █████████                  9
+ tree_test      ████████                   8
+ killer_test    ███████                    7  ← 단, 시그널 메타데이터뿐(아래 갭)
+ config_test    █████                      5
+ scanner_test   ██                         2  ← 시스템 의존·얇음(아래 갭)</code></pre>
+</details>
+
+<h3 id="s5-2">5-2. ★ 커버리지 갭 (자동 테스트가 닿지 않는 영역 — 정직 기록) <a class="anchor" href="#s5-2">#</a></h3>
+<blockquote>"어디가 안 덮였나"를 숨기지 않는다. 아래는 <strong>단위 테스트가 없어 수동/시각/통합 검수(STEP 7·릴리스 검증)에 맡겨진 영역</strong>이다. 로드맵(40)의 일부 항목과 겹친다.</blockquote>
+<div class="table-wrap">
+<table>
+<thead><tr><th>갭 영역</th><th>무엇이 안 덮였나</th><th>왜(원인)</th><th>어떻게 보완</th><th>관련</th></tr></thead>
+<tbody>
+<tr><td><strong>TUI 렌더링</strong></td><td><code>ui.rs</code>·<code>widgets/*</code>(process_list·detail_panel·각 탭·다이얼로그·status_bar·empty_state) 렌더·레이아웃</td><td>ratatui 화면 출력은 단위화 어려움</td><td>STEP 7 수동 시각 검수(20·21)</td><td>TC-1.4·2.10·2.11·5.3·E13</td></tr>
+<tr><td><strong>TUI 키 핸들링</strong></td><td><code>handle_key</code>/<code>handle_*_key</code> 모드 분기(필터 Enter/Esc·정렬·다이얼로그 전이)</td><td>상태 머신이 App+터미널에 결합</td><td>수동 시나리오 검수</td><td>TC-2.10·2.11</td></tr>
+<tr><td><strong>실제 종료 동작</strong></td><td><code>graceful_kill</code> 폴링·<code>force_kill</code> 에스컬레이션·<code>send_signal</code> 결과·<code>kill_tree</code> <strong>역순</strong>·EPERM</td><td>실제 프로세스 생사·권한 필요(부수효과 큼)</td><td>통합 테스트(가짜 프로세스)·수동</td><td>TC-3.8·3.11·4.7·E1·E4</td></tr>
+<tr><td><strong>platform FFI</strong></td><td><code>phys_footprint</code>·thread/fd count(F18 macOS 메모리 정확도)</td><td>OS별 FFI·Activity Monitor 비교</td><td>macOS 릴리스 시 <code>info</code> vs Activity Monitor 육안 비교</td><td>TC-1.6(표시만 덮임)</td></tr>
+<tr><td><strong>env 마스킹 로직</strong></td><td><code>env_tab.rs</code> SENSITIVE_PATTERNS 마스킹·과마스킹·CLI 미마스킹(F17)</td><td>마스킹은 위젯 내부, 단위 테스트 없음</td><td>마스킹 단위 테스트 추가(40 R8·R10)</td><td>TC-E14</td></tr>
+<tr><td><strong>명령 부재 시나리오</strong></td><td>lsof/netstat 실제 부재 시 빈 결과(파싱만 덮임)</td><td>환경 조작 필요</td><td>부재 환경 통합 테스트</td><td>TC-8.8·E2</td></tr>
+<tr><td><strong>정렬 비교자</strong></td><td><code>SortColumn</code> 9컬럼 비교자·트리 레벨별 정렬</td><td>App <code>rebuild_view</code> 내부</td><td>비교자 단위 테스트 추가</td><td>TC-2.11</td></tr>
+<tr><td><strong>health 메모리 분기</strong></td><td><code>from_cpu_mem</code> 2번째 인자가 MB로 넘어가는 코드 실상(40 R6 버그)</td><td>테스트가 CPU 기준만 확인</td><td>메모리 분기 단위 테스트(버그 회귀 방지)</td><td>TC-11.6</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="s6">6. 시각화 (G-g) <a class="anchor" href="#s6">#</a></h2>
+
+<h3 id="s6-1">6-1. 테스트 커버리지 맵 (마인드맵: 기능군 → 테스트 모듈) <a class="anchor" href="#s6-1">#</a></h3>
+<blockquote>✅ = 단위/E2E로 덮임 · ⚠ = 부분(메타데이터/얇음) · ✗갭 = 자동 테스트 없음(§5-2).</blockquote>
+
+<figure class="viz">
+<svg viewBox="0 0 770 440" role="img" aria-label="테스트 커버리지 마인드맵 — 7 기능군 × 10 모듈">
+  <!-- root -->
+  <rect x="280" y="14" width="210" height="44" rx="10" fill="#0f172a"/>
+  <text x="385" y="33" font-size="12.5" font-weight="700" fill="#fff" text-anchor="middle">ntop 테스트 커버리지 맵</text>
+  <text x="385" y="49" font-size="11" fill="#a5b4fc" text-anchor="middle">10 모듈 / 115 테스트</text>
+  <!-- connectors -->
+  <g stroke="#cbd5e1" stroke-width="1.3" fill="none">
+    <path d="M385 58 V72 H62 V86"/>
+    <path d="M385 58 V72 H170 V86"/>
+    <path d="M385 58 V72 H278 V86"/>
+    <path d="M385 58 V72 H385 V86"/>
+    <path d="M385 58 V72 H492 V86"/>
+    <path d="M385 58 V72 H600 V86"/>
+    <path d="M385 58 V72 H708 V86"/>
+  </g>
+  <!-- 7 group headers -->
+  <g font-size="11" font-weight="700">
+    <rect x="14" y="86" width="96" height="26" rx="6" fill="#eef2ff" stroke="#4f46e5"/><text x="62" y="103" text-anchor="middle" fill="#3730a3">A 식별</text>
+    <rect x="122" y="86" width="96" height="26" rx="6" fill="#eef2ff" stroke="#4f46e5"/><text x="170" y="103" text-anchor="middle" fill="#3730a3">B 포트</text>
+    <rect x="230" y="86" width="96" height="26" rx="6" fill="#fef2f2" stroke="#dc2626"/><text x="278" y="103" text-anchor="middle" fill="#991b1b">C 안전종료</text>
+    <rect x="338" y="86" width="96" height="26" rx="6" fill="#eef2ff" stroke="#4f46e5"/><text x="386" y="103" text-anchor="middle" fill="#3730a3">D 뷰탐색</text>
+    <rect x="446" y="86" width="96" height="26" rx="6" fill="#eef2ff" stroke="#4f46e5"/><text x="494" y="103" text-anchor="middle" fill="#3730a3">E 점검</text>
+    <rect x="554" y="86" width="96" height="26" rx="6" fill="#eef2ff" stroke="#4f46e5"/><text x="602" y="103" text-anchor="middle" fill="#3730a3">F 인터페이스</text>
+    <rect x="662" y="86" width="96" height="26" rx="6" fill="#ecfdf5" stroke="#059669"/><text x="710" y="103" text-anchor="middle" fill="#065f46">횡단/공통</text>
+  </g>
+  <!-- modules under each, with status -->
+  <g font-size="10">
+    <!-- A -->
+    <text x="62" y="132" text-anchor="middle" fill="#059669" font-weight="700">✅ framework(24)</text>
+    <text x="62" y="146" text-anchor="middle" fill="#475569">F1·F3·F4</text>
+    <text x="62" y="162" text-anchor="middle" fill="#059669" font-weight="700">✅ scanner(2)</text>
+    <text x="62" y="176" text-anchor="middle" fill="#475569">F1·F10 (얇음)</text>
+    <!-- B -->
+    <text x="170" y="132" text-anchor="middle" fill="#059669" font-weight="700">✅ network(13)</text>
+    <text x="170" y="146" text-anchor="middle" fill="#475569">F5·F6</text>
+    <!-- C -->
+    <text x="278" y="132" text-anchor="middle" fill="#d97706" font-weight="700">⚠ killer(7)</text>
+    <text x="278" y="146" text-anchor="middle" fill="#475569">F9 메타만</text>
+    <text x="278" y="162" text-anchor="middle" fill="#059669" font-weight="700">✅ tree(8)</text>
+    <text x="278" y="176" text-anchor="middle" fill="#475569">F8·F10</text>
+    <!-- D -->
+    <text x="386" y="132" text-anchor="middle" fill="#059669" font-weight="700">✅ filter(9)</text>
+    <text x="386" y="146" text-anchor="middle" fill="#475569">F11·12·13</text>
+    <!-- E -->
+    <text x="494" y="132" text-anchor="middle" fill="#059669" font-weight="700">✅ log(13)</text>
+    <text x="494" y="146" text-anchor="middle" fill="#475569">F16</text>
+    <text x="494" y="162" text-anchor="middle" fill="#059669" font-weight="700">✅ types(23)</text>
+    <text x="494" y="176" text-anchor="middle" fill="#475569">F1·F2·F18</text>
+    <!-- F -->
+    <text x="602" y="132" text-anchor="middle" fill="#059669" font-weight="700">✅ cli(11,E2E)</text>
+    <text x="602" y="146" text-anchor="middle" fill="#475569">F19·7·8 디스패치</text>
+    <!-- 횡단 -->
+    <text x="710" y="132" text-anchor="middle" fill="#059669" font-weight="700">✅ config(5)</text>
+    <text x="710" y="146" text-anchor="middle" fill="#475569">F21</text>
+    <text x="710" y="162" text-anchor="middle" fill="#475569">types(23) 직렬화</text>
+  </g>
+  <!-- gap row -->
+  <line x1="14" y1="196" x2="758" y2="196" stroke="#e2e8f0"/>
+  <g font-size="10">
+    <text x="62" y="218" text-anchor="middle" fill="#16a34a">갭: 없음(잘 덮임)</text>
+    <text x="170" y="218" text-anchor="middle" fill="#dc2626">✗ 명령부재(8.8)</text>
+    <text x="278" y="218" text-anchor="middle" fill="#dc2626">✗ 실제종료·역순</text>
+    <text x="278" y="232" text-anchor="middle" fill="#dc2626">·EPERM(3.8/4.7)</text>
+    <text x="386" y="218" text-anchor="middle" fill="#dc2626">✗ 정렬비교자</text>
+    <text x="386" y="232" text-anchor="middle" fill="#dc2626">·Node토글UI</text>
+    <text x="494" y="218" text-anchor="middle" fill="#dc2626">✗ env마스킹</text>
+    <text x="494" y="232" text-anchor="middle" fill="#dc2626">·platform FFI</text>
+    <text x="602" y="218" text-anchor="middle" fill="#dc2626">✗ TUI 키핸들</text>
+    <text x="602" y="232" text-anchor="middle" fill="#94a3b8">(디스패치는 덮임)</text>
+    <text x="710" y="218" text-anchor="middle" fill="#16a34a">✗ 갭: —</text>
+  </g>
+  <!-- global gap band -->
+  <rect x="14" y="252" width="744" height="40" rx="8" fill="#fef2f2" stroke="#fecaca"/>
+  <text x="28" y="270" font-size="11.5" font-weight="700" fill="#991b1b">✗ 전역 갭(모든 군 공통): TUI 렌더링(ui.rs·widgets/*) — 단위 테스트 0</text>
+  <text x="28" y="286" font-size="11" fill="#b91c1c">→ STEP 7 수동 시각 검수 영역(20·21 명세 기준).</text>
+</svg>
+<figcaption>커버리지 마인드맵 — 7 기능군 → 10 테스트 모듈, ✅/⚠/✗갭 표시. C 안전종료(실제 종료 동작)와 전역 TUI 렌더링이 가장 큰 갭.</figcaption>
+</figure>
+
+<details class="raw"><summary>원본 ASCII 보기</summary>
+<pre><code>                              ┌──────────────────────────────┐
+                              │   ntop 테스트 커버리지 맵     │
+                              │   (10 모듈 / 115 테스트)      │
+                              └───────────────┬──────────────┘
+      ┌──────────────┬──────────────┬─────────┼─────────┬──────────────┬──────────────┐
+      ▼              ▼              ▼          ▼         ▼              ▼              ▼
+ ┌─────────┐  ┌─────────┐  ┌──────────┐ ┌─────────┐ ┌─────────┐ ┌────────────┐ ┌──────────┐
+ │A 식별   │  │B 포트   │  │C 안전종료 │ │D 뷰탐색 │ │E 점검   │ │F 인터페이스│ │횡단/공통 │
+ └────┬────┘  └────┬────┘  └────┬─────┘ └────┬────┘ └────┬────┘ └─────┬──────┘ └────┬─────┘
+      │            │            │            │           │            │             │
+ ✅framework(24)  ✅network(13) ⚠killer(7)  ✅filter(9) ✅log(13)   ✅cli(11,E2E)  ✅config(5)
+   F1·F3·F4         F5·F6        F9 메타만    F11·12·13   F16          F19·7·8 디스패치 F21
+ ✅scanner(2)                    ✅tree(8)               ✅types(23)                  ✅types(23)
+   F1·F10 (얇음)                  F8·F10       (Node-only) F1·F2·F18(health/disp)     (Display/직렬화)
+      │            │            │            │           │            │
+ ✗갭: 없음        ✗갭:명령부재  ✗갭:실제종료 ✗갭:정렬    ✗갭:env마스킹 ✗갭:TUI키핸들  ✗갭:—
+   (잘 덮임)         시나리오     ·역순·EPERM   비교자·    ·CLI미마스킹  (E2E 디스패치는
+                    (TC-8.8)      (TC-3.8/4.7) Node토글UI  ·platform     덮임, 키 분기는 갭)
+                                              (TUI)        FFI(F18)
+ ────────────────────────────────────────────────────────────────────────────────────────────
+ ✗ 전역 갭(모든 군 공통): TUI 렌더링(ui.rs·widgets/*) — 단위 테스트 0, STEP 7 수동 시각 검수 영역</code></pre>
+</details>
+
+<h3 id="s6-2">6-2. 케이스 우선순위 분포 + 케이스↔모듈 요약 <a class="anchor" href="#s6-2">#</a></h3>
+
+<figure class="viz">
+<svg viewBox="0 0 760 270" role="img" aria-label="케이스 우선순위 분포와 종류 분포">
+  <text x="20" y="22" font-size="13" font-weight="700" fill="#0f172a">우선순위 분포 (본 문서 정의 케이스 기준)</text>
+  <g font-size="12">
+    <circle cx="30" cy="48" r="7" fill="#dc2626"/><text x="46" y="52" fill="#1e293b">높음</text>
+    <rect x="100" y="40" width="430" height="18" rx="3" fill="#dc2626"/><text x="540" y="54" font-size="11" fill="#64748b">안전·식별·견고성(분류·kill·EPERM·고아·comm절단·버퍼상한)</text>
+    <circle cx="30" cy="80" r="7" fill="#d97706"/><text x="46" y="84" fill="#1e293b">중간</text>
+    <rect x="100" y="72" width="290" height="18" rx="3" fill="#d97706"/><text x="400" y="86" font-size="11" fill="#64748b">코어 보조(필터·네트워크·로그·설정·health·CLI 보조)</text>
+    <circle cx="30" cy="112" r="7" fill="#94a3b8"/><text x="46" y="116" fill="#1e293b">낮음</text>
+    <rect x="100" y="104" width="110" height="18" rx="3" fill="#94a3b8"/><text x="220" y="118" font-size="11" fill="#64748b">표시·편의(uptime·PID부분일치·duration·default)</text>
+  </g>
+  <line x1="20" y1="140" x2="740" y2="140" stroke="#e2e8f0"/>
+  <text x="20" y="166" font-size="13" font-weight="700" fill="#0f172a">종류 분포</text>
+  <g font-size="12">
+    <rect x="100" y="184" width="34" height="20" rx="4" fill="#ecfdf5" stroke="#a7f3d0"/><text x="117" y="198" font-size="11" font-weight="700" fill="#059669" text-anchor="middle">U</text>
+    <rect x="140" y="184" width="380" height="20" rx="3" fill="#059669"/><text x="528" y="199" font-size="11" fill="#64748b">대부분(framework/types/network/log/filter/tree/config/killer)</text>
+    <rect x="100" y="212" width="34" height="20" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="117" y="226" font-size="11" font-weight="700" fill="#4f46e5" text-anchor="middle">E</text>
+    <rect x="140" y="212" width="100" height="20" rx="3" fill="#4f46e5"/><text x="248" y="227" font-size="11" fill="#64748b">cli_test 11(유일한 바이너리 구동)</text>
+    <rect x="100" y="240" width="34" height="20" rx="4" fill="#fffbeb" stroke="#fde68a"/><text x="117" y="254" font-size="11" font-weight="700" fill="#d97706" text-anchor="middle">M</text>
+    <rect x="140" y="240" width="120" height="20" rx="3" fill="#d97706"/><text x="268" y="255" font-size="11" fill="#64748b">TUI 렌더·키·실제 종료·FFI·마스킹·명령부재</text>
+  </g>
+</svg>
+<figcaption>케이스 우선순위 분포(높음 다수=안전·견고성)와 테스트 종류 분포([U] 단위가 대부분, [E] cli 11, [M] 갭은 TUI·실제 종료·FFI).</figcaption>
+</figure>
+
+<details class="raw"><summary>원본 ASCII 보기</summary>
+<pre><code> 우선순위 분포 (본 문서 정의 케이스 기준)
+   ● 높음  ████████████████████████  안전·식별·견고성(분류·kill·EPERM·고아·comm절단·버퍼상한·견고파싱)
+   ◐ 중간  ████████████████          코어 보조(필터·네트워크·로그·설정·health·CLI 보조)
+   ○ 낮음  ██████                    표시·편의(uptime·PID부분일치·duration·default)
+
+ 종류 분포
+   [U] 단위    ████████████████████████████████  대부분(framework/types/network/log/filter/tree/config/killer)
+   [E] E2E     ███████                           cli_test 11(유일한 바이너리 구동)
+   [M] 갭/수동 ████████                          TUI 렌더·키·실제 종료·FFI·마스킹·명령부재</code></pre>
+</details>
+
+<h3 id="s6-3">6-3. 커버리지 갭 한눈 매트릭스 (자동 vs 수동) <a class="anchor" href="#s6-3">#</a></h3>
+
+<figure class="viz">
+<svg viewBox="0 0 760 400" role="img" aria-label="커버리지 매트릭스 — 기능군 × (자동/갭)">
+  <!-- header -->
+  <rect x="240" y="16" width="250" height="26" rx="5" fill="#ecfdf5" stroke="#a7f3d0"/><text x="365" y="34" font-size="12" font-weight="700" fill="#065f46" text-anchor="middle">자동 테스트 (있음)</text>
+  <rect x="500" y="16" width="250" height="26" rx="5" fill="#fef2f2" stroke="#fecaca"/><text x="625" y="34" font-size="12" font-weight="700" fill="#991b1b" text-anchor="middle">갭 — 수동/통합 필요 (없음)</text>
+  <!-- rows -->
+  <g font-size="11.5">
+    <!-- row helper: label x=10..235, auto cell x=240..490, gap cell x=500..750 -->
+    <text x="14" y="62" fill="#1e293b" font-weight="700">분류(F1·F3·F4)</text>
+    <rect x="240" y="48" width="250" height="24" rx="4" fill="#dcfce7"/><text x="250" y="64" fill="#166534">✅ framework_test 24</text>
+    <rect x="500" y="48" width="250" height="24" rx="4" fill="#f8fafc"/><text x="510" y="64" fill="#94a3b8">—</text>
+
+    <text x="14" y="92" fill="#1e293b" font-weight="700">표시·health(F2·F18)</text>
+    <rect x="240" y="78" width="250" height="24" rx="4" fill="#dcfce7"/><text x="250" y="94" fill="#166534">✅ types_test(표시·health 분기)</text>
+    <rect x="500" y="78" width="250" height="24" rx="4" fill="#fef3c7"/><text x="510" y="94" fill="#92400e">⚠ platform FFI·health MB 버그</text>
+
+    <text x="14" y="122" fill="#1e293b" font-weight="700">포트(F5·F6)</text>
+    <rect x="240" y="108" width="250" height="24" rx="4" fill="#dcfce7"/><text x="250" y="124" fill="#166534">✅ network_test(파싱)</text>
+    <rect x="500" y="108" width="250" height="24" rx="4" fill="#fee2e2"/><text x="510" y="124" fill="#991b1b">✗ lsof/netstat 부재 시나리오</text>
+
+    <text x="14" y="152" fill="#1e293b" font-weight="700">로그(F16)</text>
+    <rect x="240" y="138" width="250" height="24" rx="4" fill="#dcfce7"/><text x="250" y="154" fill="#166534">✅ log_test(glob·버퍼)</text>
+    <rect x="500" y="138" width="250" height="24" rx="4" fill="#fef3c7"/><text x="510" y="154" fill="#92400e">⚠ /proc fallback</text>
+
+    <text x="14" y="182" fill="#1e293b" font-weight="700">필터/정렬(F11·12·13)</text>
+    <rect x="240" y="168" width="250" height="24" rx="4" fill="#dcfce7"/><text x="250" y="184" fill="#166534">✅ filter_test(매칭·Node-only)</text>
+    <rect x="500" y="168" width="250" height="24" rx="4" fill="#fee2e2"/><text x="510" y="184" fill="#991b1b">✗ 정렬 비교자·필터 UI 키</text>
+
+    <text x="14" y="212" fill="#1e293b" font-weight="700">안전종료(F7·F8·F9)</text>
+    <rect x="240" y="198" width="250" height="24" rx="4" fill="#fef3c7"/><text x="250" y="214" fill="#92400e">⚠ killer(시그널 메타)·tree(pids)</text>
+    <rect x="500" y="198" width="250" height="24" rx="4" fill="#fee2e2"/><text x="510" y="214" fill="#991b1b">✗ 실제 graceful/force/역순/EPERM</text>
+
+    <text x="14" y="242" fill="#1e293b" font-weight="700">설정(F21)</text>
+    <rect x="240" y="228" width="250" height="24" rx="4" fill="#dcfce7"/><text x="250" y="244" fill="#166534">✅ config_test</text>
+    <rect x="500" y="228" width="250" height="24" rx="4" fill="#f8fafc"/><text x="510" y="244" fill="#94a3b8">—</text>
+
+    <text x="14" y="272" fill="#1e293b" font-weight="700">CLI(F19)</text>
+    <rect x="240" y="258" width="250" height="24" rx="4" fill="#dcfce7"/><text x="250" y="274" fill="#166534">✅ cli_test(E2E 디스패치)</text>
+    <rect x="500" y="258" width="250" height="24" rx="4" fill="#f8fafc"/><text x="510" y="274" fill="#94a3b8">—</text>
+
+    <text x="14" y="302" fill="#1e293b" font-weight="700">TUI(F10·F15·F20…)</text>
+    <rect x="240" y="288" width="250" height="24" rx="4" fill="#f8fafc"/><text x="250" y="304" fill="#94a3b8">—</text>
+    <rect x="500" y="288" width="250" height="24" rx="4" fill="#fee2e2"/><text x="510" y="304" fill="#991b1b">✗ 렌더링·키 핸들링 전부(STEP 7 수동)</text>
+
+    <text x="14" y="332" fill="#1e293b" font-weight="700">env 마스킹(F17)</text>
+    <rect x="240" y="318" width="250" height="24" rx="4" fill="#f8fafc"/><text x="250" y="334" fill="#94a3b8">—</text>
+    <rect x="500" y="318" width="250" height="24" rx="4" fill="#fee2e2"/><text x="510" y="334" fill="#991b1b">✗ 마스킹·CLI 미마스킹(40 R8·R10)</text>
+  </g>
+  <!-- legend -->
+  <g font-size="11">
+    <rect x="14" y="356" width="14" height="14" rx="3" fill="#dcfce7"/><text x="34" y="367" fill="#475569">✅ 자동 덮임</text>
+    <rect x="130" y="356" width="14" height="14" rx="3" fill="#fef3c7"/><text x="150" y="367" fill="#475569">⚠ 부분</text>
+    <rect x="230" y="356" width="14" height="14" rx="3" fill="#fee2e2"/><text x="250" y="367" fill="#475569">✗ 갭(수동/통합 필요)</text>
+    <rect x="420" y="356" width="14" height="14" rx="3" fill="#f8fafc" stroke="#e2e8f0"/><text x="440" y="367" fill="#475569">— 해당 없음</text>
+  </g>
+</svg>
+<figcaption>커버리지 매트릭스(플로우·기능군 × 자동/갭) — 초록=자동 덮임, 노랑=부분, 빨강=갭. TUI 전반과 env 마스킹, 실제 종료 동작이 가장 큰 미커버 영역.</figcaption>
+</figure>
+
+<details class="raw"><summary>원본 ASCII 보기</summary>
+<pre><code>                      │ 자동 테스트(있음)              │ 갭 — 수동/통합 필요(없음)
+ ─────────────────────┼───────────────────────────────┼──────────────────────────────────
+ 분류(F1·F3·F4)       │ ✅ framework_test 24            │ —
+ 표시·health(F2·F18)  │ ✅ types_test(표시·health 분기) │ ⚠ platform FFI(메모리 정확도)·health MB 버그
+ 포트(F5·F6)          │ ✅ network_test(파싱)           │ ✗ lsof/netstat 부재 시나리오
+ 로그(F16)            │ ✅ log_test(glob·버퍼)          │ ⚠ /proc fallback
+ 필터/정렬(F11·12·13) │ ✅ filter_test(매칭·Node-only)  │ ✗ 정렬 비교자·필터 UI 키
+ 안전종료(F7·F8·F9)   │ ⚠ killer(시그널 메타)·tree(pids)│ ✗ 실제 graceful/force/역순/EPERM
+ 설정(F21)            │ ✅ config_test                  │ —
+ CLI(F19)             │ ✅ cli_test(E2E 디스패치)       │ —
+ TUI(F10·F15·F20…)    │ —                              │ ✗ 렌더링·키 핸들링 전부(STEP 7 수동)
+ env 마스킹(F17)      │ —                              │ ✗ 마스킹·CLI 미마스킹(40 R8·R10)</code></pre>
+</details>
+
+<h2 id="selfcheck">자체 검증 (Self-verification) <a class="anchor" href="#selfcheck">#</a></h2>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>#</th><th>체크</th><th>결과</th><th>어디서 충족</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">T-1</span></td><td>핵심 플로우별 케이스(UF-1~6) 전제/입력/기대/우선</td><td><span class="chip ok">PASS</span> — §2-1~§2-6 각 UF 케이스 표(TC-1.*~TC-6.*)</td><td>§2</td></tr>
+<tr><td><span class="chip">T-2</span></td><td>핵심 기능별 케이스(분류·네트워크·로그·설정·health)</td><td><span class="chip ok">PASS</span> — §3-1~§3-5(TC-7.*~TC-11.*)</td><td>§3</td></tr>
+<tr><td><span class="chip">T-3</span></td><td>엣지/예외(EPERM·명령부재·좀비/고아·comm절단·npx오분류·버퍼·부분설정)</td><td><span class="chip ok">PASS</span> — §4 TC-E1~E14, playbook 명시 엣지 전부 포함</td><td>§4</td></tr>
+<tr><td><span class="chip">T-4</span></td><td>★ 테스트 모듈 10종 매핑(함수명·커버 F#/UF#)</td><td><span class="chip ok">PASS</span> — §5-1 표(framework/scanner/tree/killer/network/log/cli/config/filter/types, 실제 함수명)</td><td>§5-1</td></tr>
+<tr><td><span class="chip">T-5</span></td><td>커버리지 갭 명시</td><td><span class="chip ok">PASS</span> — §5-2 갭 표(TUI 렌더·실제 종료·FFI·env 마스킹·명령부재·정렬비교자·health MB) + §6-3</td><td>§5-2·§6-3</td></tr>
+<tr><td><span class="chip">T-6</span></td><td>시각화(커버리지 맵 마인드맵 + 우선순위 분포, 외부 렌더러 0)</td><td><span class="chip ok">PASS</span> — §6-1 마인드맵·§6-2 분포·§6-3 갭 매트릭스, 전부 ASCII</td><td>§6</td></tr>
+<tr><td><span class="chip">T-7</span></td><td>단일 출처 준수(기능=10·플로우=13·키=21·값=31·정책=33·로드맵=40 참조)</td><td><span class="chip ok">PASS</span> — 본문 참조 표기, 케이스만 소유</td><td>전체</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>추가 원칙 점검:</strong></p>
+<ul>
+<li><strong>창작 금지(spec §7):</strong> 결제·DB·REST·회원 케이스 0. 모든 테스트 모듈·함수명은 실제 <code>tests/*.rs</code>에서 추출(framework_test 24·types_test 23·network_test 13·log_test 13·cli_test 11·filter_test 9·tree_test 8·killer_test 7·config_test 5·scanner_test 2 = 115). 없는 테스트를 지어내지 않음.</li>
+<li><strong>사실 정정 반영:</strong> TUI 목록에 FRAMEWORK 컬럼 없음(TC-1.5는 Info 탭에서 확인)·세로 레이아웃·<code>Version=-</code>(40 R7)·health 메모리 인자 MB(40 R6)·CLI env 미마스킹(40 R8)을 정직 케이스/갭으로 기록.</li>
+<li><strong>갭 정직성:</strong> killer_test가 <strong>시그널 메타데이터만</strong> 덮고 실제 종료 동작(graceful/force/역순/EPERM)은 안 덮는다는 점, TUI 렌더·키 핸들링·platform FFI가 단위 테스트 0이라는 점을 §5-2·§6-3에 명시(숨기지 않음).</li>
+<li><strong>쉬운 설명(probe):</strong> 첫 등장 용어(테스트 케이스·전제·단위/통합·커버리지 갭·EPERM·고아·comm 절단) 풀이.</li>
+</ul>
+
+<p><strong>알려진 한계(후속 보완):</strong></p>
+<ul>
+<li>본 문서는 <strong>검증 케이스의 단일 출처</strong>다. 기능·우선순위·키·값·정책·로드맵 항목 자체는 10/21/31/33/40을 참조하며 재정의하지 않는다(같은 수치는 31 인용).</li>
+<li><code>[M] 갭</code> 케이스(실제 종료·EPERM·TUI 렌더·env 마스킹·명령 부재)는 <strong>수동/통합 검수 또는 추가 테스트 여지</strong>로 표기했을 뿐, 본 패키지는 문서화만 하며 실제 테스트 코드를 추가하지 않는다(spec §7 비목표).</li>
+<li>테스트 수치(115·모듈별 카운트)는 현재 <code>tests/*.rs</code> 기준 — 코드 변경 시 갱신 대상이다.</li>
+</ul>
+
+</main>
+</div>
+
+<script>
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  var map = {};
+  links.forEach(function(a){ var id = a.getAttribute('href').slice(1); if(id) map[id] = a; });
+  var observer = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(l){ l.classList.remove('active'); });
+        var a = map[e.target.id];
+        if(a) a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-64px 0px -70% 0px', threshold: 0 });
+  document.querySelectorAll('main h2[id], main h3[id]').forEach(function(h){ observer.observe(h); });
+})();
+</script>
+</body>
+</html>

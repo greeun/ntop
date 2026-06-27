@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01 · 서비스 기획 — 핵심 가치·MVP·성공지표·차별화 · ntop</title>
+<style>
+/* ntop 기획 패키지 — 공통 디자인 시스템 (자체완결: 각 NN-name.html <style>에 인라인 복제) */
+/* 외부 의존 0 — CDN/웹폰트/Mermaid 금지. 시스템 폰트만. */
+:root{
+  --accent:#4f46e5;        /* indigo */
+  --accent2:#0d9488;       /* teal */
+  --accent-soft:#eef2ff;
+  --bg:#ffffff;
+  --fg:#1e293b;
+  --muted:#64748b;
+  --line:#e2e8f0;
+  --code-bg:#f1f5f9;
+  --warn:#d97706; --warn-bg:#fffbeb;
+  --bad:#dc2626;  --bad-bg:#fef2f2;
+  --ok:#059669;   --ok-bg:#ecfdf5;
+  --t1:#dc2626; --t2:#d97706; --t3:#ca8a04;
+  --maxw:860px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;color:var(--fg);background:var(--bg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  line-height:1.7;font-size:16px;
+}
+code,pre,.mono{font-family:"SF Mono",SFMono-Regular,ui-monospace,Menlo,Consolas,"D2Coding",monospace}
+
+/* ── 상단바 ── */
+.topbar{
+  position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  padding:10px 18px;background:#0f172a;color:#f8fafc;font-weight:600;font-size:15px;
+  border-bottom:3px solid var(--accent);
+}
+.topbar .doc-no{color:#a5b4fc;font-variant-numeric:tabular-nums}
+.topbar nav{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.topbar nav a,.topbar nav button{
+  color:#e2e8f0;background:#1e293b;border:1px solid #334155;border-radius:6px;
+  padding:4px 10px;font-size:13px;text-decoration:none;cursor:pointer;font-weight:500;
+}
+.topbar nav a:hover,.topbar nav button:hover{background:var(--accent);border-color:var(--accent)}
+
+/* ── 티어 배지 ── */
+.tier{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:700;color:#fff}
+.tier.t1{background:var(--t1)} .tier.t2{background:var(--t2)} .tier.t3{background:var(--t3)}
+
+/* ── 레이아웃: TOC + 본문 ── */
+.layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:0;max-width:1200px;margin:0 auto}
+.toc{position:sticky;top:58px;align-self:start;height:calc(100vh - 58px);overflow:auto;padding:18px 12px;border-right:1px solid var(--line);font-size:13.5px}
+.toc h4{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.toc a{display:block;padding:3px 8px;color:var(--muted);text-decoration:none;border-radius:5px;border-left:2px solid transparent}
+.toc a:hover{background:var(--accent-soft);color:var(--accent)}
+.toc a.active{color:var(--accent);background:var(--accent-soft);border-left-color:var(--accent);font-weight:600}
+.toc a.lv3{padding-left:18px;font-size:12.5px}
+main{padding:26px 34px;max-width:var(--maxw)}
+main h1{font-size:26px;line-height:1.3;margin:0 0 6px}
+main h2{font-size:21px;margin:34px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--line);scroll-margin-top:64px}
+main h3{font-size:17px;margin:24px 0 10px;color:#0f172a;scroll-margin-top:64px}
+main h4{font-size:15px;margin:18px 0 8px;color:var(--muted)}
+main p{margin:10px 0}
+main a{color:var(--accent)}
+.anchor{margin-left:8px;color:var(--line);text-decoration:none;font-weight:400;font-size:.8em}
+main h2:hover .anchor,main h3:hover .anchor{color:var(--accent)}
+
+/* ── 표 ── */
+.table-wrap{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:7px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{background:#f8fafc;font-weight:700;position:sticky;top:0;border-bottom:2px solid var(--line)}
+tbody tr:nth-child(even){background:#fbfcfe}
+tbody tr:hover{background:var(--accent-soft)}
+
+/* ── 코드·칩 ── */
+:not(pre)>code{background:var(--code-bg);padding:1px 6px;border-radius:5px;font-size:.88em;color:#be185d}
+pre{background:#0f172a;color:#e2e8f0;padding:14px 16px;border-radius:8px;overflow-x:auto;font-size:13px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+.chip{display:inline-block;background:var(--accent-soft);color:var(--accent);border:1px solid #c7d2fe;border-radius:5px;padding:0 6px;font-size:.85em;font-weight:600}
+.chip.p0{background:var(--bad-bg);color:var(--bad);border-color:#fecaca}
+.chip.p1{background:var(--warn-bg);color:var(--warn);border-color:#fde68a}
+.chip.ok{background:var(--ok-bg);color:var(--ok);border-color:#a7f3d0}
+
+/* ── 콜아웃 ── */
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+.callout.warn{border-color:var(--warn);background:var(--warn-bg)}
+.callout.bad{border-color:var(--bad);background:var(--bad-bg)}
+.callout.ok{border-color:var(--ok);background:var(--ok-bg)}
+blockquote{border-left:4px solid var(--line);margin:14px 0;padding:4px 16px;color:var(--muted)}
+
+/* ── 인포그래픽 figure ── */
+figure.viz{margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:10px;background:#fcfdff;text-align:center}
+figure.viz svg{max-width:100%;height:auto;display:block;margin:0 auto}
+figure.viz figcaption{margin-top:10px;font-size:13px;color:var(--muted);text-align:center}
+.viz-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+details.raw{margin-top:8px;font-size:13px}
+details.raw summary{cursor:pointer;color:var(--muted);font-size:12.5px}
+details.raw pre{margin-top:6px}
+
+/* SVG 공통 텍스트 */
+svg text{font-family:-apple-system,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+.svg-node{fill:#fff;stroke:var(--accent);stroke-width:1.5}
+.svg-edge{stroke:var(--muted);stroke-width:1.5;fill:none}
+.svg-label{font-size:12px;fill:var(--fg)}
+.svg-accent{fill:var(--accent)} .svg-accent2{fill:var(--accent2)}
+
+/* 화면 mockup 프레임(20/21용) */
+.screen{border:2px solid #334155;border-radius:8px;background:#0f172a;color:#cbd5e1;font-family:"SF Mono",ui-monospace,monospace;font-size:12px;padding:0;overflow:hidden;text-align:left;margin:0 auto;max-width:560px}
+.screen .bar{background:#1e293b;color:#a5b4fc;padding:4px 8px;font-size:11px;border-bottom:1px solid #334155}
+.screen .body{padding:8px 10px;white-space:pre;overflow-x:auto;line-height:1.4}
+
+/* ── print ── */
+@media print{
+  .topbar,.toc,.anchor,details.raw summary{display:none!important}
+  .layout{grid-template-columns:1fr;max-width:none}
+  main{max-width:none;padding:0}
+  details.raw{display:none}
+  *{break-inside:avoid}
+  figure.viz{border:1px solid #ccc}
+}
+/* ── 반응형 ── */
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}
+  main{padding:18px}
+}
+
+/* ── 페이지 전용 보조 ── */
+.sv-title{font-size:13px;font-weight:700;fill:#0f172a}
+.sv-sub{font-size:11px;fill:#64748b}
+.sv-mono{font-family:"SF Mono",ui-monospace,monospace;font-size:12px}
+.yes{color:#059669;font-weight:700}
+.part{color:#d97706;font-weight:700}
+.no{color:#94a3b8}
+td.c{text-align:center}
+tr.row-hl td{background:#eef2ff;font-weight:600}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <span class="doc-no">01</span>
+  <span class="tier t1">T1</span> · 서비스 기획 — 핵심 가치·MVP·성공지표·차별화
+  <nav>
+    <a href="index.html">← 목록</a>
+    <a href="00-business-model.html">← 이전</a>
+    <a href="02-market-competition.html">다음 →</a>
+    <button onclick="window.print()">🖨 인쇄</button>
+  </nav>
+</header>
+
+<div class="layout">
+<nav class="toc">
+  <h4>목차</h4>
+  <a href="#sprint-contract">Sprint Contract</a>
+  <a href="#s1">1. 문제 정의</a>
+  <a href="#s2">2. 타깃</a>
+  <a href="#s3">3. 핵심 기능</a>
+  <a href="#s3-1" class="lv3">3-1. 구조 마인드맵</a>
+  <a href="#s4">4. 유저 플로우</a>
+  <a href="#s4-1" class="lv3">4-1. 가치 루프</a>
+  <a href="#s5">5. MVP 범위 / Out-of-scope</a>
+  <a href="#s5-1" class="lv3">5-1. MVP에 포함</a>
+  <a href="#s5-2" class="lv3">5-2. Out-of-scope</a>
+  <a href="#s5-3" class="lv3">5-3. 쿼드런트</a>
+  <a href="#s6">6. 성공지표</a>
+  <a href="#s6-1" class="lv3">6-1. 제품 품질 지표</a>
+  <a href="#s6-2" class="lv3">6-2. OSS 채택 지표</a>
+  <a href="#s7">7. 차별화</a>
+  <a href="#s8">8. OSS 지속가능성 링크</a>
+  <a href="#verify">자체 검증</a>
+</nav>
+
+<main>
+<h1>01 · 서비스 기획 — 핵심 가치 / MVP / 성공지표 / 차별화 (ntop)</h1>
+
+<blockquote>
+<strong>이 문서는 단일 출처(single source)다.</strong> ntop의 <strong>핵심 가치·MVP 범위·성공지표·차별화</strong>는 여기서만
+확정하고, 하위 문서(<code>10-prd</code> 기능·우선순위, <code>40-backlog</code> 로드맵)는 이 문서를 <strong>참조</strong>한다. 반대로
+이 문서는 <strong>OSS 지속가능성/수익화/배포 채널은 <code>00-business-model</code></strong>, <strong>경쟁/생태계 분석은
+<code>02-market-competition</code></strong>, <strong>페르소나 상세는 <code>03-personas</code></strong> 를 단일 출처로 참조하며 <strong>재정의하지
+않는다.</strong>
+</blockquote>
+
+<div class="callout">
+<strong>전제:</strong> ntop은 <strong>이미 v0.2.0까지 구현된 MIT 오픈소스 도구</strong>다(codebase-facts §0). 따라서 이 기획서는
+"앞으로 만들 것"이 아니라 <strong>이미 만들어진 동작을 역설계(reverse-engineering)</strong> 해 가치·범위·지표·
+차별점으로 정리한 것이다.
+</div>
+
+<div class="callout">
+<strong>용어 풀이(첫 등장)</strong>
+<ul class="glossary" style="list-style:none;margin:6px 0 0;padding:0">
+<li><strong>TUI</strong>(Text User Interface) = 터미널 안에서 키보드로 조작하는 전체화면 텍스트 UI</li>
+<li><strong>CLI</strong>(Command-Line Interface) = 명령 한 줄로 실행해 결과를 출력하는 방식</li>
+<li><strong>런타임(runtime)</strong> = 코드를 실행하는 엔진(Node·Python·Java 등)</li>
+<li><strong>프레임워크(framework)</strong> = 런타임 위에서 서버를 만드는 틀(Next.js·FastAPI·Spring Boot 등)</li>
+<li><strong>dev 서버</strong> = 개발 중 코드를 바로 띄워 확인하는 임시 서버</li>
+<li><strong>MCP</strong>(Model Context Protocol) = AI 비서가 외부 도구·데이터에 붙는 표준 연결, 보통 <code>npx</code>로 백그라운드 실행</li>
+<li><strong>graceful 종료(정상 종료)</strong> = "정리하고 꺼져라"라고 <strong>요청</strong>(SIGTERM), 강제 종료(SIGKILL)와 다름</li>
+<li><strong>에스컬레이션</strong> = 정상 요청이 안 통하면 강제로 단계 올림</li>
+<li><strong>트리 종료</strong> = 부모-자식 프로세스를 묶어 함께 종료</li>
+<li><strong>PRB-n</strong> = research-s2가 정의한 문제(problem) 번호</li>
+<li><strong>MVP</strong>(Minimum Viable Product) = 가치를 전달하는 최소 제품 범위</li>
+</ul>
+</div>
+
+<h2 id="sprint-contract">Sprint Contract (self-proposed checks) <a class="anchor" href="#sprint-contract">#</a></h2>
+<p>이 문서(g1a의 <code>01</code>)가 만족시킬 <strong>관찰 가능한 체크</strong>(playbook §S4-g1 관찰 바 + spec §5(01행)·§8에서 도출).</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>#</th><th>체크</th><th>어떻게 충족하나</th><th>본문 위치</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">P-1</span></td><td><strong>7섹션 충족</strong> — 문제/타깃/핵심기능/플로우/MVP/지표/차별화</td><td>§1~§7 + 지속가능성 링크(§8)</td><td>§1~§8</td></tr>
+<tr><td><span class="chip">P-2</span></td><td><strong>모든 핵심 기능이 PRB로 역추적(G-a 시드)</strong></td><td>§3 기능 표에 기능핸들↔PRB 매핑 열</td><td>§3</td></tr>
+<tr><td><span class="chip">P-3</span></td><td><strong>MVP(=v0.2.0)/Out-of-scope 명시 분리 + 우선순위 근거(G-e)</strong></td><td>§5 포함/제외 분리 + 쿼드런트 + 근거</td><td>§5</td></tr>
+<tr><td><span class="chip">P-4</span></td><td><strong>성공지표: 수치 + 측정도구/주기/판정(G-d)</strong> — 제품 품질 vs OSS 채택(가설) 구분</td><td>§6 2부 표 + 가설 라벨</td><td>§6</td></tr>
+<tr><td><span class="chip">P-5</span></td><td><strong>차별화: 실명 경쟁자 명시 비교(G-c)</strong> + moat, 02 인용</td><td>§7 매트릭스 요약 + 해자 3논거(02/research-s1 §9 인용)</td><td>§7</td></tr>
+<tr><td><span class="chip">P-6</span></td><td><strong>시각화(G-g)</strong> — 구조 마인드맵·가치 루프·MVP 쿼드런트·성공지표 차트</td><td>§3·§4·§5·§6 ASCII(외부 렌더러 0)</td><td>§3~§6</td></tr>
+<tr><td><span class="chip">P-7</span></td><td><strong>단일 출처 준수</strong> — 지속가능성=00·경쟁/생태계=02·페르소나=03 참조</td><td>본문 곳곳 참조 표기</td><td>전체</td></tr>
+<tr><td><span class="chip">P-8</span></td><td><strong>사실 정정 반영</strong> — TUI 목록에 FRAMEWORK 컬럼 없음(Info 탭·CLI 테이블만), 레이아웃 세로(상/하)</td><td>§3·§4 표기 정정 적용</td><td>§3, §4</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="s1">1. 문제 정의 (who-what-why) — 의미 격차 <a class="anchor" href="#s1">#</a></h2>
+<blockquote>출처: research-s2 §1~§3(PRB-1~8). 본 절은 요약이며, 문제 목록의 단일 출처는 research-s2(→ <code>03-personas</code>)다.</blockquote>
+
+<ul>
+<li><strong>누가:</strong> 한 머신에서 <strong>여러 런타임의 서버 프로세스를 동시에</strong> 띄우는 개발자/운영자.</li>
+<li><strong>무엇이 문제:</strong> 범용 프로세스 모니터(htop·top·Activity Monitor 등)는 프로세스를 <strong>익명의 PID·CPU·메모리</strong>로만 보여줄 뿐, "이 <code>node</code>가 <strong>어느 프레임워크의, 어느 포트의, 어느 프로젝트</strong> 서버인가"를 모른다 — 이것이 <strong>의미 격차(semantic gap)</strong> 다.</li>
+<li><strong>왜 문제:</strong> 개발자는 그 격차를 <code>lsof -i :3000</code>(포트→PID), <code>ps aux | grep node</code>(이름 검색), Activity Monitor(메모리) <strong>사이를 손으로 오가며</strong> 메우고, 종종 <strong>엉뚱한 프로세스를 죽이는 사고</strong>로 이어진다(research-s2 §1).</li>
+</ul>
+
+<figure class="viz">
+<svg viewBox="0 0 720 240" role="img" aria-label="의미 격차 — 범용 모니터가 보는 것 vs 내가 알아야 하는 것">
+  <defs><marker id="gap-arrow" markerWidth="12" markerHeight="12" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#dc2626"/></marker></defs>
+  <text x="155" y="26" text-anchor="middle" class="sv-title">범용 모니터가 보는 것</text>
+  <rect x="20" y="36" width="270" height="140" rx="8" fill="#0f172a"/>
+  <text x="38" y="68" class="sv-mono" fill="#e2e8f0">PID 41822  node   2.1%</text>
+  <text x="38" y="96" class="sv-mono" fill="#e2e8f0">PID 41835  node   0.4%</text>
+  <text x="38" y="124" class="sv-mono" fill="#e2e8f0">PID 41840  node   0.0%</text>
+  <text x="38" y="152" class="sv-mono" fill="#e2e8f0">PID 42013  python 5.0%</text>
+  <text x="155" y="198" text-anchor="middle" class="sv-sub">"이름·번호·숫자뿐"</text>
+  <text x="360" y="100" text-anchor="middle" font-size="26" font-weight="700" fill="#dc2626">???</text>
+  <line x1="298" y1="120" x2="422" y2="120" stroke="#dc2626" stroke-width="1.6" marker-end="url(#gap-arrow)"/>
+  <text x="360" y="142" text-anchor="middle" class="sv-sub" fill="#dc2626">의미 격차</text>
+  <text x="565" y="26" text-anchor="middle" class="sv-title">내가 알아야 하는 것</text>
+  <rect x="430" y="36" width="270" height="140" rx="8" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.4"/>
+  <text x="448" y="68" class="svg-label">Next.js dev 서버 @:3000</text>
+  <text x="448" y="96" class="svg-label">FastAPI @:8000 (백엔드)</text>
+  <text x="448" y="124" class="svg-label">Claude Code MCP (건들면 끊김)</text>
+  <text x="448" y="152" class="svg-label">Celery 워커 (큐 처리 중)</text>
+  <text x="565" y="198" text-anchor="middle" class="sv-sub">"프레임워크·포트·역할·안전여부"</text>
+</svg>
+<figcaption>의미 격차(semantic gap) — 범용 모니터는 익명 PID·숫자만 보여주고, 정작 알아야 할 프레임워크·포트·역할·안전여부는 사용자가 머릿속/손으로 메운다.</figcaption>
+<details class="raw"><summary>원본(텍스트)</summary><pre> 범용 모니터가 보는 것              내가 알아야 하는 것              ← 이 사이가 "의미 격차"
+ ┌──────────────────────┐          ┌────────────────────────────┐
+ │ PID 41822  node  2.1% │          │ Next.js dev 서버 @:3000      │
+ │ PID 41835  node  0.4% │   ???    │ FastAPI @:8000 (백엔드)      │
+ │ PID 41840  node  0.0% │  ─────▶  │ Claude Code MCP (건들면 끊김) │
+ │ PID 42013  python 5%  │          │ Celery 워커 (큐 처리 중)     │
+ └──────────────────────┘          └────────────────────────────┘
+   "이름·번호·숫자뿐"                 "프레임워크·포트·역할·안전여부"</pre></details>
+</figure>
+
+<p><strong>하위 문제(PRB) 요약 — G-a 추적의 출발점(research-s2 §3):</strong></p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>PRB</th><th>문제(한 줄)</th><th>핵심 통증</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">PRB-1</span></td><td>익명 <code>node</code> 더미 — 어느 게 뭔지 모름</td><td>의미 격차(식별 불가)</td></tr>
+<tr><td><span class="chip">PRB-2</span></td><td>포트 역추적 수작업(<code>lsof</code> 왕복)</td><td>문맥 전환</td></tr>
+<tr><td><span class="chip">PRB-3</span></td><td>엉뚱한 프로세스 kill 위험(MCP/도구 vs dev)</td><td>오kill·세션 끊김</td></tr>
+<tr><td><span class="chip">PRB-4</span></td><td>다중 런타임 문맥 전환</td><td>인지 부하</td></tr>
+<tr><td><span class="chip">PRB-5</span></td><td>안전하지 않은 종료(<code>kill -9</code> 즉사·고아)</td><td>데이터 유실·고아</td></tr>
+<tr><td><span class="chip">PRB-6</span></td><td>메모리 오판독 + 환경 민감값 노출</td><td>오판·유출</td></tr>
+<tr><td><span class="chip">PRB-7</span></td><td>헤드리스·자동화 환경에서 점검·종료 어려움</td><td>GUI 불가·스크립트화</td></tr>
+<tr><td><span class="chip">PRB-8</span></td><td>GUI↔터미널 문맥 전환(Activity Monitor 왕복)</td><td>도구 이동 피로</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="s2">2. 타깃 (Target) — 개발자/운영자 페르소나 <a class="anchor" href="#s2">#</a></h2>
+<blockquote>출처·단일 출처: research-s2 §4 / <code>03-personas</code>. 본 절은 요약(상세·여정 맵은 <code>03-personas</code> 참조).
+ntop은 결제 도구가 아니므로 페르소나는 <strong>고객이 아니라 사용자</strong>다(codebase-facts §0-1).</blockquote>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>페르소나</th><th>한 줄</th><th>핵심 상황</th><th>1순위 통증</th><th>원하는 결과</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">P1</span> 박서연 · 폴리글랏 풀스택(★1순위)</td><td>혼자 프런트·백·워커 다 맡는 4년차</td><td>macOS에서 Next.js(:3000)+FastAPI(:8000)+Celery+MCP, <code>node</code>만 6~8개</td><td>PRB-1·2·3·5·6</td><td>"한 화면에서 정체 파악 → 그 자리서 안전 종료"</td></tr>
+<tr><td><span class="chip">P2</span> 정태호 · 플랫폼/운영(운영자 축)</td><td>SSH로만 접속하는 공용 Linux 서버 관리</td><td>좀비·고아 프로세스가 포트 점유하는 인시던트</td><td>PRB-7·4·5·2</td><td>"헤드리스에서 식별·필터·트리 종료 + JSON 자동화"</td></tr>
+<tr><td><span class="chip">P3</span> 이준 · AI 응용(npx/MCP 헤비)</td><td>LLM 에이전트·도구 연동 개발</td><td>npx MCP 다수, <code>node</code> 10+개, cwd 제각각</td><td>PRB-1·3·4</td><td>"커맨드라인 기반 정확 분류로 MCP↔dev 구분, dev만 종료"</td></tr>
+</tbody>
+</table>
+</div>
+
+<figure class="viz">
+<svg viewBox="0 0 700 180" role="img" aria-label="타깃 우선순위 — 페르소나별 통증 합계 막대">
+  <text x="350" y="18" text-anchor="middle" class="sv-sub">타깃 우선순위 (research-s2 §6-2 통증 합계) — 막대 길이 = 통증 개수</text>
+  <text x="150" y="50" text-anchor="end" class="svg-label">P1 폴리글랏</text>
+  <rect x="160" y="36" width="380" height="22" rx="4" fill="#4f46e5"/>
+  <text x="548" y="51" class="sv-sub">● 통증 7개 (가장 넓고 깊음) → 1순위</text>
+  <text x="150" y="98" text-anchor="end" class="svg-label">P2 운영자</text>
+  <rect x="160" y="84" width="218" height="22" rx="4" fill="#0d9488"/>
+  <text x="386" y="99" class="sv-sub">● 통증 4개 (헤드리스·트리 종료 고유 강점)</text>
+  <text x="150" y="146" text-anchor="end" class="svg-label">P3 AI도구</text>
+  <rect x="160" y="132" width="110" height="22" rx="4" fill="#818cf8"/>
+  <text x="278" y="147" class="sv-sub">● 통증 2개 (식별·오분류 회피 날카로움)</text>
+</svg>
+<figcaption>타깃 우선순위 — P1(폴리글랏)이 가장 넓고 깊은 통증으로 1순위. P2·P3는 고유 강점 축(헤드리스·정확 분류)을 가진다.</figcaption>
+<details class="raw"><summary>원본(텍스트)</summary><pre>타깃 우선순위 (research-s2 §6-2 통증 합계)
+ P1 폴리글랏  ████████████████████████████  ● 통증 7개 (가장 넓고 깊음) → 1순위
+ P2 운영자    ████████████████              ● 통증 4개 (헤드리스·트리 종료 고유 강점)
+ P3 AI도구    ████████                      ● 통증 2개 (식별·오분류 회피 날카로움)</pre></details>
+</figure>
+
+<blockquote><strong>P3의 전략적 의미:</strong> P3의 "원하는 결과(파일시스템 안 읽는 정확 분류)"는 ntop의 <strong>프로세스-로컬 전용
+탐지 원칙</strong>과 정확히 맞물린다 — 이는 §7 차별화(해자)의 핵심이 실제 통증을 푸는 증거다.</blockquote>
+
+<h2 id="s3">3. 핵심 기능 (Core features) — 기능↔문제(PRB) 추적 <a class="anchor" href="#s3">#</a></h2>
+<blockquote>모든 핵심 기능에 <strong>잠정 기능 핸들(<code>F-*</code>)</strong> 을 부여하고 각각을 research-s2의 <strong>PRB로 역추적</strong>한다(G-a
+시드). <strong>정규 기능 ID는 <code>10-prd</code>에서 확정</strong>되며, 본 표가 그 추적표의 토대다. 기능은 모두 codebase-facts
+의 <strong>실제 구현 동작</strong>에서 도출했다(창작 0).</blockquote>
+
+<div class="callout warn">
+<strong>★사실 정정 반영(<span class="chip">P-8</span>):</strong> 런타임/프레임워크는 <strong>TUI 상단 목록의 컬럼이 아니다</strong> — 상단 목록 컬럼은
+<code>PID·NAME·PORT·THR·CPU·MEM·USER·STS·UPTIME</code>이고, <strong>FRAMEWORK는 상세 Info 탭과 CLI <code>list</code> 테이블에서만</strong>
+노출된다(codebase-facts §6 정정값). 화면 레이아웃도 좌/우가 아니라 <strong>세로(위=목록 55% / 아래=상세 45%)</strong>.
+</div>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>기능핸들</th><th>핵심 기능</th><th>무엇을 하나(요지)</th><th>해소 PRB</th><th>근거(codebase-facts)</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">F-식별분류</span></td><td>런타임/프레임워크 인지 분류</td><td>데이터 주도 규칙 테이블로 8런타임·다수 FW 식별, <code>display_name()</code>로 읽을 이름 추출</td><td>PRB-1</td><td>§2(<code>FRAMEWORK_RULES</code>/<code>RUNTIME_RULES</code>), §3</td></tr>
+<tr><td><span class="chip">F-정확분류</span></td><td>프로세스-로컬 전용 탐지</td><td>이름+커맨드라인만 사용, <strong>파일시스템 안 읽음</strong> → npx/전역 도구 오분류 회피</td><td>PRB-3</td><td>§2(fs 미독 원칙)</td></tr>
+<tr><td><span class="chip">F-포트매핑</span></td><td>포트→프로세스 매핑 내장</td><td><code>NetworkInspector</code>가 LISTEN 포트를 PID별 매핑 → PORT 컬럼·Net 탭</td><td>PRB-2</td><td>§4-1</td></tr>
+<tr><td><span class="chip">F-안전종료</span></td><td>확인 게이트 + graceful 종료</td><td>KillConfirm 확인 → SIGTERM → timeout 시 force 자동 에스컬레이션</td><td>PRB-3·5</td><td>§3·§5 (<code>graceful_kill</code>)</td></tr>
+<tr><td><span class="chip">F-트리종료</span></td><td>트리(부모+자식) 종료</td><td><code>kill_tree</code>가 자식부터 <strong>역순</strong> 종료 → 고아 방지</td><td>PRB-5</td><td>§5 (<code>kill_tree</code>)</td></tr>
+<tr><td><span class="chip">F-시그널선택</span></td><td>임의 시그널 선택 전송</td><td>SignalPicker로 Unix 6종 / Windows 3종 시그널 선택</td><td>PRB-5</td><td>§5·§6 (<code>KillSignal</code>)</td></tr>
+<tr><td><span class="chip">F-멀티런타임</span></td><td>8런타임 횡단</td><td>Node·Python·Java·Deno·Bun·Ruby·PHP·.NET을 동일 키 조작으로 처리</td><td>PRB-4</td><td>§2 (<code>Runtime</code> enum)</td></tr>
+<tr><td><span class="chip">F-필터정렬Node전용</span></td><td>필터/정렬/Node-only 토글</td><td><code>/</code> 실시간 필터, <code>s</code>/<code>r</code> 정렬, <code>n</code> Node-only 토글(<code>rebuild_view</code>)</td><td>PRB-1·4</td><td>§6</td></tr>
+<tr><td><span class="chip">F-네트워크탭</span></td><td>네트워크 점검</td><td>Net 탭에 LISTEN 포트 + 활성 TCP 연결</td><td>PRB-2</td><td>§4-1·§6</td></tr>
+<tr><td><span class="chip">F-Env마스킹</span></td><td>환경변수 안전 점검</td><td>Env 탭에서 PASSWORD/SECRET/TOKEN 등 자동 마스킹(<code>mask_env_values</code>)</td><td>PRB-6</td><td>§3·§6</td></tr>
+<tr><td><span class="chip">F-정확메모리</span></td><td>정확한 메모리 보고</td><td>macOS는 <code>phys_footprint</code>(Activity Monitor 일치) 사용, RSS 과소보고 회피</td><td>PRB-6</td><td>§4-2</td></tr>
+<tr><td><span class="chip">F-로그</span></td><td>로그 자동 감지·tail</td><td><code>LogStreamer</code>가 cwd 로그파일 glob → 최신 파일 실시간 tail(점검 보조)</td><td>PRB-1(점검)</td><td>§4-3</td></tr>
+<tr><td><span class="chip">F-CLI</span></td><td>CLI 5종 + 출력 스키마</td><td><code>list</code>/<code>kill</code>/<code>info</code>/<code>log</code>/<code>config</code> + <code>--json</code>/<code>--format csv</code>로 자동화</td><td>PRB-7</td><td>§7</td></tr>
+<tr><td><span class="chip">F-TUI일원화</span></td><td>터미널 내 단일 화면</td><td>식별·점검·안전 종료를 한 TUI에서 완결 → GUI 왕복 제거</td><td>PRB-8</td><td>§6·§7</td></tr>
+</tbody>
+</table>
+</div>
+
+<blockquote><strong>추적 커버리지:</strong> PRB-1~8 <strong>전부</strong>가 1개 이상의 기능핸들로 매핑됨(PRB-1→F-식별분류·F-필터정렬·F-로그 /
+PRB-2→F-포트매핑·F-네트워크탭 / PRB-3→F-정확분류·F-안전종료 / PRB-4→F-멀티런타임·F-필터정렬 / PRB-5→
+F-안전종료·F-트리종료·F-시그널선택 / PRB-6→F-Env마스킹·F-정확메모리 / PRB-7→F-CLI / PRB-8→F-TUI일원화).</blockquote>
+
+<h3 id="s3-1">3-1. 구조 마인드맵 (service → 기능군) <a class="anchor" href="#s3-1">#</a></h3>
+
+<figure class="viz">
+<svg viewBox="0 0 760 360" role="img" aria-label="구조 마인드맵 — ntop에서 5개 기능군으로 분기">
+  <rect x="220" y="18" width="320" height="54" rx="10" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.8"/>
+  <text x="380" y="42" text-anchor="middle" class="sv-title">ntop</text>
+  <text x="380" y="60" text-anchor="middle" class="sv-sub">멀티 런타임 서버 프로세스 모니터/매니저</text>
+  <g stroke="#94a3b8" stroke-width="1.3" fill="none">
+    <path d="M380,72 C380,100 82,100 82,128"/>
+    <path d="M380,72 C380,100 230,100 230,128"/>
+    <path d="M380,72 L380,128"/>
+    <path d="M380,72 C380,100 528,100 528,128"/>
+    <path d="M380,72 C380,100 678,100 678,128"/>
+  </g>
+  <g>
+    <rect x="18" y="128" width="128" height="38" rx="8" fill="#4f46e5"/><text x="82" y="152" text-anchor="middle" class="sv-title" fill="#ffffff">식별군</text>
+    <rect x="166" y="128" width="128" height="38" rx="8" fill="#4f46e5"/><text x="230" y="152" text-anchor="middle" class="sv-title" fill="#ffffff">포트군</text>
+    <rect x="316" y="128" width="128" height="38" rx="8" fill="#0d9488"/><text x="380" y="152" text-anchor="middle" class="sv-title" fill="#ffffff">안전종료군</text>
+    <rect x="464" y="128" width="128" height="38" rx="8" fill="#4f46e5"/><text x="528" y="152" text-anchor="middle" class="sv-title" fill="#ffffff">점검군</text>
+    <rect x="614" y="128" width="128" height="38" rx="8" fill="#4f46e5"/><text x="678" y="152" text-anchor="middle" class="sv-title" fill="#ffffff">인터페이스</text>
+  </g>
+  <g class="sv-sub" text-anchor="middle">
+    <text x="82" y="196">F-식별분류 (PRB-1)</text>
+    <text x="82" y="216">F-정확분류 (PRB-3)</text>
+    <text x="82" y="236">F-멀티런타임 (PRB-4)</text>
+    <text x="82" y="256">F-필터정렬Node전용</text>
+    <text x="82" y="272">(PRB-1·4)</text>
+    <text x="230" y="196">F-포트매핑 (PRB-2)</text>
+    <text x="230" y="216">F-네트워크탭 (PRB-2)</text>
+    <text x="380" y="196">F-안전종료 (PRB-3·5)</text>
+    <text x="380" y="216">F-트리종료 (PRB-5)</text>
+    <text x="380" y="236">F-시그널선택 (PRB-5)</text>
+    <text x="528" y="196">F-Env마스킹 (PRB-6)</text>
+    <text x="528" y="216">F-정확메모리 (PRB-6)</text>
+    <text x="528" y="236">F-로그 (점검)</text>
+    <text x="678" y="196">F-CLI (PRB-7)</text>
+    <text x="678" y="216">F-TUI일원화 (PRB-8)</text>
+  </g>
+</svg>
+<figcaption>구조 마인드맵 — ntop이 5개 기능군(식별·포트·안전종료·점검·인터페이스)으로 갈라지고, 각 군의 기능핸들이 PRB로 역추적된다.</figcaption>
+<details class="raw"><summary>원본(텍스트)</summary><pre>                                  ┌──────────────────────────────────────┐
+                                  │              ntop                     │
+                                  │  멀티 런타임 서버 프로세스 모니터/매니저 │
+                                  └───────────────────┬──────────────────┘
+            ┌────────────────────┬────────────────────┼────────────────────┬────────────────────┐
+            ▼                    ▼                     ▼                    ▼                    ▼
+      ┌───────────┐       ┌───────────┐         ┌───────────┐       ┌───────────┐       ┌───────────┐
+      │ [식별군]  │       │ [포트군]  │         │[안전종료군]│       │ [점검군]  │       │[인터페이스]│
+      └─────┬─────┘       └─────┬─────┘         └─────┬─────┘       └─────┬─────┘       └─────┬─────┘
+            │                   │                     │                   │                   │
+   F-식별분류 (PRB-1)    F-포트매핑 (PRB-2)   F-안전종료 (PRB-3·5)  F-Env마스킹 (PRB-6)  F-CLI (PRB-7)
+   F-정확분류 (PRB-3)    F-네트워크탭(PRB-2)  F-트리종료 (PRB-5)    F-정확메모리(PRB-6)  F-TUI일원화(PRB-8)
+   F-멀티런타임(PRB-4)                        F-시그널선택(PRB-5)   F-로그 (점검)
+   F-필터정렬Node전용
+        (PRB-1·4)</pre></details>
+</figure>
+
+<h2 id="s4">4. 유저 플로우 (User flow) — 가치 루프 <a class="anchor" href="#s4">#</a></h2>
+<blockquote>출처·단일 출처: research-s3(→ <code>13-user-flows</code>). 본 절은 핵심 플로우 요약 + 가치 루프(상세 플로우차트·
+시퀀스/상태 다이어그램은 <code>13-user-flows</code> 참조). 화면 레이아웃은 <strong>세로 분할</strong>(위=목록 / 아래=상세,
+codebase-facts §6 정정값).</blockquote>
+
+<p><strong>핵심 플로우 6종(research-s3 §3):</strong> F1 기동→스캔(2-pass)→선택→상세 4탭 점검→종료 / F2 필터·정렬·
+Node-only / F3 kill 단건(graceful→force) / F4 kill 트리 / F5 SignalPicker / F6 CLI <code>list --json</code>→
+<code>kill --tree</code>.</p>
+
+<h3 id="s4-1">4-1. 가치 루프 (스캔 → 식별 → 점검 → 안전 종료 → 반복) <a class="anchor" href="#s4-1">#</a></h3>
+
+<figure class="viz">
+<svg viewBox="0 0 720 218" role="img" aria-label="가치 루프 — 스캔·식별·점검·안전종료 반복">
+  <defs><marker id="loop-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#64748b"/></marker></defs>
+  <path d="M630,96 C630,34 90,34 90,96" fill="none" stroke="#0d9488" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#loop-arrow)"/>
+  <text x="360" y="28" text-anchor="middle" class="sv-sub" fill="#0d9488">(반복)</text>
+  <g>
+    <rect x="20" y="96" width="140" height="56" rx="8" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.5"/>
+    <text x="90" y="120" text-anchor="middle" class="sv-title">스캔 (Scan)</text>
+    <text x="90" y="138" text-anchor="middle" class="sv-sub">2-pass + 포트 채움</text>
+    <rect x="200" y="96" width="140" height="56" rx="8" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.5"/>
+    <text x="270" y="120" text-anchor="middle" class="sv-title">식별 (Identify)</text>
+    <text x="270" y="138" text-anchor="middle" class="sv-sub">런타임/FW 분류</text>
+    <rect x="380" y="96" width="140" height="56" rx="8" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.5"/>
+    <text x="450" y="120" text-anchor="middle" class="sv-title">점검 (Inspect)</text>
+    <text x="450" y="138" text-anchor="middle" class="sv-sub">Info/Log/Net/Env 4탭</text>
+    <rect x="560" y="96" width="140" height="56" rx="8" fill="#ecfdf5" stroke="#0d9488" stroke-width="1.6"/>
+    <text x="630" y="120" text-anchor="middle" class="sv-title">안전 종료 (Safe-kill)</text>
+    <text x="630" y="138" text-anchor="middle" class="sv-sub">graceful→force·트리역순</text>
+  </g>
+  <g stroke="#64748b" stroke-width="1.4">
+    <line x1="160" y1="124" x2="198" y2="124" marker-end="url(#loop-arrow)"/>
+    <line x1="340" y1="124" x2="378" y2="124" marker-end="url(#loop-arrow)"/>
+    <line x1="520" y1="124" x2="558" y2="124" marker-end="url(#loop-arrow)"/>
+  </g>
+  <g class="sv-sub" text-anchor="middle" fill="#4f46e5">
+    <text x="90" y="176">PRB-1·2 진입</text>
+    <text x="90" y="192">(event Tick)</text>
+    <text x="270" y="176">PRB-1·3·4 해소</text>
+    <text x="270" y="192">(목록·Info 탭)</text>
+    <text x="450" y="176">PRB-2·6 해소</text>
+    <text x="450" y="192">(상세 탭)</text>
+    <text x="630" y="176">PRB-3·5 해소</text>
+    <text x="630" y="192">(모달 확인 게이트)</text>
+  </g>
+</svg>
+<figcaption>가치 루프 — 모든 동작은 식별 → 점검 → 안전 종료의 한 루프 위에 있고, 위험 분기(종료·시그널)에는 모달 확인 또는 graceful 우선이라는 안전 게이트가 끼어 있다.</figcaption>
+<details class="raw"><summary>원본(텍스트)</summary><pre>            ┌──────────────────────────────────────────────────────────────┐
+            │                            (반복)                             │
+            ▼                                                              │
+      ┌──────────┐      ┌──────────┐      ┌──────────┐      ┌──────────────┐
+      │  스캔    │ ───▶ │  식별    │ ───▶ │  점검    │ ───▶ │  안전 종료    │ ──┘
+      │ (Scan)   │      │(Identify)│      │(Inspect) │      │ (Safe-kill)  │
+      └──────────┘      └──────────┘      └──────────┘      └──────────────┘
+       2-pass 스캔        런타임/FW 분류    Info/Log/Net/    KillConfirm →
+       + 포트 채움        + display_name    Env 4탭          graceful→force
+                                                            + 트리 역순
+       ─────────────     ─────────────     ─────────────    ──────────────
+       PRB-1·2 진입       PRB-1·3·4 해소     PRB-2·6 해소      PRB-3·5 해소
+       (event Tick)       (목록·Info 탭)     (상세 탭)        (모달 확인 게이트)</pre></details>
+</figure>
+
+<p><strong>루프가 말하는 것:</strong> ntop의 모든 동작은 <strong>식별 → 점검 → 안전 종료</strong>라는 한 루프 위에 있다(research-s2
+§5의 3대 능력군과 1:1). 위험한 분기(종료·시그널)에는 반드시 <strong>모달 확인 또는 graceful 우선</strong>이 끼어
+있어, 단계가 군더더기가 아니라 <strong>안전 게이트</strong>다(research-s3 §3·§9). 별도 로그인·모드 선택·설정 마법사가
+없어 PRB-8(도구 왕복)을 구조적으로 제거한다.</p>
+
+<h2 id="s5">5. MVP 범위 / Out-of-scope (G-e) — v0.2.0 = MVP <a class="anchor" href="#s5">#</a></h2>
+<blockquote><strong>MVP = 이미 출시된 v0.2.0 범위.</strong> ntop은 역설계 기획이므로 "구현 완료된 v0.2.0이 곧 MVP"다. 향후
+항목은 <code>40-backlog</code>(로드맵, codebase-facts §12 근거)가 단일 출처이며, 여기서는 <strong>포함/제외 경계와
+우선순위 근거</strong>만 확정한다.</blockquote>
+
+<h3 id="s5-1">5-1. MVP에 포함 (v0.2.0 출시 범위) <a class="anchor" href="#s5-1">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>우선순위</th><th>기능(핸들)</th><th>우선순위 근거</th></tr></thead>
+<tbody>
+<tr><td><span class="chip p0">P0 (코어)</span></td><td>F-식별분류·F-정확분류·F-포트매핑·F-안전종료·F-트리종료·F-멀티런타임</td><td>의미 격차(PRB-1~5)를 직접 메우는 가치 루프의 척추 — 없으면 ntop이 아님</td></tr>
+<tr><td><span class="chip p1">P1 (핵심 보조)</span></td><td>F-시그널선택·F-필터정렬Node전용·F-네트워크탭·F-Env마스킹·F-정확메모리·F-CLI</td><td>코어를 실사용 가능하게 만드는 점검·자동화·정확성(PRB-4·6·7)</td></tr>
+<tr><td><span class="chip">P2 (편의)</span></td><td>F-로그·F-TUI일원화의 세부(스크롤·도움말·테마)</td><td>점검 편의·발견성, 코어 가치엔 종속</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="s5-2">5-2. Out-of-scope (명시적 제외) <a class="anchor" href="#s5-2">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>제외 항목</th><th>왜 제외(근거)</th><th>출처</th></tr></thead>
+<tbody>
+<tr><td><strong>웹 GUI / 데스크톱 앱</strong></td><td>ntop은 터미널 도구(TUI+CLI) — GUI는 설계 정체성 밖, PRB-8(터미널 일원화)과 상충</td><td>spec §7, research-s1 §8-2</td></tr>
+<tr><td><strong>파일시스템(<code>package.json</code>) 기반 탐지</strong></td><td>★<strong>영구 제외(설계 원칙).</strong> fs를 읽으면 npx/전역 프로세스를 상속 cwd로 <strong>오분류</strong> → PRB-3 악화. 이를 안 읽는 것이 해자(§7)</td><td>codebase-facts §2, spec §7</td></tr>
+<tr><td><strong>프로세스 감독/자동 재시작/데몬화</strong></td><td>ntop은 "죽이는 도구"이지 "살려두는 supervisor"가 아님 — pm2·systemd 영역</td><td>research-s1 §8-2</td></tr>
+<tr><td><strong>시스템 전역 그래프·실시간 이력 차트</strong></td><td>전역 모니터(btop·glances)의 영역 — ntop은 "서버 선별 + 안전 종료"에 집중</td><td>research-s1 §8-2</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="s5-3">5-3. MVP ↔ 향후 2축 쿼드런트 <a class="anchor" href="#s5-3">#</a></h3>
+<blockquote>X축 = 구현 상태(MVP/v0.2.0 ↔ 향후/미구현) · Y축 = 코어 가치 근접도(높음 ↔ 낮음/제외). 향후 항목은
+모두 codebase-facts §12 근거(추측 창작 0). 제외 항목은 우상단이 아니라 <strong>별도 영역</strong>에 둔다.</blockquote>
+
+<figure class="viz">
+<svg viewBox="0 0 720 430" role="img" aria-label="MVP 대 향후 2축 쿼드런트">
+  <rect x="44" y="44" width="312" height="152" rx="6" fill="#eef2ff"/>
+  <rect x="364" y="44" width="312" height="152" rx="6" fill="#fffbeb"/>
+  <rect x="44" y="204" width="312" height="152" rx="6" fill="#f5f3ff"/>
+  <rect x="364" y="204" width="312" height="152" rx="6" fill="#fef2f2"/>
+  <line x1="360" y1="34" x2="360" y2="368" stroke="#475569" stroke-width="1.4"/>
+  <line x1="40" y1="200" x2="684" y2="200" stroke="#475569" stroke-width="1.4"/>
+  <text x="360" y="24" text-anchor="middle" class="sv-sub">▲ 코어 가치 근접 (높음)</text>
+  <text x="360" y="388" text-anchor="middle" class="sv-sub">코어 가치 근접 (낮음/제외)</text>
+  <text x="180" y="412" text-anchor="middle" class="sv-sub">◀ MVP (v0.2.0, 구현됨)</text>
+  <text x="540" y="412" text-anchor="middle" class="sv-sub">향후 / 미구현 ▶</text>
+  <!-- TL -->
+  <text x="60" y="66" class="sv-title" fill="#4f46e5">MVP·코어 — 이미 구현</text>
+  <g class="svg-label"><text x="60" y="90">F-식별분류  F-정확분류</text>
+  <text x="60" y="112">F-포트매핑  F-안전종료</text>
+  <text x="60" y="134">F-트리종료  F-멀티런타임</text></g>
+  <!-- TR -->
+  <text x="380" y="66" class="sv-title" fill="#d97706">향후·우선 (가설/예정, §12 근거)</text>
+  <g class="svg-label"><text x="380" y="90">· Express/Fastify/Koa/Hapi 규칙 등록</text>
+  <text x="380" y="110" class="sv-sub">  (enum만 있고 규칙 미등록 — §12)</text>
+  <text x="380" y="132">· Windows 시그널 보강(HUP/USR1/USR2 부재)</text>
+  <text x="380" y="154">· 외부 명령 의존 완화(lsof/netstat)</text></g>
+  <!-- BL -->
+  <text x="60" y="228" class="sv-title" fill="#6d28d9">MVP·보조 — 이미 구현</text>
+  <g class="svg-label"><text x="60" y="252">F-시그널선택  F-필터정렬Node전용</text>
+  <text x="60" y="274">F-네트워크탭  F-Env마스킹</text>
+  <text x="60" y="296">F-정확메모리  F-CLI  F-로그</text></g>
+  <!-- BR -->
+  <text x="380" y="228" class="sv-title" fill="#dc2626">향후·낮음 / Out-of-scope</text>
+  <g class="svg-label"><text x="380" y="252">· 로그 stdout 직접 캡처 개선(§12)</text>
+  <text x="380" y="276" fill="#dc2626">─ Out-of-scope(제외):</text>
+  <text x="380" y="298">  웹 GUI · fs 기반 탐지(영구) ·</text>
+  <text x="380" y="318">  프로세스 감독/재시작 · 전역 그래프</text></g>
+</svg>
+<figcaption>MVP ↔ 향후 쿼드런트 — 좌측 두 칸은 이미 구현된 v0.2.0(코어/보조), 우측은 §12 근거의 향후 항목과 영구 제외(Out-of-scope)를 별도 영역으로 분리.</figcaption>
+<details class="raw"><summary>원본(텍스트)</summary><pre> 코어 가치 근접 (높음)
+        ▲
+        │  [MVP·코어 — 이미 구현]                │  [향후·우선 (가설/예정, §12 근거)]
+        │   F-식별분류  F-정확분류                │   · Express/Fastify/Koa/Hapi 규칙 등록
+        │   F-포트매핑  F-안전종료                │     (enum만 있고 규칙 미등록 — §12)
+        │   F-트리종료  F-멀티런타임              │   · Windows 시그널 보강(HUP/USR1/USR2 부재)
+        │                                        │   · 외부 명령 의존 완화(lsof/netstat)
+        │  ──────────────────────────────────────┼──────────────────────────────────────────
+        │  [MVP·보조 — 이미 구현]                │  [향후·낮음 / Out-of-scope]
+        │   F-시그널선택  F-필터정렬Node전용      │   · 로그 stdout 직접 캡처 개선(§12)
+        │   F-네트워크탭  F-Env마스킹             │   ─ Out-of-scope(제외):
+        │   F-정확메모리  F-CLI  F-로그           │     웹 GUI · fs 기반 탐지(영구) ·
+        │                                        │     프로세스 감독/재시작 · 전역 그래프
+        └────────────────────────────────────────────────────────────────────────────────▶
+       MVP (v0.2.0, 구현됨)                              향후 / 미구현            구현 상태</pre></details>
+</figure>
+
+<h2 id="s6">6. 성공지표 (Success metrics, G-d) <a class="anchor" href="#s6">#</a></h2>
+<blockquote><strong>두 부류를 엄격히 구분한다:</strong> ① <strong>제품 품질 지표</strong>(코드·동작으로 측정 가능, 사실 기반) ② <strong>OSS 채택
+지표</strong>(외부 채택 결과 — 전부 <strong>"가설"</strong> 로 표기, 목표치는 사실 아님). 모든 지표에 <strong>수치 + 측정도구 +
+주기 + 판정기준</strong>을 부여한다. 채택 지표의 단일 출처는 본 절이며 <code>00-business-model §4</code>(퍼널)이 이를
+참조한다. (config 기본값의 정규 출처는 <code>31-erd</code>; 본 절은 측정 임계값으로만 인용.)</blockquote>
+
+<figure class="viz">
+<svg viewBox="0 0 720 150" role="img" aria-label="제품 품질 지표의 핵심 수치 임계값">
+  <text x="360" y="18" text-anchor="middle" class="sv-sub">제품 품질 지표 — 핵심 수치 임계값 (정규값 출처 31-erd / CI)</text>
+  <g>
+    <rect x="12" y="30" width="108" height="100" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="1.4"/>
+    <text x="66" y="74" text-anchor="middle" font-size="24" font-weight="700" fill="#059669">3초</text>
+    <text x="66" y="98" text-anchor="middle" class="sv-sub">refresh_interval</text>
+    <text x="66" y="116" text-anchor="middle" class="sv-sub">스캔 tick 기준</text>
+  </g>
+  <g>
+    <rect x="128" y="30" width="108" height="100" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="1.4"/>
+    <text x="182" y="74" text-anchor="middle" font-size="24" font-weight="700" fill="#059669">10초</text>
+    <text x="182" y="98" text-anchor="middle" class="sv-sub">graceful_timeout</text>
+    <text x="182" y="116" text-anchor="middle" class="sv-sub">TERM→KILL 승격</text>
+  </g>
+  <g>
+    <rect x="244" y="30" width="108" height="100" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="1.4"/>
+    <text x="298" y="74" text-anchor="middle" font-size="24" font-weight="700" fill="#059669">200ms</text>
+    <text x="298" y="98" text-anchor="middle" class="sv-sub">폴링 주기</text>
+    <text x="298" y="116" text-anchor="middle" class="sv-sub">사망 확인</text>
+  </g>
+  <g>
+    <rect x="360" y="30" width="108" height="100" rx="10" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.4"/>
+    <text x="414" y="74" text-anchor="middle" font-size="24" font-weight="700" fill="#4f46e5">10</text>
+    <text x="414" y="98" text-anchor="middle" class="sv-sub">테스트 모듈</text>
+    <text x="414" y="116" text-anchor="middle" class="sv-sub">전부 통과(CI)</text>
+  </g>
+  <g>
+    <rect x="476" y="30" width="108" height="100" rx="10" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.4"/>
+    <text x="530" y="74" text-anchor="middle" font-size="24" font-weight="700" fill="#4f46e5">3 OS</text>
+    <text x="530" y="98" text-anchor="middle" class="sv-sub">빌드 매트릭스</text>
+    <text x="530" y="116" text-anchor="middle" class="sv-sub">mac·Linux·Win</text>
+  </g>
+  <g>
+    <rect x="592" y="30" width="108" height="100" rx="10" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.4"/>
+    <text x="646" y="74" text-anchor="middle" font-size="24" font-weight="700" fill="#4f46e5">0</text>
+    <text x="646" y="98" text-anchor="middle" class="sv-sub">clippy 경고</text>
+    <text x="646" y="116" text-anchor="middle" class="sv-sub">clippy-clean</text>
+  </g>
+</svg>
+<figcaption>제품 품질 지표의 핵심 수치 — 모두 코드·CI로 객관 측정되는 사실 기반 임계값(정규값은 31-erd).</figcaption>
+</figure>
+
+<h3 id="s6-1">6-1. 제품 품질 지표 (측정 가능 · 사실 기반) <a class="anchor" href="#s6-1">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>지표</th><th>수치(판정 임계값)</th><th>측정도구</th><th>주기</th><th>판정기준</th></tr></thead>
+<tbody>
+<tr><td><strong>스캔 tick 비차단성</strong></td><td>1회 <code>do_scan()</code> 소요 &lt; refresh_interval(기본 3초; 정규값 31-erd)</td><td>TUI 루프 <code>Instant</code> 계측 / 체감</td><td>매 tick(상시)</td><td>스캔이 tick 간격을 넘겨 UI가 멈추지 않음</td></tr>
+<tr><td><strong>CPU delta 정확도</strong></td><td>부하 있는 프로세스 <code>cpu_percent</code> &gt; 0.0 (0.0% 고정 금지)</td><td><code>ntop list --json</code> 검사 · <code>scanner_test</code></td><td>릴리스마다(회귀)</td><td>long-lived System + prime로 측정 정상</td></tr>
+<tr><td><strong>macOS 메모리 정확도</strong></td><td>ntop 메모리 ≈ Activity Monitor 값(RSS 최대 100배 과소보고 회피)</td><td>동일 PID <code>ntop info</code> vs Activity Monitor 비교</td><td>macOS 릴리스 검증</td><td>두 값이 육안 비교로 일치</td></tr>
+<tr><td><strong>graceful 에스컬레이션 정확성</strong></td><td>SIGTERM 후 graceful_timeout(기본 10초; 정규값 31-erd) 내 미사망 시 SIGKILL 자동 승격, 폴링 200ms</td><td>SIGTERM 무시 프로세스 시나리오 · <code>killer_test</code></td><td>릴리스마다</td><td>timeout 후 force 트리거 + 트리 자식부터 역순</td></tr>
+<tr><td><strong>분류 회귀 무결성</strong></td><td>등록 규칙이 기대대로 분류, 비서버 = None(미표시)</td><td><code>framework_test</code></td><td>매 커밋(CI)</td><td>케이스 100% 통과</td></tr>
+<tr><td><strong>테스트·린트 게이트</strong></td><td>테스트 10모듈 전부 통과, clippy 경고 0</td><td><code>cargo test</code> · <code>cargo clippy</code>(GitHub Actions)</td><td>매 PR/커밋</td><td>100% pass · clippy-clean</td></tr>
+<tr><td><strong>크로스플랫폼 빌드</strong></td><td>macOS·Linux·Windows 빌드 성공</td><td><code>cargo build --release</code>(CI 매트릭스)</td><td>릴리스마다</td><td>3 OS 빌드 모두 그린</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="s6-2">6-2. OSS 채택 지표 (★전부 "가설" — 목표치는 사실 아님) <a class="anchor" href="#s6-2">#</a></h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>지표</th><th>수치(가설 목표·예시)</th><th>측정도구</th><th>주기</th><th>판정기준</th></tr></thead>
+<tbody>
+<tr><td><strong>GitHub Stars</strong></td><td>(가설) 단계적 증가 추세</td><td>GitHub Insights</td><td>월간</td><td>가설 추세 대비 모니터링(목표는 가설)</td></tr>
+<tr><td><strong>다운로드 수</strong></td><td>(가설) crates.io/Releases 누적 증가</td><td>crates.io stats · Releases 다운로드</td><td>월간</td><td>가설 추세 대비 모니터링</td></tr>
+<tr><td><strong>기여자 / 외부 PR(특히 새 Rule)</strong></td><td>(가설) 신규 런타임/FW PR 유입</td><td>GitHub contributors · PR 라벨</td><td>분기</td><td>기여 루프 작동 여부(가설)</td></tr>
+<tr><td><strong>이슈 첫 응답 시간</strong></td><td>(가설) 중앙값 단축 추세</td><td>GitHub 이슈 타임스탬프</td><td>월간</td><td>가설 목표 대비 모니터링</td></tr>
+</tbody>
+</table>
+</div>
+
+<figure class="viz">
+<svg viewBox="0 0 720 256" role="img" aria-label="성공지표 두 부류 — 사실로 측정 vs 가설로 추적">
+  <rect x="20" y="30" width="330" height="206" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="1.4"/>
+  <rect x="370" y="30" width="330" height="206" rx="10" fill="#fffbeb" stroke="#d97706" stroke-width="1.4"/>
+  <text x="185" y="54" text-anchor="middle" class="sv-title" fill="#059669">① 제품 품질 (측정 가능·사실)</text>
+  <text x="535" y="54" text-anchor="middle" class="sv-title" fill="#d97706">② OSS 채택 (전부 "가설")</text>
+  <g class="svg-label" fill="#065f46">
+    <text x="40" y="84">✔ scan 비차단 &lt; 3s</text>
+    <text x="40" y="108">✔ CPU delta &gt; 0.0%</text>
+    <text x="40" y="132">✔ mac 메모리 = ActMon</text>
+    <text x="40" y="156">✔ graceful 10s→force</text>
+    <text x="40" y="180">✔ 테스트 10모듈 pass</text>
+    <text x="40" y="204">✔ 3-OS 빌드 그린</text>
+  </g>
+  <text x="40" y="228" class="sv-sub" fill="#059669">판정: 객관·재현 가능</text>
+  <g class="svg-label" fill="#92400e">
+    <text x="390" y="84">◇ GitHub Stars</text>
+    <text x="390" y="108">◇ 다운로드 수</text>
+    <text x="390" y="132">◇ 기여자·외부 PR</text>
+    <text x="390" y="156">◇ 이슈 응답 시간</text>
+  </g>
+  <text x="390" y="188" class="sv-sub" fill="#d97706">← 목표치는 사실이 아님 (00 §4 참조)</text>
+  <text x="390" y="228" class="sv-sub" fill="#d97706">판정: 추세 모니터링(산정 금지)</text>
+</svg>
+<figcaption>성공지표 두 부류 — 왼쪽은 코드/CI로 객관 측정되는 사실, 오른쪽은 외부 채택 결과로 전부 가설(목표치는 사실이 아님).</figcaption>
+<details class="raw"><summary>원본(텍스트)</summary><pre>성공지표 두 부류 — "사실로 측정" vs "가설로 추적"
+ ┌─────────────────────────────────────┬─────────────────────────────────────┐
+ │  ① 제품 품질 (측정 가능·사실)        │  ② OSS 채택 (전부 "가설")            │
+ ├─────────────────────────────────────┼─────────────────────────────────────┤
+ │  scan 비차단 &lt; 3s        ✔ 계측      │  GitHub Stars        ◇ 가설          │
+ │  CPU delta &gt; 0.0%        ✔ json/test │  다운로드 수         ◇ 가설          │
+ │  mac 메모리 = ActMon     ✔ 비교      │  기여자·외부 PR      ◇ 가설          │
+ │  graceful 10s→force      ✔ test      │  이슈 응답 시간      ◇ 가설          │
+ │  테스트 10모듈 pass      ✔ CI        │                                     │
+ │  3-OS 빌드 그린          ✔ CI        │  ← 목표치는 사실이 아님(00 §4 참조)  │
+ │  판정: 객관·재현 가능               │  판정: 추세 모니터링(산정 금지)      │
+ └─────────────────────────────────────┴─────────────────────────────────────┘</pre></details>
+</figure>
+
+<blockquote><strong>단일 출처 메모:</strong> OSS 채택 지표의 <strong>퍼널 맥락(이탈/레버)</strong> 은 <code>00-business-model §4</code>가, <strong>로드맵 진척</strong>
+은 <code>40-backlog</code>가 본 절의 지표를 참조한다(중복정의 0).</blockquote>
+
+<h2 id="s7">7. 차별화 (Differentiation, G-c) — 실명 경쟁자 명시 비교 <a class="anchor" href="#s7">#</a></h2>
+<blockquote><strong>단일 출처는 <code>02-market-competition</code></strong>(전체 비교 매트릭스·포지셔닝 쿼드런트·생태계 맵). 본 절은 그
+결론을 <strong>인용·요약</strong>한다. 근거: research-s1 §3(매트릭스)·§9(해자).</blockquote>
+
+<p><strong>한 줄 명시 비교(research-s1 §3·§9):</strong> <em>htop·btop·top·glances·gotop·Activity Monitor</em> 는 <strong>런타임 인지
+(RT)·프레임워크 식별(FW)·포트 매핑(PORT) 세 축이 모두 ✗</strong>, <em>pm2·systemd·launchd</em> 는 <strong>종료(KILL)는
+✓지만 RT/FW/PORT가 비고 범위가 좁다.</strong> <strong>세 축(RT·FW·PORT)이 동시에 ✓인 도구는 ntop뿐이다.</strong></p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>도구</th><th class="c">RT</th><th class="c">FW</th><th class="c">PORT</th><th class="c">KILL</th><th class="c">TREE</th><th class="c">XPLAT</th><th class="c">T+C</th><th class="c">BIN</th></tr></thead>
+<tbody>
+<tr class="row-hl"><td>▶ ntop</td><td class="c"><span class="yes">✓</span></td><td class="c"><span class="yes">✓</span></td><td class="c"><span class="yes">✓</span></td><td class="c"><span class="yes">✓</span></td><td class="c"><span class="yes">✓</span></td><td class="c"><span class="yes">✓</span></td><td class="c"><span class="yes">✓</span></td><td class="c"><span class="yes">✓</span></td></tr>
+<tr><td>htop / btop</td><td class="c"><span class="no">✗</span></td><td class="c"><span class="no">✗</span></td><td class="c"><span class="no">✗</span></td><td class="c"><span class="part">△</span></td><td class="c"><span class="yes">✓</span></td><td class="c"><span class="part">△</span></td><td class="c"><span class="no">✗</span></td><td class="c"><span class="yes">✓</span></td></tr>
+<tr><td>top / gotop / glances</td><td class="c"><span class="no">✗</span></td><td class="c"><span class="no">✗</span></td><td class="c"><span class="no">✗</span></td><td class="c"><span class="part">△</span></td><td class="c">△/✗</td><td class="c">△/✓</td><td class="c">△/✓</td><td class="c">✓/✗</td></tr>
+<tr><td>Activity Monitor (GUI)</td><td class="c"><span class="no">✗</span></td><td class="c"><span class="no">✗</span></td><td class="c"><span class="no">✗</span></td><td class="c"><span class="part">△</span></td><td class="c"><span class="yes">✓</span></td><td class="c"><span class="no">✗</span></td><td class="c"><span class="no">✗</span></td><td class="c"><span class="yes">✓</span></td></tr>
+<tr><td>pm2 (Node 매니저)</td><td class="c"><span class="part">△</span></td><td class="c"><span class="no">✗</span></td><td class="c"><span class="no">✗</span></td><td class="c"><span class="yes">✓</span></td><td class="c"><span class="no">✗</span></td><td class="c"><span class="yes">✓</span></td><td class="c"><span class="yes">✓</span></td><td class="c"><span class="no">✗</span></td></tr>
+<tr><td>systemd / launchd (서비스 관리)</td><td class="c"><span class="no">✗</span></td><td class="c"><span class="no">✗</span></td><td class="c"><span class="no">✗</span></td><td class="c"><span class="yes">✓</span></td><td class="c"><span class="part">△</span></td><td class="c"><span class="no">✗</span></td><td class="c"><span class="part">△</span></td><td class="c"><span class="part">△</span></td></tr>
+</tbody>
+</table>
+</div>
+<p class="sv-sub" style="color:var(--muted);font-size:13px">✓=한다 · △=부분/조건부 · ✗=안 함 · <strong>RT</strong>=런타임인지 <strong>FW</strong>=프레임워크식별 <strong>PORT</strong>=포트매핑 <strong>KILL</strong>=시그널/graceful <strong>TREE</strong>=트리뷰 <strong>XPLAT</strong>=크로스플랫폼 <strong>T+C</strong>=TUI+CLI <strong>BIN</strong>=단일바이너리. 전체는 02-market-competition / research-s1 §3.</p>
+
+<details class="raw"><summary>원본(텍스트) — 비교 매트릭스</summary><pre>비교 매트릭스 요약 (전체는 02-market-competition / research-s1 §3)
+ ✓=한다 · △=부분/조건부 · ✗=안 함        RT  FW  PORT KILL TREE XPLAT T+C BIN
+ ──────────────────────────────────────────────────────────────────────────
+ ▶ ntop                                    ✓   ✓   ✓    ✓    ✓    ✓    ✓   ✓   ← RT·FW·PORT 동시 ✓ 유일
+ ──────────────────────────────────────────────────────────────────────────
+ htop / btop                               ✗   ✗   ✗    △    ✓    △    ✗   ✓
+ top / gotop / glances                     ✗   ✗   ✗    △    △/✗  △/✓  △/✓ ✓/✗
+ Activity Monitor (GUI)                    ✗   ✗   ✗    △    ✓    ✗    ✗   ✓
+ pm2 (Node 매니저)                          △   ✗   ✗    ✓    ✗    ✓    ✓   ✗
+ systemd / launchd (서비스 관리)            ✗   ✗   ✗    ✓    △    ✗    △   △
+ RT=런타임인지 FW=프레임워크식별 PORT=포트매핑 KILL=시그널/graceful TREE=트리뷰
+ XPLAT=크로스플랫폼 T+C=TUI+CLI BIN=단일바이너리</pre></details>
+
+<figure class="viz">
+<svg viewBox="0 0 720 320" role="img" aria-label="포지셔닝 — 의미 인지 × 제어 깊이 2축">
+  <defs><marker id="pos-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#475569"/></marker></defs>
+  <line x1="80" y1="272" x2="690" y2="272" stroke="#475569" stroke-width="1.4" marker-end="url(#pos-arrow)"/>
+  <line x1="80" y1="272" x2="80" y2="26" stroke="#475569" stroke-width="1.4" marker-end="url(#pos-arrow)"/>
+  <text x="80" y="300" text-anchor="start" class="sv-sub">의미 인지 낮음 ("익명 PID")</text>
+  <text x="690" y="300" text-anchor="end" class="sv-sub">의미 인지 높음 ("Next.js@:3000")</text>
+  <text x="70" y="290" text-anchor="end" class="sv-sub">낮음</text>
+  <text x="40" y="150" text-anchor="middle" class="sv-sub" transform="rotate(-90 40 150)">제어 깊이 →</text>
+  <!-- pm2 group top-left -->
+  <rect x="120" y="58" width="230" height="56" rx="8" fill="#fff" stroke="#94a3b8" stroke-width="1.3"/>
+  <text x="235" y="82" text-anchor="middle" class="svg-label">pm2 · systemd · launchd</text>
+  <text x="235" y="102" text-anchor="middle" class="sv-sub">제어 깊지만 의미 인지 낮고 범위 좁음</text>
+  <!-- ntop top-right -->
+  <rect x="440" y="58" width="240" height="56" rx="8" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.8"/>
+  <text x="560" y="80" text-anchor="middle" class="sv-title" fill="#4f46e5">▶ ntop</text>
+  <text x="560" y="100" text-anchor="middle" class="sv-sub">의미 인지 × 안전 제어 동시</text>
+  <!-- htop group bottom -->
+  <rect x="150" y="196" width="380" height="56" rx="8" fill="#fff" stroke="#94a3b8" stroke-width="1.3"/>
+  <text x="340" y="220" text-anchor="middle" class="svg-label">htop · btop · top · glances · gotop · Activity Monitor</text>
+  <text x="340" y="240" text-anchor="middle" class="sv-sub">의미 인지 거의 없음, 시그널 전송 수준</text>
+</svg>
+<figcaption>포지셔닝 — ntop은 의미 인지(RT·FW·PORT)와 안전 제어(graceful·트리)를 동시에 갖춘 유일한 우상단 좌표. 축 자체가 다르다.</figcaption>
+<details class="raw"><summary>원본(텍스트) — 포지셔닝</summary><pre>포지셔닝 한 줄 (research-s1 §4)
+  제어 깊이 높음 │ pm2·systemd·launchd        ▶ ntop (의미 인지 × 안전 제어 동시)
+                │ (제어 깊지만 의미 인지 낮고 범위 좁음)
+  ──────────────┼────────────────────────────────────────────────────────
+  제어 깊이 낮음 │ htop·btop·top·glances·gotop·Activity Monitor
+                │ (의미 인지 거의 없음, 시그널 전송 수준)
+                └──────────────────────────────────────────────────────▶
+                 의미 인지 낮음("익명 PID")        의미 인지 높음("Next.js@:3000")</pre></details>
+</figure>
+
+<p><strong>모방난이도(해자/moat) 3논거 — research-s1 §9 / <code>02-market-competition</code> 인용:</strong></p>
+<ol>
+<li><strong>데이터 주도 규칙 테이블 = 축적된 경험 사전.</strong> <code>node_modules/.bin/next</code>·<code>-m flask</code>·<code>bin/rails</code>·<code>org.springframework</code>·macOS <code>comm</code> 16자 절단을 푸는 <code>normalize_name</code> 등은 기능 하나가 아니라 <strong>현장에서 검증해 쌓은 경험치</strong>라 "한 번에 추가" 불가(codebase-facts §2).</li>
+<li><strong>프로세스-로컬 전용 탐지 = 비자명한 설계 결정.</strong> 순진한 복제는 cwd의 <code>package.json</code>을 읽어 npx/전역 프로세스를 <strong>오분류</strong>하는 함정에 빠진다 — ntop은 이를 <strong>의도적으로 회피</strong>(PRB-3 해소, §5-2 영구 제외).</li>
+<li><strong>확장 구조가 해자를 복리로 키운다.</strong> 새 런타임/FW = <code>Rule</code> 1개 + enum 값 1개 → 기여가 쌓일수록 사전이 복리로 커진다(00-business-model §6 지속가능성 엔진과 동일 메커니즘).</li>
+</ol>
+
+<div class="callout ok">
+<strong>결론:</strong> ntop의 차별점은 "더 편리/더 빠름"이 아니라 <strong>축이 다르다</strong> — 의미 인지(RT·FW·PORT)와 안전
+제어(graceful·트리)를 <strong>동시에</strong> 갖춘 유일한 좌표다(research-s1 §4·§9).
+</div>
+
+<h2 id="s8">8. OSS 지속가능성 링크 (참조 only) <a class="anchor" href="#s8">#</a></h2>
+<p>ntop의 지속가능성·수익화·비용·배포·채택 퍼널은 <strong><code>00-business-model</code>이 단일 출처</strong>다(여기서 재정의하지
+않는다). 본 기획서의 가치와 연결되는 한 줄 요약만 둔다:</p>
+<ul>
+<li>가치 루프(§4)가 <strong>퍼널 ③ 상시 사용</strong>의 전환 레버다(첫 화면 의미 식별 → 매일 켬). → <code>00 §4</code></li>
+<li>차별화의 확장 구조(§7-③)가 곧 <strong>퍼널 ④ 기여</strong>의 저장벽 = 지속가능성 엔진. → <code>00 §6</code></li>
+<li>비용은 사실상 메인테이너 시간뿐이며(서버·결제 0), <strong>수익화는 전부 가설</strong>. → <code>00 §2·§5</code></li>
+</ul>
+
+<h2 id="verify">자체 검증 (Self-verification) <a class="anchor" href="#verify">#</a></h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>#</th><th>체크</th><th>결과</th><th>어디서 충족</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">P-1</span></td><td>7섹션(문제/타깃/기능/플로우/MVP/지표/차별화) + 지속가능성 링크</td><td><strong>PASS</strong></td><td>§1~§8</td></tr>
+<tr><td><span class="chip">P-2</span></td><td>모든 핵심 기능 → PRB 역추적(G-a 시드)</td><td><strong>PASS</strong> — §3 표 14개 기능핸들 전부 PRB 매핑, PRB-1~8 전부 커버</td><td>§3</td></tr>
+<tr><td><span class="chip">P-3</span></td><td>MVP(v0.2.0)/Out-of-scope 분리 + 우선순위 근거(G-e)</td><td><strong>PASS</strong> — §5-1 포함(P0/P1/P2)·§5-2 제외(근거)·§5-3 쿼드런트</td><td>§5</td></tr>
+<tr><td><span class="chip">P-4</span></td><td>지표 수치+측정도구/주기/판정(G-d), 품질 vs 채택(가설) 구분</td><td><strong>PASS</strong> — §6-1 품질 7지표(사실)·§6-2 채택 4지표(전부 가설)</td><td>§6</td></tr>
+<tr><td><span class="chip">P-5</span></td><td>차별화 실명 경쟁자 명시 비교(G-c) + moat, 02 인용</td><td><strong>PASS</strong> — 매트릭스 요약 + "RT·FW·PORT 동시 ✓는 ntop뿐" + 해자 3논거</td><td>§7</td></tr>
+<tr><td><span class="chip">P-6</span></td><td>시각화(마인드맵·가치루프·MVP쿼드런트·지표차트, 외부 렌더러 0)</td><td><strong>PASS</strong> — §3-1·§4-1·§5-3·§6 모두 순수 ASCII</td><td>§3~§6</td></tr>
+<tr><td><span class="chip">P-7</span></td><td>단일 출처 준수(지속가능성=00·경쟁/생태계=02·페르소나=03)</td><td><strong>PASS</strong> — §2·§7·§8에 참조 표기, 재정의 0</td><td>전체</td></tr>
+<tr><td><span class="chip">P-8</span></td><td>사실 정정(TUI 목록 FRAMEWORK 컬럼 없음·세로 레이아웃)</td><td><strong>PASS</strong> — §3 정정 박스·§4 세로 분할 명기</td><td>§3, §4</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>추가 원칙 점검</h4>
+<ul>
+<li><strong>창작 금지(spec §7):</strong> 결제·정산·DB·REST 언급 0. 모든 기능은 codebase-facts §2~§7 실제 동작에서 도출(§3 근거 열). 로드맵·향후 항목은 codebase-facts §12 근거 + "가설/예정" 표기(§5-3).</li>
+<li><strong>fs 미독 원칙 유지:</strong> fs 기반 탐지를 §5-2에서 <strong>영구 제외</strong>로 명시(원칙을 뒤집지 않음).</li>
+<li><strong>쉬운 설명(probe 9):</strong> 첫 등장 용어(TUI·CLI·런타임·프레임워크·MCP·graceful·에스컬레이션·트리 종료·MVP·PRB) 풀이 블록 제공.</li>
+<li><strong>사실 역추적성:</strong> ntop 동작은 codebase-facts §번호, 시장/페르소나/플로우는 research-s1·s2·s3 인용으로 역추적. 정정값(FRAMEWORK 위치·세로 레이아웃)을 §3·§4에 반영.</li>
+</ul>
+
+<h4>알려진 한계(후속 보완)</h4>
+<ul>
+<li>잠정 기능 핸들(<code>F-*</code>)은 <code>10-prd</code>에서 정규 기능 ID로 확정되는 앵커다(본 문서에서 기능 창작 0).</li>
+<li>제품 품질 지표의 일부 임계값(scan &lt; 3s 등)은 config 기본값(31-erd 정규)에 종속 — 정규값 변경 시 31-erd를 따른다(여기서는 측정 임계값으로만 인용).</li>
+</ul>
+
+</main>
+</div>
+
+<script>
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+  var heads = Array.prototype.slice.call(document.querySelectorAll('main h2[id], main h3[id]'));
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(a){ a.classList.remove('active'); });
+        var id = e.target.getAttribute('id');
+        if(map[id]) map[id].classList.add('active');
+      }
+    });
+  }, {rootMargin:'-64px 0px -70% 0px', threshold:0});
+  heads.forEach(function(h){ obs.observe(h); });
+  document.querySelectorAll('main h2, main h3').forEach(function(h){
+    h.style.cursor='pointer';
+    h.addEventListener('click', function(ev){
+      if(ev.target.classList.contains('anchor')) return;
+      if(h.id) history.replaceState(null,'','#'+h.id);
+    });
+  });
+})();
+</script>
+</body>
+</html>

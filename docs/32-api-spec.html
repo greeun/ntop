@@ -1,0 +1,919 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>32 · API 명세 — 외부 인터페이스 계약 · ntop</title>
+<style>
+/* ntop 기획 패키지 — 공통 디자인 시스템 (자체완결: 각 NN-name.html <style>에 인라인 복제) */
+/* 외부 의존 0 — CDN/웹폰트/Mermaid 금지. 시스템 폰트만. */
+:root{
+  --accent:#4f46e5;        /* indigo */
+  --accent2:#0d9488;       /* teal */
+  --accent-soft:#eef2ff;
+  --bg:#ffffff;
+  --fg:#1e293b;
+  --muted:#64748b;
+  --line:#e2e8f0;
+  --code-bg:#f1f5f9;
+  --warn:#d97706; --warn-bg:#fffbeb;
+  --bad:#dc2626;  --bad-bg:#fef2f2;
+  --ok:#059669;   --ok-bg:#ecfdf5;
+  --t1:#dc2626; --t2:#d97706; --t3:#ca8a04;
+  --maxw:860px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;color:var(--fg);background:var(--bg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  line-height:1.7;font-size:16px;
+}
+code,pre,.mono{font-family:"SF Mono",SFMono-Regular,ui-monospace,Menlo,Consolas,"D2Coding",monospace}
+
+/* ── 상단바 ── */
+.topbar{
+  position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  padding:10px 18px;background:#0f172a;color:#f8fafc;font-weight:600;font-size:15px;
+  border-bottom:3px solid var(--accent);
+}
+.topbar .doc-no{color:#a5b4fc;font-variant-numeric:tabular-nums}
+.topbar nav{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.topbar nav a,.topbar nav button{
+  color:#e2e8f0;background:#1e293b;border:1px solid #334155;border-radius:6px;
+  padding:4px 10px;font-size:13px;text-decoration:none;cursor:pointer;font-weight:500;
+}
+.topbar nav a:hover,.topbar nav button:hover{background:var(--accent);border-color:var(--accent)}
+
+/* ── 티어 배지 ── */
+.tier{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:700;color:#fff}
+.tier.t1{background:var(--t1)} .tier.t2{background:var(--t2)} .tier.t3{background:var(--t3)}
+
+/* ── 레이아웃: TOC + 본문 ── */
+.layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:0;max-width:1200px;margin:0 auto}
+.toc{position:sticky;top:58px;align-self:start;height:calc(100vh - 58px);overflow:auto;padding:18px 12px;border-right:1px solid var(--line);font-size:13.5px}
+.toc h4{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.toc a{display:block;padding:3px 8px;color:var(--muted);text-decoration:none;border-radius:5px;border-left:2px solid transparent}
+.toc a:hover{background:var(--accent-soft);color:var(--accent)}
+.toc a.active{color:var(--accent);background:var(--accent-soft);border-left-color:var(--accent);font-weight:600}
+.toc a.lv3{padding-left:18px;font-size:12.5px}
+main{padding:26px 34px;max-width:var(--maxw)}
+main h1{font-size:26px;line-height:1.3;margin:0 0 6px}
+main h2{font-size:21px;margin:34px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--line);scroll-margin-top:64px}
+main h3{font-size:17px;margin:24px 0 10px;color:#0f172a;scroll-margin-top:64px}
+main h4{font-size:15px;margin:18px 0 8px;color:var(--muted)}
+main p{margin:10px 0}
+main a{color:var(--accent)}
+.anchor{margin-left:8px;color:var(--line);text-decoration:none;font-weight:400;font-size:.8em}
+main h2:hover .anchor,main h3:hover .anchor{color:var(--accent)}
+
+/* ── 표 ── */
+.table-wrap{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:7px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{background:#f8fafc;font-weight:700;position:sticky;top:0;border-bottom:2px solid var(--line)}
+tbody tr:nth-child(even){background:#fbfcfe}
+tbody tr:hover{background:var(--accent-soft)}
+
+/* ── 코드·칩 ── */
+:not(pre)>code{background:var(--code-bg);padding:1px 6px;border-radius:5px;font-size:.88em;color:#be185d}
+pre{background:#0f172a;color:#e2e8f0;padding:14px 16px;border-radius:8px;overflow-x:auto;font-size:13px;line-height:1.55}
+pre code{background:none;color:inherit;padding:0}
+.chip{display:inline-block;background:var(--accent-soft);color:var(--accent);border:1px solid #c7d2fe;border-radius:5px;padding:0 6px;font-size:.85em;font-weight:600}
+.chip.p0{background:var(--bad-bg);color:var(--bad);border-color:#fecaca}
+.chip.p1{background:var(--warn-bg);color:var(--warn);border-color:#fde68a}
+.chip.ok{background:var(--ok-bg);color:var(--ok);border-color:#a7f3d0}
+
+/* ── 콜아웃 ── */
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+.callout.warn{border-color:var(--warn);background:var(--warn-bg)}
+.callout.bad{border-color:var(--bad);background:var(--bad-bg)}
+.callout.ok{border-color:var(--ok);background:var(--ok-bg)}
+blockquote{border-left:4px solid var(--line);margin:14px 0;padding:4px 16px;color:var(--muted)}
+
+/* ── 인포그래픽 figure ── */
+figure.viz{margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:10px;background:#fcfdff;text-align:center}
+figure.viz svg{max-width:100%;height:auto;display:block;margin:0 auto}
+figure.viz figcaption{margin-top:10px;font-size:13px;color:var(--muted);text-align:center}
+.viz-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+details.raw{margin-top:8px;font-size:13px}
+details.raw summary{cursor:pointer;color:var(--muted);font-size:12.5px}
+details.raw pre{margin-top:6px}
+
+/* SVG 공통 텍스트 */
+svg text{font-family:-apple-system,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+.svg-node{fill:#fff;stroke:var(--accent);stroke-width:1.5}
+.svg-edge{stroke:var(--muted);stroke-width:1.5;fill:none}
+.svg-label{font-size:12px;fill:var(--fg)}
+.svg-accent{fill:var(--accent)} .svg-accent2{fill:var(--accent2)}
+
+/* 화면 mockup 프레임(20/21용) */
+.screen{border:2px solid #334155;border-radius:8px;background:#0f172a;color:#cbd5e1;font-family:"SF Mono",ui-monospace,monospace;font-size:12px;padding:0;overflow:hidden;text-align:left;margin:0 auto;max-width:560px}
+.screen .bar{background:#1e293b;color:#a5b4fc;padding:4px 8px;font-size:11px;border-bottom:1px solid #334155}
+.screen .body{padding:8px 10px;white-space:pre;overflow-x:auto;line-height:1.4}
+
+/* ── print ── */
+@media print{
+  .topbar,.toc,.anchor,details.raw summary{display:none!important}
+  .layout{grid-template-columns:1fr;max-width:none}
+  main{max-width:none;padding:0}
+  details.raw{display:none}
+  *{break-inside:avoid}
+  figure.viz{border:1px solid #ccc}
+}
+/* ── 반응형 ── */
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}
+  main{padding:18px}
+}
+/* ── 페이지 전용 보강 ── */
+svg .ttl{font-size:13px;font-weight:700;fill:var(--fg)}
+svg .sub{font-size:11px;fill:var(--muted)}
+svg .mn{font-family:"SF Mono",ui-monospace,Menlo,monospace}
+svg .b{font-weight:700}
+.legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:14px;height:14px;border-radius:3px;display:inline-block;border:1px solid var(--line)}
+</style></head>
+<body>
+<header class="topbar"><span class="doc-no">32</span> <span class="tier t1">T1</span> · API 명세 — 외부 인터페이스 계약
+  <nav><a href="index.html">← 목록</a> <a href="31-erd.html">← 이전</a> <a href="33-policy.html">다음 →</a>
+  <button onclick="window.print()">🖨 인쇄</button></nav></header>
+<div class="layout">
+<nav class="toc"><h4>목차</h4>
+  <a href="#contract">Sprint Contract</a>
+  <a href="#s0">0 · HTTP API가 아니다 — 3종 계약</a>
+  <a href="#s1">1 · 진입점과 디스패치</a>
+  <a href="#s2">2 · CLI 명령 계약 ①</a>
+  <a class="lv3" href="#s2-0">2-0 · 명령/인자/플래그 표</a>
+  <a class="lv3" href="#s2-1">2-1 · list</a>
+  <a class="lv3" href="#s2-2">2-2 · kill (3경로)</a>
+  <a class="lv3" href="#s2-3">2-3 · info</a>
+  <a class="lv3" href="#s2-4">2-4 · log</a>
+  <a class="lv3" href="#s2-5">2-5 · config</a>
+  <a class="lv3" href="#s2-6">2-6 · TUI</a>
+  <a class="lv3" href="#s2-7">2-7 · 종료코드 계약</a>
+  <a href="#s3">3 · 출력 스키마</a>
+  <a class="lv3" href="#s3-1">3-1 · table (7컬럼)</a>
+  <a class="lv3" href="#s3-2">3-2 · JSON (17키)</a>
+  <a class="lv3" href="#s3-3">3-3 · CSV (9컬럼)</a>
+  <a href="#s4">4 · 공개 라이브러리 API ②</a>
+  <a class="lv3" href="#s4-1">4-1 · 핵심 함수 표</a>
+  <a class="lv3" href="#s4-2">4-2 · 사용 계약</a>
+  <a href="#s5">5 · 의존 시스템 명령 ③</a>
+  <a class="lv3" href="#s5-1">5-1 · 부재·실패 처리</a>
+  <a href="#s6">6 · 시각화 — 호출 시퀀스</a>
+  <a class="lv3" href="#s6-1">6-1 · list 시퀀스</a>
+  <a class="lv3" href="#s6-2">6-2 · kill 시퀀스</a>
+  <a class="lv3" href="#s6-3">6-3 · 계약 한눈 요약</a>
+  <a href="#verify">자체 검증</a>
+</nav>
+<main>
+<h1>32 · API 명세 (API Spec) — 외부 인터페이스 계약 (ntop)</h1>
+
+<div class="callout"><strong>이 문서는 단일 출처(single source)다.</strong> ntop의 <strong>외부 인터페이스 계약</strong> — ① CLI 명령 계약(서브커맨드·플래그·종료코드·출력 스키마) ② 공개 라이브러리 API(<code>ntop::</code> 크레이트가 외부에 노출하는 타입·함수) ③ 의존 시스템 명령(<code>lsof</code>/<code>netstat</code>/<code>taskkill</code>)과의 계약 — 은 <strong>여기서만 계약으로 확정</strong>한다. <code>21-screen-spec</code>·<code>30-functional-spec</code>·<code>41-qa-testcases</code>는 이 계약을 <strong>참조</strong>할 뿐 재정의하지 않는다(spec §4-3).</div>
+
+<div class="callout bad"><strong>★ HTTP API가 아니다.</strong> ntop은 <strong>백엔드 서버·DB·REST 엔드포인트·회원 계정·결제가 전혀 없는 로컬 개발자 도구</strong>다(codebase-facts §0-1). 따라서 "API"는 웹 엔드포인트가 아니라 <strong>명령줄(CLI)·러스트 함수(lib)·외부 시스템 명령</strong>이라는 세 종류의 계약을 뜻한다. URL·메서드(GET/POST)·상태코드(200/404)는 없다.</div>
+
+<div class="callout"><strong>값은 여기서 정의하지 않는다.</strong> 구조체/enum 필드와 Config 기본값(<code>refresh_interval=3</code>·<code>graceful_timeout=10</code>·<code>MAX_BUFFER_LINES=1000</code> 등)의 정규 출처는 <strong><code>31-erd</code></strong>, 동작·알고리즘(스캔 2-pass·분류·파싱·graceful 폴링)은 <strong><code>30-functional-spec</code></strong>, 안전·프라이버시 정책(확인 게이트·시그널 권한·마스킹·fs 미독)은 <strong><code>33-policy</code></strong>다. 본 문서는 그 값·동작·정책을 <strong>인용만</strong> 한다(중복정의 0).</div>
+
+<div class="callout"><strong>전제:</strong> ntop은 <strong>이미 v0.2.0까지 구현된 MIT 오픈소스 도구</strong>다. 본 명세는 "앞으로 만들 API"가 아니라 <strong>이미 구현된 인터페이스를 역설계한 계약</strong>이며, 모든 시그니처·플래그·스키마는 실제 소스코드(<code>src/cli.rs</code>·<code>src/main.rs</code>·<code>src/lib.rs</code>·<code>src/process/*.rs</code>·<code>src/config.rs</code>·<code>src/log/streamer.rs</code>)에서 그대로 추출했다(창작 0).</div>
+
+<div class="callout"><strong>용어 풀이(첫 등장):</strong> <strong>CLI</strong>(Command-Line Interface) = 명령 한 줄로 실행해 결과를 출력하는 방식 / <strong>서브커맨드(subcommand)</strong> = <code>ntop list</code>처럼 메인 명령 뒤에 붙는 하위 명령 / <strong>플래그(flag)</strong> = <code>--json</code>처럼 동작을 바꾸는 옵션 / <strong>종료코드(exit code)</strong> = 프로그램이 끝날 때 셸에 돌려주는 숫자(0=성공 관례) / <strong>스키마(schema)</strong> = 출력 데이터의 컬럼·필드 구조 / <strong>크레이트(crate)</strong> = 러스트의 라이브러리/패키지 단위 / <strong>시그니처(signature)</strong> = 함수의 이름·인자·반환 타입 / <strong>stdout</strong> = 표준 출력(화면) / <strong>stderr</strong> = 표준 오류 출력 / <strong>field-mode</strong> = lsof의 "한 줄에 한 필드" 출력 형식.</div>
+
+<h2 id="contract">Sprint Contract (self-proposed checks) <a class="anchor" href="#contract">§</a></h2>
+<p>이 문서(g4의 <code>32-api-spec</code>)가 만족시킬 <strong>관찰 가능한 체크</strong>(playbook §S4-g4 관찰 바 + spec §5(32행)·§8).</p>
+<div class="table-wrap"><table>
+<thead><tr><th>#</th><th>체크</th><th>어떻게 충족하나</th><th>본문 위치</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">A-1</span></td><td><strong>CLI 계약 — 서브커맨드/플래그/필수성</strong> — <code>list</code>·<code>kill</code>·<code>info</code>·<code>log</code>·<code>config</code>(+무서브=TUI) 각 인자·플래그·필수 규칙</td><td>§2 명령/플래그 표 + §2-1~2-6</td><td>§2</td></tr>
+<tr><td><span class="chip">A-2</span></td><td><strong>종료코드 계약</strong> — 성공 0 / clap 파싱오류 2 / 런타임 오류 1, "not found"·"cancelled"·"permission denied"는 0(코드-진실)</td><td>§2-7 종료코드 표</td><td>§2-7</td></tr>
+<tr><td><span class="chip">A-3</span></td><td><strong>출력 스키마</strong> — table(7컬럼)·JSON(17키+depth)·CSV(9컬럼) 정확 명세</td><td>§3 출력 스키마 표 3종</td><td>§3</td></tr>
+<tr><td><span class="chip">A-4</span></td><td><strong>공개 라이브러리 API</strong> — <code>ntop::</code> 노출 타입/함수 시그니처(ProcessScanner·NetworkInspector·ProcessKiller·FrameworkDetector·Config·TreeBuilder·LogStreamer·KillSignal)</td><td>§4 lib API 표(타입 정의는 31 참조)</td><td>§4</td></tr>
+<tr><td><span class="chip">A-5</span></td><td><strong>의존 시스템 명령 계약</strong> — <code>lsof</code>(unix)/<code>netstat</code>(win)/<code>taskkill</code>(win) 정확 인자 + 부재→빈 결과</td><td>§5 시스템명령 표 + 부재 처리</td><td>§5</td></tr>
+<tr><td><span class="chip">A-6</span></td><td><strong>시각화(G-g)</strong> — CLI 호출 시퀀스 다이어그램 + 명령/플래그/종료코드 표 + 출력 스키마 표(외부 렌더러 0)</td><td>§6 시퀀스 + §2·§3 표</td><td>§6, §2, §3</td></tr>
+<tr><td><span class="chip">A-7</span></td><td><strong>단일 출처 준수</strong> — 값=31·동작=30·정책=33 참조, 계약만 소유. HTTP/REST/DB 창작 0</td><td>본문 곳곳 참조 + §0 HTTP 부재 콜아웃</td><td>전체</td></tr>
+</tbody></table></div>
+
+<h2 id="s0">0. ★ HTTP API가 아니다 — 세 종류의 계약 <a class="anchor" href="#s0">§</a></h2>
+<div class="callout">ntop에는 <strong>네트워크 서버도, REST 엔드포인트도, 데이터베이스도 없다.</strong> "외부에서 ntop을 어떻게 호출하는가"는 아래 세 경로로만 일어난다. 이 문서는 그 세 계약을 정의한다.</div>
+
+<figure class="viz">
+<svg viewBox="0 0 780 292" role="img" aria-label="ntop 외부 인터페이스는 3종 계약이며 HTTP 엔드포인트가 0개임을 보여주는 다이어그램">
+  <text class="ttl" x="390" y="22" text-anchor="middle">ntop의 "외부 인터페이스" = 3종 계약 (HTTP 엔드포인트 0개)</text>
+  <!-- ① CLI -->
+  <rect class="svg-node" x="16" y="42" width="240" height="150" rx="9"/>
+  <rect x="16" y="42" width="240" height="30" rx="9" fill="#eef2ff"/>
+  <text class="b svg-accent" x="136" y="62" text-anchor="middle" font-size="13">① CLI 명령 계약</text>
+  <text class="mn" x="30" y="96" font-size="12">ntop · list · kill</text>
+  <text class="mn" x="30" y="116" font-size="12">info · log · config</text>
+  <text class="sub" x="30" y="140" font-size="11">사람/스크립트가 셸에서</text>
+  <text class="sub" x="30" y="156" font-size="11">실행 → stdout</text>
+  <text class="b svg-accent2" x="30" y="180" font-size="11">(§2 · §3)</text>
+  <!-- ② lib -->
+  <rect class="svg-node" x="270" y="42" width="240" height="150" rx="9"/>
+  <rect x="270" y="42" width="240" height="30" rx="9" fill="#eef2ff"/>
+  <text class="b svg-accent" x="390" y="62" text-anchor="middle" font-size="13">② 공개 라이브러리 API</text>
+  <text class="mn" x="284" y="96" font-size="12">use ntop::…</text>
+  <text class="mn" x="284" y="116" font-size="12">ProcessScanner ·</text>
+  <text class="mn" x="284" y="136" font-size="12">NetworkInspector …</text>
+  <text class="sub" x="284" y="158" font-size="11">다른 러스트 프로그램이 재사용</text>
+  <text class="b svg-accent2" x="284" y="180" font-size="11">(§4)</text>
+  <!-- ③ syscmd -->
+  <rect class="svg-node" x="524" y="42" width="240" height="150" rx="9"/>
+  <rect x="524" y="42" width="240" height="30" rx="9" fill="#eef2ff"/>
+  <text class="b svg-accent" x="644" y="62" text-anchor="middle" font-size="13">③ 의존 시스템 명령</text>
+  <text class="mn" x="538" y="96" font-size="12">lsof (unix)</text>
+  <text class="mn" x="538" y="116" font-size="12">netstat (win)</text>
+  <text class="mn" x="538" y="136" font-size="12">taskkill (win)</text>
+  <text class="sub" x="538" y="158" font-size="11">ntop이 OS 명령의 "호출자"</text>
+  <text class="b svg-accent2" x="538" y="180" font-size="11">(§5)</text>
+  <!-- 없음 배너 -->
+  <rect x="16" y="210" width="748" height="66" rx="8" fill="#fef2f2" stroke="#dc2626"/>
+  <text class="b" x="390" y="234" text-anchor="middle" fill="#dc2626" font-size="13">✗ 없음 — ntop은 HTTP API가 아니다</text>
+  <text class="sub" x="390" y="256" text-anchor="middle" font-size="11">REST/GraphQL 엔드포인트 · URL 경로 · GET/POST · 200/404 · 인증 토큰 · DB 쿼리 · 웹훅 · 회원 API</text>
+</svg>
+<figcaption>§0 — 외부 인터페이스 = 3종 계약(CLI/lib/syscmd). HTTP 엔드포인트·DB·결제는 존재하지 않는다.</figcaption>
+</figure>
+
+<details class="raw"><summary>원본(텍스트) 다이어그램 펼치기</summary><pre><code> ┌──────────────────────────────────────────────────────────────────────────────┐
+ │  ntop의 "외부 인터페이스" = 3종 계약 (HTTP 엔드포인트 0개)                       │
+ │                                                                                │
+ │  ① CLI 명령 계약          사람/스크립트가 셸에서 `ntop &lt;cmd&gt;` 실행 → stdout      │
+ │     ntop / list / kill / info / log / config         (§2·§3)                    │
+ │                                                                                │
+ │  ② 공개 라이브러리 API     다른 러스트 프로그램이 `use ntop::...`로 재사용         │
+ │     ProcessScanner · NetworkInspector · ProcessKiller …   (§4)                  │
+ │                                                                                │
+ │  ③ 의존 시스템 명령 계약   ntop이 OS의 명령을 호출해 정보 수집 (ntop이 "호출자")  │
+ │     lsof(unix) · netstat(win) · taskkill(win)            (§5)                   │
+ │                                                                                │
+ │   ✗ 없음:  REST/GraphQL 엔드포인트 · URL 경로 · GET/POST · 200/404 · 인증 토큰   │
+ │            · DB 쿼리 · 웹훅 · 회원 API                                          │
+ └──────────────────────────────────────────────────────────────────────────────┘</code></pre></details>
+
+<p><strong>이 문서가 소유(정규 정의)하는 것:</strong> CLI 서브커맨드·플래그·필수성·종료코드·출력 스키마(table/JSON/CSV)·공개 lib 함수 시그니처·의존 시스템 명령의 정확 인자와 부재 처리.</p>
+<p><strong>참조(여기서 정의 안 함):</strong> 구조체/enum/Config 값 → <strong>31</strong> · 처리 알고리즘(스캔·분류·파싱·graceful) → <strong>30</strong> · 안전/프라이버시 정책 → <strong>33</strong> · 키 바인딩/화면 → <strong>21</strong> · 기능 ID(F#) → <strong>10-prd</strong>.</p>
+
+<h2 id="s1">1. 진입점과 디스패치 (Entry point) <a class="anchor" href="#s1">§</a></h2>
+<p><code>ntop</code> 바이너리는 clap(러스트 명령줄 파서)으로 인자를 읽고, <strong>서브커맨드가 없으면 TUI를 띄우고, 있으면 해당 CLI 핸들러로 분기</strong>한다(<code>src/main.rs</code> <code>main()</code>). 모든 핸들러는 <code>do_scan</code>과 동일하게 <code>ProcessScanner</code> + <code>NetworkInspector</code>를 재사용한다(처리 골격은 30-16).</p>
+
+<figure class="viz">
+<svg viewBox="0 0 780 358" role="img" aria-label="ntop 진입점에서 서브커맨드 유무에 따라 TUI 또는 CLI 핸들러로 분기하는 트리">
+  <rect class="svg-node" x="270" y="12" width="240" height="38" rx="8"/>
+  <text class="mn b" x="390" y="36" text-anchor="middle" font-size="12">$ ntop [SUBCOMMAND [ARGS/FLAGS]]</text>
+  <line class="svg-edge" x1="390" y1="50" x2="390" y2="64"/>
+  <rect class="svg-node" x="250" y="64" width="280" height="44" rx="8" style="fill:#eef2ff"/>
+  <text class="mn b svg-accent" x="390" y="84" text-anchor="middle" font-size="12">Cli::parse() + Config::load()</text>
+  <text class="sub" x="390" y="100" text-anchor="middle" font-size="10.5">~/.config/ntop/config.toml · 부재 → 기본값(31)</text>
+  <line class="svg-edge" x1="390" y1="108" x2="390" y2="124"/>
+  <text class="sub" x="390" y="138" text-anchor="middle" font-size="11">서브커맨드 분기 — main.rs match cli.command</text>
+  <!-- 6 cards -->
+  <g font-size="12">
+  <rect class="svg-node" x="40" y="150" width="334" height="44" rx="7"/>
+  <text class="mn b" x="52" y="170">None → run_tui(config)</text>
+  <text class="sub" x="52" y="187">전체화면 TUI 이벤트 루프</text>
+  <rect class="svg-node" x="406" y="150" width="334" height="44" rx="7"/>
+  <text class="mn b" x="418" y="170">List{json,format} → cmd_list</text>
+  <text class="sub" x="418" y="187">서버 목록 (table / json / csv)</text>
+  <rect class="svg-node" x="40" y="204" width="334" height="44" rx="7"/>
+  <text class="mn b" x="52" y="224">Kill{…} → cmd_kill</text>
+  <text class="sub" x="52" y="241">PID / 트리 / 전체 종료</text>
+  <rect class="svg-node" x="406" y="204" width="334" height="44" rx="7"/>
+  <text class="mn b" x="418" y="224">Info{pid} → cmd_info</text>
+  <text class="sub" x="418" y="241">단일 프로세스 상세</text>
+  <rect class="svg-node" x="40" y="258" width="334" height="44" rx="7"/>
+  <text class="mn b" x="52" y="278">Log{pid} → cmd_log</text>
+  <text class="sub" x="52" y="295">로그 tail 스트림</text>
+  <rect class="svg-node" x="406" y="258" width="334" height="44" rx="7"/>
+  <text class="mn b" x="418" y="278">Config → cmd_config</text>
+  <text class="sub" x="418" y="295">설정 경로 + 현재 값</text>
+  </g>
+  <text class="sub" x="390" y="332" text-anchor="middle" font-size="11">전역 플래그(clap): --help/-h · --version/-V (= Cargo.toml 0.2.0)</text>
+</svg>
+<figcaption>§1 — 진입점 디스패치. 서브커맨드 없음→TUI, 있으면 5개 CLI 핸들러로 분기(모두 Scanner+NetworkInspector 재사용).</figcaption>
+</figure>
+
+<details class="raw"><summary>원본(텍스트) 다이어그램 펼치기</summary><pre><code> $ ntop [&lt;SUBCOMMAND&gt; [ARGS/FLAGS]]
+        │
+        ▼  Cli::parse()  +  Config::load()   (~/.config/ntop/config.toml, 부재→기본값 31)
+   ┌────┴───────────────────────────────────────────────────────────┐
+   │ 서브커맨드 분기 (main.rs match cli.command)                       │
+   ├──────────────────────────────────────────────────────────────────┤
+   │ None              → run_tui(config)         전체화면 TUI 이벤트 루프  │
+   │ List{json,format} → cmd_list                서버 목록(table/json/csv) │
+   │ Kill{...}         → cmd_kill                 PID/트리/전체 종료        │
+   │ Info{pid}         → cmd_info                 단일 프로세스 상세        │
+   │ Log{pid}          → cmd_log                  로그 tail 스트림          │
+   │ Config            → cmd_config               설정 경로 + 현재 값       │
+   └──────────────────────────────────────────────────────────────────┘</code></pre></details>
+
+<p><strong>전역 플래그(clap 자동 제공):</strong> <code>--help</code>/<code>-h</code>(도움말), <code>--version</code>/<code>-V</code>(버전 = <code>Cargo.toml</code>의 <code>0.2.0</code>). clap <code>about</code> 문구: <code>"Node Top - Monitor and manage server processes (Node, Python, Java, and more)"</code>.</p>
+
+<h2 id="s2">2. CLI 명령 계약 (Contract ①) <a class="anchor" href="#s2">§</a></h2>
+
+<h3 id="s2-0">2-0. 명령/인자/플래그 표 (정규) <a class="anchor" href="#s2-0">§</a></h3>
+<div class="callout"><code>required</code>=필수, <code>opt</code>=선택. 코드 근거: <code>src/cli.rs</code>(인자 정의) + <code>src/main.rs</code>(핸들러).</div>
+
+<figure class="viz">
+<svg viewBox="0 0 780 470" role="img" aria-label="ntop 루트에서 5개 서브커맨드와 각 인자·플래그로 뻗는 CLI 인터페이스 트리">
+  <rect class="svg-node" x="14" y="200" width="86" height="50" rx="9" style="fill:#0f172a;stroke:#0f172a"/>
+  <text class="mn b" x="57" y="230" text-anchor="middle" fill="#f8fafc" font-size="14">ntop</text>
+  <g class="mn" font-size="11.5">
+  <!-- rows -->
+  <path class="svg-edge" d="M100,225 C128,225 128,40 150,40"/>
+  <rect class="svg-node" x="150" y="14" width="616" height="54" rx="7"/>
+  <text class="b" x="164" y="36">(서브커맨드 없음)</text>
+  <text class="sub" x="164" y="55" font-size="11">전역 -h / -V · 인자/플래그 없음 → 전체화면 TUI 기동</text>
+
+  <path class="svg-edge" d="M100,225 C128,225 128,116 150,116"/>
+  <rect class="svg-node" x="150" y="90" width="616" height="54" rx="7"/>
+  <text class="b svg-accent" x="164" y="112">list</text>
+  <text class="sub" x="164" y="131" font-size="11">플래그: --json (bool) · --format &lt;table|csv|json&gt;  (둘 다 opt, --json 우선)</text>
+
+  <path class="svg-edge" d="M100,225 C128,225 128,200 150,200"/>
+  <rect class="svg-node" x="150" y="166" width="616" height="66" rx="7" style="stroke:#dc2626"/>
+  <text class="b" x="164" y="188" fill="#dc2626">kill  &lt;PID&gt;</text>
+  <text class="sub" x="164" y="206" font-size="11">인자: &lt;PID&gt; (u32) — --all 없을 때 required_unless_present="all"</text>
+  <text class="sub" x="164" y="223" font-size="11">플래그: --tree · --signal &lt;SIG&gt; · --all · --no-confirm (모두 bool/opt)</text>
+
+  <path class="svg-edge" d="M100,225 C128,225 128,294 150,294"/>
+  <rect class="svg-node" x="150" y="270" width="616" height="50" rx="7"/>
+  <text class="b svg-accent" x="164" y="292">info  &lt;PID&gt;</text>
+  <text class="sub" x="164" y="310" font-size="11">인자: &lt;PID&gt; (u32, required) · 플래그 없음 → 단일 프로세스 상세</text>
+
+  <path class="svg-edge" d="M100,225 C128,225 128,366 150,366"/>
+  <rect class="svg-node" x="150" y="342" width="616" height="50" rx="7"/>
+  <text class="b svg-accent" x="164" y="364">log  &lt;PID&gt;</text>
+  <text class="sub" x="164" y="382" font-size="11">인자: &lt;PID&gt; (u32, required) · 로그 자동 감지 → 실시간 tail</text>
+
+  <path class="svg-edge" d="M100,225 C128,225 128,438 150,438"/>
+  <rect class="svg-node" x="150" y="414" width="616" height="50" rx="7"/>
+  <text class="b svg-accent" x="164" y="436">config</text>
+  <text class="sub" x="164" y="454" font-size="11">인자/플래그 없음 → 설정 경로 + 3섹션 현재 값 출력</text>
+  </g>
+</svg>
+<figcaption>§2-0 — CLI 명령 인터페이스 트리. <code>kill</code>만 파괴적(빨강)이며 <code>&lt;PID&gt;</code>는 <code>--all</code> 없을 때 필수.</figcaption>
+</figure>
+
+<div class="table-wrap"><table>
+<thead><tr><th>명령</th><th>인자</th><th>플래그</th><th>필수성</th><th>동작(요지)</th></tr></thead>
+<tbody>
+<tr><td><code>ntop</code></td><td>—</td><td>(전역 <code>-h</code>/<code>-V</code>)</td><td>—</td><td>TUI 기동(서브커맨드 없음)</td></tr>
+<tr><td><code>ntop list</code></td><td>—</td><td><code>--json</code> (bool) · <code>--format &lt;table|csv|json&gt;</code></td><td>둘 다 opt</td><td>분류된 서버 목록 출력</td></tr>
+<tr><td><code>ntop kill</code></td><td><code>&lt;PID&gt;</code> (u32)</td><td><code>--tree</code> · <code>--signal &lt;SIG&gt;</code> · <code>--all</code> · <code>--no-confirm</code> (모두 bool/opt)</td><td><strong><code>PID</code>는 <code>--all</code> 없을 때 필수</strong>(<code>required_unless_present="all"</code>)</td><td>PID/트리/전체 종료</td></tr>
+<tr><td><code>ntop info</code></td><td><code>&lt;PID&gt;</code> (u32, required)</td><td>—</td><td><code>PID</code> 필수</td><td>단일 프로세스 상세 출력</td></tr>
+<tr><td><code>ntop log</code></td><td><code>&lt;PID&gt;</code> (u32, required)</td><td>—</td><td><code>PID</code> 필수</td><td>로그 자동 감지 → 실시간 tail</td></tr>
+<tr><td><code>ntop config</code></td><td>—</td><td>—</td><td>—</td><td>설정 파일 경로 + 현재 3섹션 값 출력</td></tr>
+</tbody></table></div>
+
+<div class="callout warn"><strong>플래그 상호작용(코드-진실):</strong>
+<ul>
+<li><code>list</code>: <code>--json</code>이 켜지면 <code>--format</code>보다 <strong>우선</strong>(<code>effective_format = Json</code>). <code>--format</code> 미지정 시 기본 <code>table</code>.</li>
+<li><code>kill</code>: <code>--signal</code> 문자열은 <code>KillSignal::from_str</code>로 해석(<code>"SIGTERM"</code>/<code>"TERM"</code> 등 허용, 31 §3-4), <strong>인식 실패 시 조용히 기본 <code>SIGTERM</code>으로 폴백</strong>(<code>unwrap_or(KillSignal::Term)</code>). <code>--all</code>이 켜지면 <code>PID</code> 인자는 무시(전체 서버 대상). <code>--tree</code>는 <code>PID</code> 필수.</li>
+<li><code>--no-confirm</code> 또는 <code>config.general.confirm_before_kill=false</code>(31값)면 확인 프롬프트 생략(정책은 33).</li>
+</ul></div>
+
+<h3 id="s2-1">2-1. <code>ntop list</code> — 서버 목록 <a class="anchor" href="#s2-1">§</a></h3>
+<ul>
+<li><strong>입력:</strong> 없음(스캔). <code>scan_blocking()</code>(1회성 측정, 30-3) → 포트 채움 → 트리 빌드 → 평탄화 → 포맷 출력.</li>
+<li><strong>출력 포맷 3종:</strong> <code>table</code>(기본) / <code>json</code>(<code>--json</code> 또는 <code>--format json</code>) / <code>csv</code>(<code>--format csv</code>). 스키마는 §3.</li>
+<li><strong>빈 결과:</strong> table 경로는 <code>"No server processes found."</code> 한 줄 출력. (JSON/CSV는 빈 배열/헤더만.)</li>
+<li><strong>종료코드:</strong> 항상 0(스캔 결과가 비어도 정상).</li>
+</ul>
+
+<h3 id="s2-2">2-2. <code>ntop kill</code> — 종료 (3경로) <a class="anchor" href="#s2-2">§</a></h3>
+<ul>
+<li><strong>단건(<code>ntop kill &lt;PID&gt;</code>):</strong> 확인 게이트(33) 통과 → <code>graceful_kill(pid, graceful_duration())</code>(30-6). 결과 분기 출력 — <code>Terminated</code>/<code>AlreadyDead</code>/<code>PermissionDenied</code>/<code>Error</code>는 메시지만, <strong><code>TimedOut</code>이면 <code>"Graceful kill timed out. Force killing..."</code> 후 <code>force_kill</code>(SIGKILL) 자동 에스컬레이션</strong>(정책 33).</li>
+<li><strong>트리(<code>--tree</code>):</strong> 스캔→트리 빌드→<code>find_in_trees(PID)</code>→<code>collect_pids</code>→확인→<code>kill_tree(pids, signal)</code>(자식부터 역순, 30-7). PID 미발견 시 <code>"Process &lt;PID&gt; not found."</code>.</li>
+<li><strong>전체(<code>--all</code>):</strong> 스캔→서버 목록→확인(목록 미리보기)→각 PID에 <code>send_signal(signal)</code> 1회씩. 서버가 없으면 <code>"No server processes found."</code>.</li>
+<li><strong>출력:</strong> 각 PID별 <code>  PID &lt;n&gt;: &lt;KillResult/GracefulResult&gt;</code> 형태. 취소 시 <code>"Cancelled."</code>.</li>
+<li><strong>종료코드:</strong> 모든 분기 0(권한 거부·미발견·취소 포함 — 메시지만 출력하고 <code>Ok</code> 반환, §2-7).</li>
+</ul>
+
+<h3 id="s2-3">2-3. <code>ntop info &lt;PID&gt;</code> — 단일 상세 <a class="anchor" href="#s2-3">§</a></h3>
+<ul>
+<li><strong>출력(사람이 읽는 블록, 16행 + 부록):</strong> <code>PID · PPID · Name · Runtime(없으면 "—") · Framework · Version(없으면 "-") · Ports(LISTEN만, 콤마구분) · CPU({:.1}%) · Memory(memory_display) · Threads · Uptime · User · Status · Health(30-12) · CWD · Command · Open FDs</code> → 이어서 <strong>Environment Variables</strong>(있으면, 개수 헤더 + <code>KEY=VALUE</code> 줄들) → <strong>Network Connections</strong>(있으면, <code>local -&gt; remote [state]</code>).</li>
+</ul>
+<div class="callout bad"><strong>★ 코드-진실(프라이버시 주의):</strong> <strong><code>ntop info</code>의 환경변수 출력은 마스킹하지 않는다</strong>(<code>KEY=VALUE</code> 원문). 민감값 마스킹은 <strong>TUI Env 탭에서만</strong> 적용된다(33-policy §4·40-backlog 후보). 창작이 아니라 실제 동작이다.</div>
+<p><strong>미발견:</strong> <code>"Process &lt;PID&gt; not found."</code> 출력 후 종료코드 0.</p>
+
+<h3 id="s2-4">2-4. <code>ntop log &lt;PID&gt;</code> — 로그 스트림 <a class="anchor" href="#s2-4">§</a></h3>
+<ul>
+<li><strong>동작:</strong> 스캔→PID 찾기→<code>cwd</code> 비면 <code>"Cannot determine working directory..."</code> / <code>LogStreamer::detect_and_open</code>(30-9)→소스 없으면 <code>"No log source found..."</code> → 소스 있으면 <code>"Streaming logs from: &lt;path&gt;"</code> + <code>"Press Ctrl+C to stop."</code> 후 <strong>200ms 폴링 tail 루프</strong>. <strong>프로세스가 죽으면 <code>"Process &lt;PID&gt; has exited."</code> 출력 후 종료.</strong> (Ctrl+C로 수동 중단.)</li>
+<li><strong>미발견:</strong> <code>"Process &lt;PID&gt; not found."</code> → 0.</li>
+</ul>
+
+<h3 id="s2-5">2-5. <code>ntop config</code> — 설정 출력 <a class="anchor" href="#s2-5">§</a></h3>
+<ul>
+<li><strong>출력:</strong> <code>"Config file: &lt;경로&gt;"</code>(= <code>~/.config/ntop/config.toml</code>, 31) + <code>[general]</code>/<code>[display]</code>/<code>[filter]</code> 3섹션의 <strong>현재 값</strong>(부재 시 기본값, 31 §4). <code>include_bun</code>은 <code>"include_bun (deprecated):"</code>로 표기.</li>
+<li><strong>종료코드:</strong> 0.</li>
+</ul>
+
+<h3 id="s2-6">2-6. <code>ntop</code>(서브커맨드 없음) — TUI <a class="anchor" href="#s2-6">§</a></h3>
+<ul>
+<li>전체화면 TUI 이벤트 루프 진입(<code>run_tui</code>, 30-16·codebase-facts §6). 화면/키 계약은 <strong>21-screen-spec</strong> 소유. 정상 종료(<code>q</code>/<code>Ctrl+C</code>/Esc) 시 터미널 복원 후 종료코드 0.</li>
+</ul>
+
+<h3 id="s2-7">2-7. ★ 종료코드 계약 (코드-진실) <a class="anchor" href="#s2-7">§</a></h3>
+<div class="callout warn"><strong>핵심:</strong> <code>main()</code>은 <code>anyhow::Result&lt;()&gt;</code>를 반환한다. 거의 모든 핸들러는 실패 상황("프로세스 없음", "권한 거부", "취소", "서버 없음")에서도 <strong>메시지만 출력하고 <code>Ok(())</code>를 반환</strong>한다 → 종료코드 <strong>0</strong>. 비정상 종료코드는 (a) clap 인자 파싱 실패, (b) <code>?</code>로 전파되는 런타임 오류뿐이다. <strong>"kill 실패 시 1을 반환한다" 같은 동작은 코드에 없다</strong>(창작 금지).</div>
+
+<figure class="viz">
+<svg viewBox="0 0 780 252" role="img" aria-label="종료코드 0/2/1의 의미를 보여주는 인포그래픽">
+  <g text-anchor="middle">
+  <rect x="20" y="20" width="234" height="150" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="1.5"/>
+  <text x="137" y="78" font-size="56" font-weight="800" fill="#059669">0</text>
+  <text class="b" x="137" y="104" font-size="13" fill="#065f46">정상 종료</text>
+  <text class="sub" x="137" y="128" font-size="10.5">"not found" · "cancelled"</text>
+  <text class="sub" x="137" y="144" font-size="10.5">"permission denied"</text>
+  <text class="sub" x="137" y="160" font-size="10.5">"no server" 모두 포함</text>
+
+  <rect x="273" y="20" width="234" height="150" rx="10" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
+  <text x="390" y="78" font-size="56" font-weight="800" fill="#d97706">2</text>
+  <text class="b" x="390" y="104" font-size="13" fill="#92400e">clap 인자 파싱 오류</text>
+  <text class="sub" x="390" y="128" font-size="10.5">--all 없이 PID도 없는 kill</text>
+  <text class="sub" x="390" y="144" font-size="10.5">미지의 플래그 · 잘못된</text>
+  <text class="sub" x="390" y="160" font-size="10.5">--format 값 (usage→stderr)</text>
+
+  <rect x="526" y="20" width="234" height="150" rx="10" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="643" y="78" font-size="56" font-weight="800" fill="#dc2626">1</text>
+  <text class="b" x="643" y="104" font-size="13" fill="#991b1b">런타임 오류 ? 전파</text>
+  <text class="sub" x="643" y="128" font-size="10.5">터미널 셋업 실패 · I/O</text>
+  <text class="sub" x="643" y="144" font-size="10.5">JSON/CSV 직렬화 오류 등</text>
+  <text class="sub" x="643" y="160" font-size="10.5">anyhow Err → Rust 코드 1</text>
+  </g>
+  <rect x="20" y="190" width="740" height="48" rx="8" fill="#0f172a"/>
+  <text x="390" y="210" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="700">자동화 함의: "없었다" vs "성공했다"를 종료코드로 구분하지 않음</text>
+  <text x="390" y="228" text-anchor="middle" fill="#a5b4fc" font-size="11">결과 판정은 stdout 텍스트 파싱 필요(list --json 빈 배열 · info "not found") — 개선=40-backlog</text>
+</svg>
+<figcaption>§2-7 — 종료코드 계약. 거의 모든 실패도 메시지+<code>Ok</code>(0); 0이 아닌 코드는 clap 파싱(2)·런타임(1)뿐.</figcaption>
+</figure>
+
+<div class="table-wrap"><table>
+<thead><tr><th>코드</th><th>언제</th><th>근거</th></tr></thead>
+<tbody>
+<tr><td><strong>0</strong></td><td>정상 종료 + <strong>"not found"/"cancelled"/"permission denied"/"no server processes"</strong> 모두 포함</td><td>각 핸들러가 메시지 출력 후 <code>Ok(())</code>(main.rs cmd_*)</td></tr>
+<tr><td><strong>2</strong></td><td><strong>clap 인자 파싱 오류</strong> — 예: <code>kill</code>을 <code>--all</code> 없이 <code>PID</code>도 없이 호출, 미지의 플래그, 잘못된 <code>--format</code> 값</td><td>clap 기본 동작(usage 에러는 코드 2, stderr)</td></tr>
+<tr><td><strong>1</strong></td><td><strong>런타임 오류 <code>?</code> 전파</strong> — 터미널 셋업 실패, stdin/stdout I/O 오류, JSON/CSV 직렬화 오류 등 anyhow 에러</td><td><code>main() -&gt; Result</code> 가 <code>Err</code> 반환 → Rust 런타임이 코드 1로 종료</td></tr>
+</tbody></table></div>
+
+<div class="callout"><strong>자동화 함의(스크립트 작성자에게):</strong> ntop CLI는 "대상 프로세스가 없었다"와 "성공했다"를 <strong>종료코드로 구분하지 않는다.</strong> 결과 판정이 필요하면 <strong>stdout 텍스트(<code>list --json</code>의 빈 배열, <code>info</code>의 "not found" 문자열)를 파싱</strong>해야 한다. 이는 현재 동작의 한계이며 개선 여지는 40-backlog 소유.</div>
+
+<h2 id="s3">3. 출력 스키마 (Output schema) — <code>ntop list</code> 3포맷 <a class="anchor" href="#s3">§</a></h2>
+<div class="callout"><strong>이 절이 <code>list</code> 출력 스키마의 정규 출처다.</strong> 코드 근거: <code>print_table</code>/<code>print_json</code>/<code>print_csv</code>(<code>src/main.rs</code>). 필드 값의 의미·타입은 <code>ProcessInfo</code>(31 §2-1)를 참조.</div>
+
+<h3 id="s3-1">3-1. <code>table</code>(기본) — 7컬럼, 사람용 <a class="anchor" href="#s3-1">§</a></h3>
+<pre><code> 컬럼(폭):  PID(8)  NAME(20)  FRAMEWORK(12)  PORT(10)  CPU(8)  MEM(10)  UPTIME(12)
+ ────────────────────────────────────────────────────────────────────────────────
+ PID      NAME                 FRAMEWORK    PORT       CPU      MEM        UPTIME
+ --------------------------------------------------------------------------------   (80자 구분선)
+ 51234    next-server          Next.js      3000       2.3%     180.4 MB   1h 2m 5s
+ 51240      worker             Generic      -          0.0%     45.0 MB    1h 1m 0s   (트리 깊이=들여쓰기)</code></pre>
+<ul>
+<li><strong>★ table에는 FRAMEWORK 컬럼이 있다</strong>(TUI 목록에는 없음 — 정체는 TUI Info 탭에서만, 30 §0·21).</li>
+<li><code>NAME</code>은 <code>display_name()</code>(30-2), 트리 깊이만큼 <code>"  "</code> 들여쓰기(컬럼 폭은 <code>20 - 들여쓰기</code> 보정).</li>
+<li><code>PORT</code>는 LISTEN 포트 콤마(<code>,</code>) 결합, 없으면 <code>-</code>. <code>CPU</code>=<code>{:.1}%</code>. <code>MEM</code>=<code>memory_display()</code>(예: <code>180.4 MB</code>).</li>
+<li>빈 목록 → <code>"No server processes found."</code>.</li>
+</ul>
+
+<h3 id="s3-2">3-2. <code>--json</code> / <code>--format json</code> — 17키 배열, 기계용 <a class="anchor" href="#s3-2">§</a></h3>
+<div class="callout"><code>serde_json</code> pretty 배열. 각 원소 17키(아래). <code>--json</code>은 <code>--format</code>보다 우선(§2-0).</div>
+
+<figure class="viz">
+<svg viewBox="0 0 780 452" role="img" aria-label="ntop list --json 출력의 17개 키와 타입을 보여주는 스키마 트리">
+  <rect class="svg-node" x="230" y="12" width="320" height="42" rx="8" style="fill:#0f172a;stroke:#0f172a"/>
+  <text class="mn b" x="390" y="38" text-anchor="middle" fill="#f8fafc" font-size="12.5">ntop list --json → [ { …17키 }, … ]</text>
+  <line class="svg-edge" x1="390" y1="54" x2="390" y2="70"/>
+  <line class="svg-edge" x1="200" y1="70" x2="580" y2="70"/>
+  <line class="svg-edge" x1="200" y1="70" x2="200" y2="84"/>
+  <line class="svg-edge" x1="580" y1="70" x2="580" y2="84"/>
+  <g class="mn" font-size="12">
+  <!-- left col -->
+  <g>
+  <rect class="svg-node" x="20" y="84" width="360" height="26" rx="5"/><text x="32" y="102">pid</text><text class="svg-accent2" x="368" y="102" text-anchor="end">number</text>
+  <rect class="svg-node" x="20" y="114" width="360" height="26" rx="5"/><text x="32" y="132">ppid</text><text class="svg-accent2" x="368" y="132" text-anchor="end">number</text>
+  <rect class="svg-node" x="20" y="144" width="360" height="26" rx="5"/><text x="32" y="162">name</text><text class="svg-accent2" x="368" y="162" text-anchor="end">string</text>
+  <rect class="svg-node" x="20" y="174" width="360" height="26" rx="5" style="stroke:#d97706"/><text x="32" y="192">runtime</text><text class="warn" fill="#d97706" x="368" y="192" text-anchor="end">string | null</text>
+  <rect class="svg-node" x="20" y="204" width="360" height="26" rx="5"/><text x="32" y="222">framework</text><text class="svg-accent2" x="368" y="222" text-anchor="end">string</text>
+  <rect class="svg-node" x="20" y="234" width="360" height="26" rx="5" style="stroke:#d97706"/><text x="32" y="252">framework_version</text><text fill="#d97706" x="368" y="252" text-anchor="end" font-size="11">string|null (항상 null)</text>
+  <rect class="svg-node" x="20" y="264" width="360" height="26" rx="5"/><text x="32" y="282">ports</text><text class="svg-accent2" x="368" y="282" text-anchor="end">number[]</text>
+  <rect class="svg-node" x="20" y="294" width="360" height="26" rx="5"/><text x="32" y="312">cpu_percent</text><text class="svg-accent2" x="368" y="312" text-anchor="end">number</text>
+  <rect class="svg-node" x="20" y="324" width="360" height="26" rx="5"/><text x="32" y="342">memory_rss</text><text class="svg-accent2" x="368" y="342" text-anchor="end">number (byte)</text>
+  </g>
+  <!-- right col -->
+  <g>
+  <rect class="svg-node" x="400" y="84" width="360" height="26" rx="5"/><text x="412" y="102">memory_display</text><text class="svg-accent2" x="748" y="102" text-anchor="end">string</text>
+  <rect class="svg-node" x="400" y="114" width="360" height="26" rx="5"/><text x="412" y="132">uptime_seconds</text><text class="svg-accent2" x="748" y="132" text-anchor="end">number</text>
+  <rect class="svg-node" x="400" y="144" width="360" height="26" rx="5"/><text x="412" y="162">uptime_display</text><text class="svg-accent2" x="748" y="162" text-anchor="end">string</text>
+  <rect class="svg-node" x="400" y="174" width="360" height="26" rx="5"/><text x="412" y="192">user</text><text class="svg-accent2" x="748" y="192" text-anchor="end">string</text>
+  <rect class="svg-node" x="400" y="204" width="360" height="26" rx="5"/><text x="412" y="222">status</text><text class="svg-accent2" x="748" y="222" text-anchor="end">string</text>
+  <rect class="svg-node" x="400" y="234" width="360" height="26" rx="5" style="stroke:#4f46e5;fill:#eef2ff"/><text class="b svg-accent" x="412" y="252">depth ★</text><text class="svg-accent" x="748" y="252" text-anchor="end" font-size="11">number (32 고유·트리깊이)</text>
+  <rect class="svg-node" x="400" y="264" width="360" height="26" rx="5"/><text x="412" y="282">cwd</text><text class="svg-accent2" x="748" y="282" text-anchor="end">string</text>
+  <rect class="svg-node" x="400" y="294" width="360" height="26" rx="5"/><text x="412" y="312">command</text><text class="svg-accent2" x="748" y="312" text-anchor="end">string</text>
+  </g>
+  </g>
+  <rect x="20" y="370" width="740" height="60" rx="8" fill="#eef2ff" stroke="#c7d2fe"/>
+  <text class="b svg-accent" x="390" y="392" text-anchor="middle" font-size="12">계약 메모</text>
+  <text class="sub" x="390" y="411" text-anchor="middle" font-size="11">memory_rss(원시 byte) + memory_display(사람용)를 둘 다 제공 · depth로 트리 구조 복원 가능</text>
+</svg>
+<figcaption>§3-2 — JSON 17키 스키마. <code>runtime</code>·<code>framework_version</code>은 nullable, <code>depth</code>는 32-고유(트리 복원용).</figcaption>
+</figure>
+
+<div class="table-wrap"><table>
+<thead><tr><th>키</th><th>타입</th><th>비고</th></tr></thead>
+<tbody>
+<tr><td><code>pid</code></td><td>number</td><td></td></tr>
+<tr><td><code>ppid</code></td><td>number</td><td></td></tr>
+<tr><td><code>name</code></td><td>string</td><td>OS 보고 이름(원문, <code>display_name</code> 아님)</td></tr>
+<tr><td><code>runtime</code></td><td>string | null</td><td><code>Some</code>이면 Display(예 <code>"Node"</code>), 트리 부모면 <code>null</code>(31 R4)</td></tr>
+<tr><td><code>framework</code></td><td>string</td><td>예 <code>"Next.js"</code>·<code>"Generic"</code></td></tr>
+<tr><td><code>framework_version</code></td><td>string | null</td><td>현재 항상 <code>null</code>(미채움, 31 §2-1)</td></tr>
+<tr><td><code>ports</code></td><td>number[]</td><td>LISTEN 포트 배열</td></tr>
+<tr><td><code>cpu_percent</code></td><td>number</td><td>백분율(raw f32)</td></tr>
+<tr><td><code>memory_rss</code></td><td>number</td><td>byte 단위 원시값(macOS는 phys_footprint, 30-10)</td></tr>
+<tr><td><code>memory_display</code></td><td>string</td><td>사람용(예 <code>"180.4 MB"</code>)</td></tr>
+<tr><td><code>uptime_seconds</code></td><td>number</td><td>초</td></tr>
+<tr><td><code>uptime_display</code></td><td>string</td><td>예 <code>"1h 2m 5s"</code></td></tr>
+<tr><td><code>user</code></td><td>string</td><td></td></tr>
+<tr><td><code>status</code></td><td>string</td><td>예 <code>"Running"</code></td></tr>
+<tr><td><code>depth</code></td><td>number</td><td><strong>트리 깊이</strong>(평탄화 시 부여 — 32 고유, 0=루트)</td></tr>
+<tr><td><code>cwd</code></td><td>string</td><td></td></tr>
+<tr><td><code>command</code></td><td>string</td><td>전체 커맨드라인</td></tr>
+</tbody></table></div>
+<div class="callout"><strong>계약 메모:</strong> <code>--json</code>은 <code>memory_rss</code>(원시 byte)와 <code>memory_display</code>(사람용)를 <strong>둘 다</strong> 준다. <code>depth</code>로 트리 구조를 복원할 수 있다(들여쓰기 깊이).</div>
+
+<h3 id="s3-3">3-3. <code>--format csv</code> — 9컬럼, 표계산용 <a class="anchor" href="#s3-3">§</a></h3>
+<div class="callout"><code>csv</code> 크레이트 writer. <strong>헤더 1행 + 데이터 행</strong>. 코드 근거: <code>print_csv</code>.</div>
+<pre><code> 헤더: PID, PPID, NAME, FRAMEWORK, PORTS, CPU, MEMORY, UPTIME, STATUS
+ ─────────────────────────────────────────────────────────────────────────────
+ 컬럼      값                                          table/json과 다른 점
+ ─────────────────────────────────────────────────────────────────────────────
+ PID       proc.pid
+ PPID      proc.ppid                                   (table엔 없음)
+ NAME      proc.name (원문 — display_name 아님!)        ★ table NAME과 다름
+ FRAMEWORK proc.framework (Display)
+ PORTS     포트들을 ';'(세미콜론)으로 결합              ★ table는 ',' / CSV는 ';'
+ CPU       {:.1}  (★ '%' 기호 없음 — 숫자만)            ★ table는 '%' 포함
+ MEMORY    proc.memory_rss (원시 byte 정수)            ★ table는 사람용 "180.4 MB"
+ UPTIME    uptime_display ("1h 2m 5s")
+ STATUS    proc.status                                 (table엔 없음)</code></pre>
+<ul>
+<li><strong>table/JSON/CSV 차이 요약:</strong> CSV의 <code>NAME</code>은 <strong>원문 이름</strong>(table은 <code>display_name</code>), <code>PORTS</code>는 <strong>세미콜론</strong> 결합(table은 콤마), <code>CPU</code>는 <strong>숫자만</strong>(<code>%</code> 없음), <code>MEMORY</code>는 <strong>원시 byte</strong>(table은 사람용). 깊이(트리)는 CSV에 없다(평탄 행만). 이 차이는 실제 코드 동작이므로 자동화 시 주의.</li>
+</ul>
+
+<h2 id="s4">4. 공개 라이브러리 API (Contract ②) — <code>ntop::</code> 크레이트 <a class="anchor" href="#s4">§</a></h2>
+<div class="callout"><code>src/lib.rs</code>가 노출하는 모듈: <strong><code>process</code>·<code>config</code>·<code>log</code>·<code>cli</code>·<code>tui</code></strong>(전부 <code>pub</code>). 다른 러스트 프로그램은 <code>use ntop::process::scanner::ProcessScanner;</code>처럼 재사용한다. <strong>타입(구조체/enum)의 필드·정의는 <code>31-erd</code>가 단일 출처</strong>이고, 본 절은 <strong>공개 함수의 시그니처와 계약(반환/부작용)</strong> 만 정의한다.</div>
+
+<h3 id="s4-1">4-1. 핵심 공개 함수 표 (시그니처 = 코드 그대로) <a class="anchor" href="#s4-1">§</a></h3>
+<div class="table-wrap"><table>
+<thead><tr><th>타입/모듈</th><th>공개 함수 시그니처</th><th>반환/계약</th><th>처리 알고리즘</th></tr></thead>
+<tbody>
+<tr><td><strong><code>ProcessScanner&lt;'a&gt;</code></strong></td><td><code>new(config: &amp;'a Config) -&gt; Self</code></td><td>persistent <code>System</code> prime(2 refresh + sleep)</td><td>30-3</td></tr>
+<tr><td>(scanner.rs)</td><td><code>scan(&amp;mut self) -&gt; Vec&lt;ProcessInfo&gt;</code></td><td>2-pass 분류(runtime=Some/None), 포트는 <strong>미포함</strong></td><td>30-3</td></tr>
+<tr><td></td><td><code>scan_blocking(&amp;mut self) -&gt; Vec&lt;ProcessInfo&gt;</code></td><td>sleep 후 3번째 측정 refresh + <code>scan</code>(1회성 CLI용)</td><td>30-3</td></tr>
+<tr><td><strong><code>NetworkInspector</code></strong> (단위 struct, 상태없음)</td><td><code>connections_by_pid() -&gt; HashMap&lt;u32, Vec&lt;NetworkConnection&gt;&gt;</code></td><td>PID→연결들. 명령부재→<strong>빈 HashMap</strong></td><td>30-5, §5</td></tr>
+<tr><td>(network.rs)</td><td><code>connections_for_pid(pid: u32) -&gt; Vec&lt;NetworkConnection&gt;</code></td><td>해당 PID 연결만</td><td>30-5</td></tr>
+<tr><td></td><td><code>listening_ports_for_pid(pid: u32) -&gt; Vec&lt;u16&gt;</code></td><td>LISTEN 포트만</td><td>30-5</td></tr>
+<tr><td></td><td><code>parse_addr(s: &amp;str) -&gt; Option&lt;SocketAddr&gt;</code></td><td><code>*:port</code>/<code>[::1]:port</code>/<code>host:port</code> 파싱(실패→None)</td><td>30-5</td></tr>
+<tr><td><strong><code>ProcessKiller</code></strong> (단위 struct)</td><td><code>send_signal(pid: u32, signal: KillSignal) -&gt; KillResult</code></td><td>1회 시그널. <code>KillResult{Success/AlreadyDead/PermissionDenied/Error}</code></td><td>30-8, 33</td></tr>
+<tr><td>(killer.rs)</td><td><code>graceful_kill(pid: u32, timeout: Duration) -&gt; GracefulResult</code></td><td>SIGTERM→200ms 폴링→timeout. <code>GracefulResult</code>(5종)</td><td>30-6, 33</td></tr>
+<tr><td></td><td><code>force_kill(pid: u32) -&gt; KillResult</code></td><td>SIGKILL 즉시</td><td>30-6</td></tr>
+<tr><td></td><td><code>kill_tree(pids: &amp;[u32], signal: KillSignal) -&gt; Vec&lt;(u32, KillResult)&gt;</code></td><td><strong>역순(자식부터)</strong> 시그널</td><td>30-7, 33</td></tr>
+<tr><td></td><td><code>is_alive(pid: u32) -&gt; bool</code></td><td>생존 확인</td><td>30-8</td></tr>
+<tr><td><strong><code>KillSignal</code></strong> (enum)</td><td><code>all() -&gt; &amp;'static [KillSignal]</code></td><td><strong>Unix 6종 / Windows 3종</strong>(31 §3-4)</td><td>33</td></tr>
+<tr><td>(killer.rs)</td><td><code>from_str(s: &amp;str) -&gt; Option&lt;Self&gt;</code></td><td><code>"SIGTERM"</code>/<code>"TERM"</code> 허용(대소문자·<code>SIG</code> 무시)</td><td>31 §3-4</td></tr>
+<tr><td></td><td><code>name(&amp;self) -&gt; &amp;'static str</code> · <code>description(&amp;self) -&gt; &amp;'static str</code></td><td>예 <code>"SIGTERM"</code> / <code>"Graceful termination request"</code></td><td>31 §3-4</td></tr>
+<tr><td><strong><code>FrameworkDetector</code></strong></td><td><code>classify(name: &amp;str, command: &amp;str, config: &amp;Config) -&gt; Option&lt;(Runtime, FrameworkKind)&gt;</code></td><td>서버면 <code>Some</code>, 아니면 <code>None</code>(미표시). <strong>fs 미독</strong></td><td>30-1, 33</td></tr>
+<tr><td>(framework.rs)</td><td></td><td>(보조: <code>detect</code>/<code>detect_by_name</code>/<code>detect_by_command</code> 존재)</td><td>30-1</td></tr>
+<tr><td><strong><code>Config</code></strong> (config.rs)</td><td><code>load() -&gt; Self</code></td><td>TOML 로드, 실패→<code>default()</code>(부분/부재 안전)</td><td>31 §2-2</td></tr>
+<tr><td></td><td><code>config_path() -&gt; Option&lt;PathBuf&gt;</code></td><td><code>~/.config/ntop/config.toml</code></td><td>31 §4</td></tr>
+<tr><td></td><td><code>refresh_duration() -&gt; Duration</code> · <code>graceful_duration() -&gt; Duration</code></td><td>초→Duration 변환</td><td>31 §4</td></tr>
+<tr><td><strong><code>TreeBuilder</code></strong> (단위 struct)</td><td><code>build(flat: Vec&lt;ProcessInfo&gt;) -&gt; Vec&lt;ProcessInfo&gt;</code></td><td>flat→roots(자식 중첩)</td><td>30-4</td></tr>
+<tr><td>(tree.rs)</td><td><code>flatten_with_depth(trees: &amp;[ProcessInfo]) -&gt; Vec&lt;(&amp;ProcessInfo, usize)&gt;</code></td><td>DFS (참조, 깊이)</td><td>30-4</td></tr>
+<tr><td></td><td><code>collect_pids(node: &amp;ProcessInfo) -&gt; Vec&lt;u32&gt;</code></td><td>노드+모든 자손 PID(kill_tree 입력)</td><td>30-4·30-7</td></tr>
+<tr><td></td><td><code>sort_recursive&lt;F&gt;(trees: &amp;mut [ProcessInfo], cmp: &amp;F)</code></td><td>레벨별 정렬</td><td>30-14</td></tr>
+<tr><td><strong><code>LogStreamer</code></strong></td><td><code>detect_and_open(cwd: &amp;str) -&gt; Self</code></td><td>cwd 글롭→최신 로그 tail(seek end)</td><td>30-9</td></tr>
+<tr><td>(streamer.rs)</td><td><code>new() -&gt; Self</code> · <code>Default</code></td><td>빈 스트리머</td><td>30-9</td></tr>
+<tr><td></td><td><code>poll_new_lines(&amp;mut self) -&gt; Vec&lt;String&gt;</code></td><td>EOF까지 새 줄, 버퍼≤<code>MAX_BUFFER_LINES</code>(31)</td><td>30-9</td></tr>
+<tr><td></td><td><code>has_source(&amp;self) -&gt; bool</code> · <code>source_path(&amp;self) -&gt; Option&lt;&amp;Path&gt;</code> · <code>buffer(&amp;self) -&gt; &amp;VecDeque&lt;String&gt;</code></td><td>상태 조회</td><td>30-9</td></tr>
+<tr><td></td><td><code>detect_and_open_with_proc(cwd: &amp;str, pid: u32) -&gt; Self</code></td><td>Linux <code>/proc/&lt;pid&gt;/fd/1</code> fallback 포함</td><td>30-9</td></tr>
+</tbody></table></div>
+
+<div class="callout"><strong><code>ProcessInfo</code> 공개 메서드(31 §2-1 소유, 동작은 30):</strong> <code>new</code> · <code>is_server</code> · <code>is_node</code> · <code>display_name</code> · <code>uptime_display</code> · <code>memory_display</code> · <code>health</code> — 외부 코드도 호출 가능. <strong><code>HealthStatus::from_cpu_mem</code>/<code>from_process_status</code></strong> 도 공개(임계 알고리즘 30-12).</div>
+
+<h3 id="s4-2">4-2. 라이브러리 사용 계약(요지) <a class="anchor" href="#s4-2">§</a></h3>
+<ul>
+<li><strong>상태성:</strong> <code>ProcessScanner</code>는 <code>&amp;Config</code> 수명에 묶인 <strong>가변·persistent</strong> 객체(CPU delta 위해 재생성 금지, 30-3). <code>NetworkInspector</code>·<code>ProcessKiller</code>·<code>TreeBuilder</code>·<code>FrameworkDetector</code>는 <strong>상태 없는 단위 struct</strong>로 연관함수(<code>::</code>)만 호출한다.</li>
+<li><strong>에러 모델:</strong> 시스템 명령 의존부(network)는 <strong>실패해도 패닉하지 않고 빈 컬렉션을 반환</strong>(graceful degradation, §5). kill 계열은 결과를 enum(<code>KillResult</code>/<code>GracefulResult</code>)으로 돌려준다(예외 전파 아님).</li>
+<li><strong>타입 안정성:</strong> 위 시그니처는 v0.2.0 기준. 타입 정의 변경 시 31-erd가 1순위 갱신 대상(본 문서는 시그니처만).</li>
+</ul>
+
+<h2 id="s5">5. 의존 시스템 명령 계약 (Contract ③) — ntop이 "호출자" <a class="anchor" href="#s5">§</a></h2>
+<div class="callout">ntop은 포트/연결 정보와 일부 종료를 <strong>OS 외부 명령</strong>에 위임한다. 여기서 ntop은 서버가 아니라 <strong>호출자</strong>다. 코드 근거: <code>src/process/network.rs</code>·<code>src/process/killer.rs</code>. 파싱 알고리즘은 30-5 소유.</div>
+
+<figure class="viz">
+<svg viewBox="0 0 780 270" role="img" aria-label="ntop이 호출하는 OS 시스템 명령(lsof/netstat/taskkill)과 부재 시 빈 결과 반환">
+  <rect class="svg-node" x="14" y="100" width="120" height="58" rx="9" style="fill:#0f172a;stroke:#0f172a"/>
+  <text class="b" x="74" y="125" text-anchor="middle" fill="#f8fafc" font-size="13">ntop</text>
+  <text class="sub" x="74" y="143" text-anchor="middle" fill="#a5b4fc" font-size="11">(호출자)</text>
+  <g class="mn" font-size="11">
+  <path class="svg-edge" d="M134,118 C168,118 168,40 200,40" marker-end="url(#a32f)"/>
+  <rect class="svg-node" x="200" y="16" width="430" height="48" rx="7"/>
+  <text class="b" x="212" y="36">Unix: lsof -iTCP -sTCP:LISTEN,ESTABLISHED -nP -F pcnT</text>
+  <text class="sub" x="212" y="54" font-size="10.5">field-mode (p=PID · c=cmd · n=주소 · T=상태) → parse_connection(30-5)</text>
+
+  <path class="svg-edge" d="M134,129 C168,129 168,118 200,118" marker-end="url(#a32f)"/>
+  <rect class="svg-node" x="200" y="94" width="430" height="48" rx="7"/>
+  <text class="b" x="212" y="114">Windows: netstat -ano -p TCP</text>
+  <text class="sub" x="212" y="132" font-size="10.5">"TCP " 줄 공백분해(local·remote·state·pid) · "LISTENING"→"LISTEN" 정규화</text>
+
+  <path class="svg-edge" d="M134,140 C168,140 168,196 200,196" marker-end="url(#a32f)"/>
+  <rect class="svg-node" x="200" y="172" width="430" height="48" rx="7" style="stroke:#dc2626"/>
+  <text class="b" x="212" y="192" fill="#dc2626">Windows(종료): taskkill /PID &lt;pid&gt;</text>
+  <text class="sub" x="212" y="210" font-size="10.5">Term/Int 종료(Kill은 OpenProcess+TerminateProcess FFI) · stderr 검사</text>
+  </g>
+  <rect x="648" y="74" width="118" height="120" rx="8" fill="#fef2f2" stroke="#dc2626"/>
+  <text class="b" x="707" y="108" text-anchor="middle" fill="#dc2626" font-size="12">부재·실패</text>
+  <text x="707" y="130" text-anchor="middle" fill="#dc2626" font-size="11">→ 빈 결과</text>
+  <text class="sub" x="707" y="152" text-anchor="middle" font-size="10.5">크래시 0</text>
+  <text class="sub" x="707" y="170" text-anchor="middle" font-size="10.5">포트·Net 탭</text>
+  <text class="sub" x="707" y="184" text-anchor="middle" font-size="10.5">만 빔</text>
+  <path class="svg-edge" d="M630,40 C648,40 648,110 648,110"/>
+  <path class="svg-edge" d="M630,118 L648,124"/>
+  <path class="svg-edge" d="M630,196 C648,196 648,160 648,160"/>
+  <defs><marker id="a32f" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#64748b"/></marker></defs>
+</svg>
+<figcaption>§5 — 의존 시스템 명령 매핑. ntop은 호출자이며, 명령 부재/실패 시 빈 결과로 graceful degrade.</figcaption>
+</figure>
+
+<div class="table-wrap"><table>
+<thead><tr><th>플랫폼</th><th>호출 명령(정확)</th><th>입력/목적</th><th>파싱</th><th>부재·실패 시</th></tr></thead>
+<tbody>
+<tr><td><strong>Unix(mac·Linux)</strong></td><td><code>lsof -iTCP -sTCP:LISTEN,ESTABLISHED -nP -F pcnT</code></td><td>TCP LISTEN/ESTABLISHED 연결</td><td><strong>field-mode</strong>(<code>-F pcnT</code>: p=PID, c=cmd, n=주소, T=상태) → <code>parse_connection</code>(30-5)</td><td><strong>빈 <code>HashMap</code></strong>(크래시 0)</td></tr>
+<tr><td><strong>Windows</strong></td><td><code>netstat -ano -p TCP</code></td><td>TCP 연결</td><td><code>TCP </code> 줄 공백분해(local·remote·state·pid), <code>"LISTENING"→"LISTEN"</code> 정규화</td><td><strong>빈 <code>HashMap</code></strong></td></tr>
+<tr><td><strong>Windows(종료)</strong></td><td><code>taskkill /PID &lt;pid&gt;</code></td><td><code>Term</code>/<code>Int</code> 시그널 종료(<code>Kill</code>은 <code>OpenProcess</code>+<code>TerminateProcess</code> FFI)</td><td>stderr 검사: <code>"not found"</code>→AlreadyDead, <code>"Access"</code>→PermissionDenied</td><td><code>KillResult::Error</code></td></tr>
+</tbody></table></div>
+
+<h3 id="s5-1">5-1. ★ 부재·실패 처리 계약 (graceful degradation) <a class="anchor" href="#s5-1">§</a></h3>
+<div class="callout warn"><strong>명령이 없거나(미설치) 비정상 종료해도 ntop은 크래시하지 않는다.</strong> 코드 그대로:
+<ul>
+<li>명령 spawn 실패: <code>Err(_) =&gt; return HashMap::new()</code> (network.rs L104·L200)</li>
+<li>종료 상태 비성공: <code>if !output.status.success() { return HashMap::new() }</code> (L107-108·L203-204)</li>
+</ul></div>
+
+<figure class="viz">
+<svg viewBox="0 0 780 252" role="img" aria-label="connections_by_pid 호출에서 spawn 실패나 비성공 종료 시 빈 HashMap을 반환하는 흐름">
+  <rect class="svg-node" x="20" y="100" width="190" height="50" rx="8"/>
+  <text class="b mn" x="115" y="122" text-anchor="middle" font-size="11">connections_by_pid()</text>
+  <text class="sub" x="115" y="140" text-anchor="middle" font-size="10.5">Command::new("lsof"/"netstat")</text>
+  <line class="svg-edge" x1="210" y1="125" x2="250" y2="125" marker-end="url(#a32g)"/>
+  <!-- decision1 -->
+  <polygon points="320,90 380,125 320,160 260,125" class="svg-node" style="fill:#fffbeb;stroke:#d97706"/>
+  <text x="320" y="121" text-anchor="middle" font-size="11">spawn</text>
+  <text x="320" y="135" text-anchor="middle" font-size="11">실패?</text>
+  <line class="svg-edge" x1="320" y1="90" x2="320" y2="48" marker-end="url(#a32g)"/>
+  <text class="sub" x="332" y="70" font-size="10.5">예</text>
+  <!-- decision2 -->
+  <line class="svg-edge" x1="380" y1="125" x2="430" y2="125" marker-end="url(#a32g)"/>
+  <text class="sub" x="405" y="118" font-size="10.5" text-anchor="middle">아니오</text>
+  <polygon points="500,90 565,125 500,160 435,125" class="svg-node" style="fill:#fffbeb;stroke:#d97706"/>
+  <text x="500" y="121" text-anchor="middle" font-size="11">status</text>
+  <text x="500" y="135" text-anchor="middle" font-size="11">비성공?</text>
+  <line class="svg-edge" x1="500" y1="90" x2="500" y2="48" marker-end="url(#a32g)"/>
+  <text class="sub" x="512" y="70" font-size="10.5">예</text>
+  <!-- success -->
+  <line class="svg-edge" x1="565" y1="125" x2="610" y2="125" marker-end="url(#a32g)"/>
+  <text class="sub" x="587" y="118" font-size="10.5" text-anchor="middle">아니오</text>
+  <rect class="svg-node" x="610" y="100" width="150" height="50" rx="8" style="fill:#ecfdf5;stroke:#059669"/>
+  <text class="b" x="685" y="122" text-anchor="middle" font-size="11" fill="#065f46">stdout 파싱</text>
+  <text class="sub" x="685" y="140" text-anchor="middle" font-size="10.5">(30-5) 정상</text>
+  <!-- empty result -->
+  <rect class="svg-node" x="220" y="22" width="380" height="40" rx="8" style="fill:#fef2f2;stroke:#dc2626"/>
+  <text class="b mn" x="410" y="46" text-anchor="middle" font-size="11" fill="#dc2626">return HashMap::new()  — 빈 결과 (크래시 0)</text>
+  <rect x="20" y="190" width="740" height="46" rx="8" fill="#eef2ff" stroke="#c7d2fe"/>
+  <text class="sub" x="390" y="216" text-anchor="middle" font-size="11">영향: 포트 컬럼·Net 탭만 빔 — 식별·종료·로그 등 그 외 기능은 정상 동작</text>
+  <defs><marker id="a32g" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#64748b"/></marker></defs>
+</svg>
+<figcaption>§5-1 — graceful degradation. spawn 실패 또는 비성공 종료 → 빈 HashMap; 포트·Net 탭만 비고 나머지 정상.</figcaption>
+</figure>
+
+<details class="raw"><summary>원본(텍스트) 다이어그램 펼치기</summary><pre><code> NetworkInspector::connections_by_pid()
+        │
+        ▼  Command::new("lsof"/"netstat") 실행
+   ┌────┴──────────────────────┐
+   │ spawn 실패? ─── 예 ───────▶ HashMap::new()  (빈 결과)
+   │      │아니오               │
+   │ status 비성공? ─ 예 ──────▶ HashMap::new()  (빈 결과)
+   │      │성공                                   ↓
+   │ stdout 파싱(30-5)                    영향: 포트 컬럼·Net 탭만 빔
+   └──────┴──────────────────────────────────────  (그 외 기능 정상)</code></pre></details>
+
+<p>→ 결과: <code>lsof</code>/<code>netstat</code>가 없으면 <strong>포트(<code>ProcessInfo.ports</code>)와 Net 탭이 비는 정도</strong>로만 저하되고, 식별·종료·로그 등 나머지 기능은 정상 동작한다. (안정성 NFR은 10-prd §5, 외부 명령 의존 한계는 40-backlog.)</p>
+
+<h2 id="s6">6. 시각화 (G-g) — CLI 호출 시퀀스 다이어그램 (외부 렌더러 0) <a class="anchor" href="#s6">§</a></h2>
+
+<h3 id="s6-1">6-1. <code>ntop list</code> 호출 시퀀스 (CLI → Scanner → NetworkInspector → 시스템명령 → 출력) <a class="anchor" href="#s6-1">§</a></h3>
+
+<figure class="viz">
+<svg viewBox="0 0 780 440" role="img" aria-label="ntop list 실행 시 main.rs가 Scanner와 NetworkInspector를 거쳐 stdout으로 JSON을 출력하는 시퀀스">
+  <g text-anchor="middle" font-size="11">
+    <rect class="svg-node" x="14" y="12" width="110" height="30" rx="6"/><text class="b" x="69" y="32">사용자/스크립트</text>
+    <rect class="svg-node" x="150" y="12" width="96" height="30" rx="6"/><text class="b mn" x="198" y="32">main.rs</text>
+    <rect class="svg-node" x="272" y="12" width="120" height="30" rx="6"/><text class="b mn" x="332" y="32">ProcessScanner</text>
+    <rect class="svg-node" x="418" y="12" width="128" height="30" rx="6"/><text class="b mn" x="482" y="32">NetworkInspector</text>
+    <rect class="svg-node" x="572" y="12" width="104" height="30" rx="6"/><text class="b" x="624" y="32">OS 명령</text>
+    <rect class="svg-node" x="700" y="12" width="66" height="30" rx="6"/><text class="b mn" x="733" y="32">stdout</text>
+  </g>
+  <g stroke="#cbd5e1" stroke-dasharray="3 3">
+    <line x1="69" y1="42" x2="69" y2="410"/><line x1="198" y1="42" x2="198" y2="410"/>
+    <line x1="332" y1="42" x2="332" y2="410"/><line x1="482" y1="42" x2="482" y2="410"/>
+    <line x1="624" y1="42" x2="624" y2="410"/><line x1="733" y1="42" x2="733" y2="410"/>
+  </g>
+  <g font-size="10.5" fill="#1e293b">
+    <line class="svg-edge" x1="69" y1="64" x2="196" y2="64" marker-end="url(#a32h)"/><text x="132" y="58" text-anchor="middle" class="mn">$ ntop list --json</text>
+    <rect x="160" y="78" width="76" height="20" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="198" y="92" text-anchor="middle" class="mn">Config::load()</text>
+    <line class="svg-edge" x1="198" y1="112" x2="330" y2="112" marker-end="url(#a32h)"/><text x="264" y="106" text-anchor="middle" class="mn">new(&amp;config)</text>
+    <text x="332" y="128" text-anchor="middle" class="sub">prime: refresh×2 + sleep</text>
+    <line class="svg-edge" x1="198" y1="148" x2="330" y2="148" marker-end="url(#a32h)"/><text x="264" y="142" text-anchor="middle" class="mn">scan_blocking()</text>
+    <text x="332" y="164" text-anchor="middle" class="sub">측정 refresh + 2-pass classify (fs 미독)</text>
+    <line class="svg-edge" x1="330" y1="184" x2="200" y2="184" marker-end="url(#a32h)"/><text x="265" y="178" text-anchor="middle" class="sub">Vec&lt;ProcessInfo&gt; (runtime Some/None · 포트 없음)</text>
+    <line class="svg-edge" x1="198" y1="210" x2="480" y2="210" marker-end="url(#a32h)"/><text x="340" y="204" text-anchor="middle" class="mn">connections_by_pid()</text>
+    <line class="svg-edge" x1="482" y1="236" x2="622" y2="236" marker-end="url(#a32h)"/><text x="552" y="230" text-anchor="middle" class="mn">lsof -iTCP -F pcnT</text>
+    <line class="svg-edge" x1="622" y1="262" x2="484" y2="262" marker-end="url(#a32h)"/><text x="553" y="256" text-anchor="middle" class="sub">stdout / (부재→빈)</text>
+    <line class="svg-edge" x1="482" y1="288" x2="200" y2="288" marker-end="url(#a32h)"/><text x="341" y="282" text-anchor="middle" class="sub">HashMap&lt;pid,Vec&lt;Conn&gt;&gt; (LISTEN→ports 채움)</text>
+    <rect x="150" y="304" width="96" height="34" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="198" y="318" text-anchor="middle" class="sub" font-size="9.5">TreeBuilder::build</text><text x="198" y="331" text-anchor="middle" class="sub" font-size="9.5">flatten_with_depth</text>
+    <line class="svg-edge" x1="198" y1="356" x2="731" y2="356" marker-end="url(#a32h)"/><text x="460" y="350" text-anchor="middle" class="mn">print_json(flat) — 17키 + depth</text>
+    <line class="svg-edge" x1="733" y1="382" x2="71" y2="382" marker-end="url(#a32h)"/><text x="400" y="376" text-anchor="middle" class="b" fill="#059669">exit 0</text>
+  </g>
+  <defs><marker id="a32h" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#64748b"/></marker></defs>
+</svg>
+<figcaption>§6-1 — <code>ntop list --json</code> 시퀀스. classify는 fs 미독(이름+커맨드만), 포트는 NetworkInspector가 별도로 채움.</figcaption>
+</figure>
+
+<details class="raw"><summary>원본(텍스트) 시퀀스 펼치기</summary><pre><code> 사용자/스크립트     main.rs        ProcessScanner    NetworkInspector    OS 명령(lsof/netstat)   stdout
+   │                  │                 │                  │                    │                  │
+   │ $ ntop list --json                 │                  │                    │                  │
+   ├─────────────────▶│                 │                  │                    │                  │
+   │            Config::load()          │                  │                    │                  │
+   │            (~/.config/ntop, 부재→기본 31)              │                    │                  │
+   │                  │ new(&amp;config)    │                  │                    │                  │
+   │                  ├────────────────▶│ prime: refresh×2 + sleep             │                  │
+   │                  │ scan_blocking() │                  │                    │                  │
+   │                  ├────────────────▶│ 측정 refresh + 2-pass classify(30)   │                  │
+   │                  │                 │ (fs 미독 — 이름+커맨드만, 33)        │                  │
+   │                  │◀────Vec&lt;ProcessInfo&gt; (runtime Some/None, 포트 없음)    │                  │
+   │                  │ connections_by_pid()               │                    │                  │
+   │                  ├───────────────────────────────────▶│ Command::new("lsof"…)               │
+   │                  │                 │                  ├───────────────────▶│ -iTCP -F pcnT    │
+   │                  │                 │                  │◀── stdout / (부재→빈)│                  │
+   │                  │◀── HashMap&lt;pid, Vec&lt;NetworkConnection&gt;&gt; (LISTEN만 추려 ports 채움, 30)     │
+   │                  │ TreeBuilder::build + flatten_with_depth (30-4)          │                  │
+   │                  │ print_json(flat)  17키 + depth (§3-2)                   │                  │
+   │                  ├───────────────────────────────────────────────────────────────────────────▶│
+   │◀─────────────────┴──────────────── exit 0 ────────────────────────────────────────────────────┤</code></pre></details>
+
+<h3 id="s6-2">6-2. <code>ntop kill &lt;PID&gt;</code> 단건 시퀀스 (graceful→force 자동 에스컬레이션, CLI 전용) <a class="anchor" href="#s6-2">§</a></h3>
+
+<figure class="viz">
+<svg viewBox="0 0 780 440" role="img" aria-label="ntop kill 단건 실행 시 graceful_kill이 SIGTERM 후 폴링하고 TimedOut이면 자동으로 force_kill SIGKILL로 에스컬레이션하는 시퀀스">
+  <g text-anchor="middle" font-size="11">
+    <rect class="svg-node" x="40" y="12" width="100" height="30" rx="6"/><text class="b" x="90" y="32">사용자</text>
+    <rect class="svg-node" x="230" y="12" width="140" height="30" rx="6"/><text class="b mn" x="300" y="32">main.rs(cmd_kill)</text>
+    <rect class="svg-node" x="440" y="12" width="120" height="30" rx="6"/><text class="b mn" x="500" y="32">ProcessKiller</text>
+    <rect class="svg-node" x="630" y="12" width="120" height="30" rx="6"/><text class="b" x="690" y="32">대상 프로세스</text>
+  </g>
+  <g stroke="#cbd5e1" stroke-dasharray="3 3">
+    <line x1="90" y1="42" x2="90" y2="392"/><line x1="300" y1="42" x2="300" y2="392"/>
+    <line x1="500" y1="42" x2="500" y2="392"/><line x1="690" y1="42" x2="690" y2="392"/>
+  </g>
+  <g font-size="10.5" fill="#1e293b">
+    <line class="svg-edge" x1="90" y1="66" x2="298" y2="66" marker-end="url(#a32i)"/><text x="194" y="60" text-anchor="middle" class="mn">$ ntop kill 51234</text>
+    <rect x="232" y="80" width="136" height="34" rx="4" fill="#fffbeb" stroke="#fde68a"/><text x="300" y="94" text-anchor="middle" class="sub" font-size="9.5">confirm_before_kill?(31) &amp; !--no-confirm</text><text x="300" y="107" text-anchor="middle" class="mn" font-size="9.5">"Kill 51234? [y/N]"</text>
+    <line class="svg-edge" x1="90" y1="130" x2="298" y2="130" marker-end="url(#a32i)"/><text x="194" y="124" text-anchor="middle" class="b ok" fill="#059669">y</text>
+    <line class="svg-edge" x1="300" y1="156" x2="498" y2="156" marker-end="url(#a32i)"/><text x="400" y="150" text-anchor="middle" class="mn">graceful_kill(pid, 10s 31)</text>
+    <line class="svg-edge" x1="500" y1="182" x2="688" y2="182" marker-end="url(#a32i)"/><text x="594" y="176" text-anchor="middle"><tspan class="mn">SIGTERM</tspan> → (정리 시도)</text>
+    <rect x="436" y="196" width="128" height="20" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="500" y="210" text-anchor="middle" class="sub" font-size="9.5">200ms 폴링 is_alive…</text>
+    <line class="svg-edge" x1="500" y1="236" x2="302" y2="236" marker-end="url(#a32i)"/><text x="401" y="230" text-anchor="middle" class="sub">GracefulResult (죽음→Terminated / 10s초과→TimedOut)</text>
+    <rect x="222" y="250" width="156" height="20" rx="4" fill="#fef2f2" stroke="#fecaca"/><text x="300" y="264" text-anchor="middle" class="sub" font-size="9.5">TimedOut? → "Force killing..."</text>
+    <line class="svg-edge" x1="300" y1="290" x2="498" y2="290" marker-end="url(#a32i)"/><text x="400" y="284" text-anchor="middle" class="mn">force_kill(pid)</text>
+    <line class="svg-edge" x1="500" y1="316" x2="688" y2="316" marker-end="url(#a32i)"/><text x="594" y="310" text-anchor="middle"><tspan class="mn b" fill="#dc2626">SIGKILL</tspan> → (강제 종료)</text>
+    <line class="svg-edge" x1="300" y1="348" x2="92" y2="348" marker-end="url(#a32i)"/><text x="196" y="342" text-anchor="middle" class="b" fill="#059669">결과 메시지 + exit 0</text>
+  </g>
+  <rect x="40" y="372" width="710" height="44" rx="8" fill="#0f172a"/>
+  <text x="395" y="392" text-anchor="middle" fill="#f8fafc" font-size="11" font-weight="700">※ TUI KillConfirm 경로는 이 폴링/자동 force를 쓰지 않음</text>
+  <text x="395" y="408" text-anchor="middle" fill="#a5b4fc" font-size="10.5">send_signal(SIGTERM) 직접 1회. 정책·경로 구분 = 33-policy §2</text>
+  <defs><marker id="a32i" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#64748b"/></marker></defs>
+</svg>
+<figcaption>§6-2 — <code>ntop kill</code> 단건. graceful→(timeout)→force 자동 에스컬레이션은 <strong>CLI 단건 전용</strong>; TUI는 SIGTERM 직접 1회(33 참조).</figcaption>
+</figure>
+
+<details class="raw"><summary>원본(텍스트) 시퀀스 펼치기</summary><pre><code> 사용자        main.rs(cmd_kill)      ProcessKiller            대상 프로세스
+   │              │                       │                        │
+   │ $ ntop kill 51234                    │                        │
+   ├─────────────▶│ confirm_before_kill?(31) &amp; !--no-confirm       │
+   │              │  → "Kill 51234? [y/N]" (정책 33)               │
+   │◀── y ────────┤                       │                        │
+   │              │ graceful_kill(pid, graceful_duration()=10s 31)  │
+   │              ├──────────────────────▶│ SIGTERM ──────────────▶│ (정리 시도)
+   │              │                       │ 200ms 폴링 is_alive…    │
+   │              │                       │   ├ 죽음 → Terminated   │
+   │              │                       │   └ 10s 초과 → TimedOut │
+   │              │◀── GracefulResult ────┤                        │
+   │              │ TimedOut? → "Force killing..."                  │
+   │              │ force_kill(pid) ─────▶│ SIGKILL ──────────────▶│ (강제 종료)
+   │◀── 결과 메시지 + exit 0 ─────────────┴────────────────────────┤
+   (※ TUI KillConfirm 경로는 이 폴링/자동 force를 쓰지 않음 — send_signal(SIGTERM) 직접 1회. 정책·경로 구분 = 33)</code></pre></details>
+
+<h3 id="s6-3">6-3. 인터페이스 계약 한눈 요약 <a class="anchor" href="#s6-3">§</a></h3>
+
+<figure class="viz">
+<svg viewBox="0 0 780 270" role="img" aria-label="3종 계약(CLI/lib/syscmd)의 핵심 항목을 한눈에 요약한 표">
+  <text class="ttl" x="390" y="20" text-anchor="middle">인터페이스 계약 한눈 요약</text>
+  <g class="mn" font-size="11">
+  <rect class="svg-node" x="14" y="34" width="248" height="186" rx="9"/>
+  <rect x="14" y="34" width="248" height="26" rx="9" fill="#eef2ff"/><text class="b svg-accent" x="138" y="52" text-anchor="middle" font-size="12">① CLI</text>
+  <text x="26" y="80">ntop / list / kill /</text>
+  <text x="26" y="98">info / log / config</text>
+  <text x="26" y="122" font-size="10.5">플래그: --json --format</text>
+  <text x="26" y="138" font-size="10.5">--tree --signal --all</text>
+  <text x="26" y="154" font-size="10.5">--no-confirm</text>
+  <text x="26" y="178" font-size="10.5">출력: table7 / JSON17 / CSV9</text>
+  <text x="26" y="198" font-size="10.5">종료코드: 0(대부분)/2/1</text>
+
+  <rect class="svg-node" x="270" y="34" width="248" height="186" rx="9"/>
+  <rect x="270" y="34" width="248" height="26" rx="9" fill="#eef2ff"/><text class="b svg-accent" x="394" y="52" text-anchor="middle" font-size="12">② lib (ntop::)</text>
+  <text x="282" y="80" font-size="10.5">ProcessScanner.scan(_blocking)</text>
+  <text x="282" y="98" font-size="10.5">NetworkInspector.connections_*</text>
+  <text x="282" y="116" font-size="10.5">ProcessKiller.send/graceful/</text>
+  <text x="282" y="132" font-size="10.5"> force/kill_tree/is_alive</text>
+  <text x="282" y="150" font-size="10.5">FrameworkDetector.classify</text>
+  <text x="282" y="168" font-size="10.5">Config.load / TreeBuilder.build</text>
+  <text x="282" y="186" font-size="10.5">LogStreamer.detect_and_open</text>
+
+  <rect class="svg-node" x="526" y="34" width="240" height="186" rx="9"/>
+  <rect x="526" y="34" width="240" height="26" rx="9" fill="#eef2ff"/><text class="b svg-accent" x="646" y="52" text-anchor="middle" font-size="12">③ syscmd</text>
+  <text x="538" y="80" font-size="10.5">lsof -iTCP …-F pcnT (unix)</text>
+  <text x="538" y="98" font-size="10.5">netstat -ano -p TCP (win)</text>
+  <text x="538" y="116" font-size="10.5">taskkill /PID &lt;pid&gt; (win)</text>
+  <text class="bad" fill="#dc2626" x="538" y="148" font-size="11">부재/실패 → 빈 결과</text>
+  <text class="sub" x="538" y="166" font-size="10.5">(크래시 0, 포트만 빔)</text>
+  </g>
+  <rect x="14" y="232" width="752" height="30" rx="6" fill="#0f172a"/>
+  <text x="390" y="252" text-anchor="middle" fill="#a5b4fc" font-size="11">값 → 31-erd · 동작 → 30-functional-spec · 안전/프라이버시 → 33-policy · 키/화면 → 21-screen-spec</text>
+</svg>
+<figcaption>§6-3 — 3종 계약 요약. 값·동작·정책·화면의 단일 출처는 각각 31/30/33/21로 분리(중복정의 0).</figcaption>
+</figure>
+
+<details class="raw"><summary>원본(텍스트) 요약 펼치기</summary><pre><code> ┌── Contract ① CLI ────────────────┬── Contract ② lib(ntop::) ──────┬── Contract ③ syscmd ──────┐
+ │ ntop / list / kill / info / log / │ ProcessScanner.scan(_blocking)  │ lsof -iTCP …-F pcnT (unix) │
+ │ config                            │ NetworkInspector.connections_*  │ netstat -ano -p TCP (win)  │
+ │ 플래그: --json --format --tree     │ ProcessKiller.send/graceful/    │ taskkill /PID &lt;pid&gt; (win)  │
+ │        --signal --all --no-confirm │   force/kill_tree/is_alive      │                            │
+ │ 출력: table7 / JSON17 / CSV9       │ FrameworkDetector.classify      │ 부재/실패 → 빈 결과         │
+ │ 종료코드: 0(대부분)/2(파싱)/1(런타임)│ Config.load / TreeBuilder.build │   (크래시 0, 포트만 빔)    │
+ │                                   │ LogStreamer.detect_and_open     │                            │
+ └───────────────────────────────────┴─────────────────────────────────┴────────────────────────────┘
+   값 정의 → 31-erd · 동작 → 30-functional-spec · 안전/프라이버시 → 33-policy · 키/화면 → 21-screen-spec</code></pre></details>
+
+<h2 id="verify">자체 검증 (Self-verification) <a class="anchor" href="#verify">§</a></h2>
+<div class="table-wrap"><table>
+<thead><tr><th>#</th><th>체크</th><th>결과</th><th>어디서 충족</th></tr></thead>
+<tbody>
+<tr><td><span class="chip">A-1</span></td><td>CLI 서브커맨드/플래그/필수성</td><td><span class="chip ok">PASS</span> — §2-0 표(5서브+TUI, <code>PID</code> required_unless_present="all", 플래그 상호작용) + §2-1~2-6</td><td>§2</td></tr>
+<tr><td><span class="chip">A-2</span></td><td>종료코드 계약(0/2/1, not-found·cancelled=0)</td><td><span class="chip ok">PASS</span> — §2-7 표 + 자동화 함의(stdout 파싱 필요)</td><td>§2-7</td></tr>
+<tr><td><span class="chip">A-3</span></td><td>출력 스키마 table7/JSON17+depth/CSV9</td><td><span class="chip ok">PASS</span> — §3-1·§3-2·§3-3, table/JSON/CSV 차이(NAME·구분자·CPU·MEMORY) 명시</td><td>§3</td></tr>
+<tr><td><span class="chip">A-4</span></td><td>공개 lib API 시그니처</td><td><span class="chip ok">PASS</span> — §4-1 표(Scanner·Network·Killer·KillSignal·FrameworkDetector·Config·TreeBuilder·LogStreamer 코드 그대로), 타입은 31 회부</td><td>§4</td></tr>
+<tr><td><span class="chip">A-5</span></td><td>시스템명령 계약 + 부재→빈 결과</td><td><span class="chip ok">PASS</span> — §5 표(lsof/netstat/taskkill 정확 인자) + §5-1 graceful degradation 플로우(코드 L104/107)</td><td>§5</td></tr>
+<tr><td><span class="chip">A-6</span></td><td>시각화(시퀀스 + 표)</td><td><span class="chip ok">PASS</span> — §6-1 list 시퀀스·§6-2 kill 에스컬레이션 시퀀스·§6-3 요약 + §2/§3 표(mermaid 0)</td><td>§6, §2, §3</td></tr>
+<tr><td><span class="chip">A-7</span></td><td>단일 출처 + 창작 0</td><td><span class="chip ok">PASS</span> — 값=31·동작=30·정책=33 참조, HTTP/REST/DB/결제 0(§0 콜아웃), 시그니처/플래그/스키마는 소스 추출</td><td>전체</td></tr>
+</tbody></table></div>
+
+<p><strong>추가 원칙 점검:</strong></p>
+<ul>
+<li><strong>창작 금지(spec §7):</strong> REST/GraphQL/URL/메서드/상태코드/DB/회원/결제 <strong>0</strong>(§0 명시). 모든 명령·플래그·스키마·시그니처는 실제 소스(<code>cli.rs</code>·<code>main.rs</code>·<code>lib.rs</code>·<code>network.rs</code>·<code>killer.rs</code>·<code>framework.rs</code>·<code>config.rs</code>·<code>tree.rs</code>·<code>streamer.rs</code>)에서 추출.</li>
+<li><strong>코드-진실 정직 표기:</strong> ① 종료코드는 거의 항상 0(실패도 메시지+<code>Ok</code>) — "kill 실패 시 1" 같은 동작 없음(§2-7); ② <code>ntop info</code>의 env는 <strong>마스킹 안 됨</strong>(TUI만 마스킹, §2-3·33); ③ <code>--signal</code> 인식 실패 시 조용히 SIGTERM 폴백; ④ CSV는 <code>display_name</code>이 아니라 원문 <code>name</code>·세미콜론 포트·<code>%</code> 없는 CPU·원시 byte MEMORY(§3-3).</li>
+<li><strong>중복정의 0:</strong> <code>graceful_timeout=10</code>·<code>MAX_BUFFER_LINES=1000</code>·Config 기본값은 값으로 적지 않고 "31값" 인용, 알고리즘은 "30 참조", 정책은 "33 참조".</li>
+<li><strong>쉬운 설명:</strong> CLI·서브커맨드·플래그·종료코드·스키마·크레이트·시그니처·stdout·field-mode 첫 등장 풀이.</li>
+</ul>
+<p><strong>알려진 한계(후속 보완):</strong></p>
+<ul>
+<li>종료코드가 결과(성공/미발견)를 구분하지 않음 → 자동화는 stdout 파싱 필요(개선 = 40-backlog).</li>
+<li><code>ntop info</code>의 env 미마스킹은 프라이버시 갭(개선 후보 = 40-backlog, 정책 단일 출처 33).</li>
+<li>시그니처/스키마는 v0.2.0 기준 — 코드 변경 시 본 문서가 따라가야 하며 타입 정의는 31-erd가 1순위.</li>
+</ul>
+
+</main></div>
+<script>
+(function(){
+  var links=[].slice.call(document.querySelectorAll('.toc a'));
+  var map={};links.forEach(function(a){map[a.getAttribute('href').slice(1)]=a;});
+  var obs=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(l){l.classList.remove('active');});
+        var a=map[e.target.id];if(a)a.classList.add('active');
+      }
+    });
+  },{rootMargin:'-64px 0px -70% 0px'});
+  document.querySelectorAll('main h2[id],main h3[id]').forEach(function(h){obs.observe(h);});
+})();
+</script>
+</body></html>
