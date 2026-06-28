@@ -1,5 +1,6 @@
 // Network/port detection for processes
 
+use super::ProcessInfo;
 use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::process::Command;
@@ -24,13 +25,33 @@ impl NetworkInspector {
         all.get(&pid).cloned().unwrap_or_default()
     }
 
-    /// Get only the LISTEN ports for a specific PID.
-    pub fn listening_ports_for_pid(pid: u32) -> Vec<u16> {
-        Self::connections_for_pid(pid)
+    /// Extract the LISTEN-state ports from a slice of connections.
+    pub fn listening_ports(conns: &[NetworkConnection]) -> Vec<u16> {
+        conns
             .iter()
             .filter(|c| c.state == "LISTEN")
             .map(|c| c.local_addr.port())
             .collect()
+    }
+
+    /// Get only the LISTEN ports for a specific PID.
+    pub fn listening_ports_for_pid(pid: u32) -> Vec<u16> {
+        Self::listening_ports(&Self::connections_for_pid(pid))
+    }
+
+    /// Fill each process's `ports` with its LISTEN ports, looked up in a single
+    /// `connections_by_pid()` scan. Only overwrites when ports are found, so a
+    /// process with no listening sockets keeps its existing (empty) list.
+    pub fn fill_listening_ports(procs: &mut [ProcessInfo]) {
+        let net_map = Self::connections_by_pid();
+        for proc in procs {
+            if let Some(conns) = net_map.get(&proc.pid) {
+                let ports = Self::listening_ports(conns);
+                if !ports.is_empty() {
+                    proc.ports = ports;
+                }
+            }
+        }
     }
 
     /// Scan all TCP connections (LISTEN + ESTABLISHED) grouped by PID.

@@ -146,6 +146,9 @@ pub struct App {
     pub sort_ascending: bool,
     /// Log streamer for the selected process.
     pub log_streamer: Option<LogStreamer>,
+    /// PID the current `log_streamer` was opened for. Used to detect when
+    /// the selection changed so the streamer is re-opened for the new process.
+    pub log_streamer_pid: Option<u32>,
     /// Scroll offset for the log tab.
     pub log_scroll: u16,
     /// Scroll offset for the detail panel.
@@ -209,6 +212,7 @@ impl App {
             sort_column: SortColumn::Pid,
             sort_ascending: true,
             log_streamer: None,
+            log_streamer_pid: None,
             log_scroll: 0,
             detail_scroll: 0,
             detail_content_lines: 0,
@@ -287,49 +291,12 @@ impl App {
         // Build trees first, then sort at each level
         self.process_trees = TreeBuilder::build(processes);
 
+        let col = self.sort_column;
         let asc = self.sort_ascending;
-        let sort_cmp: Box<dyn Fn(&ProcessInfo, &ProcessInfo) -> std::cmp::Ordering> =
-            match self.sort_column {
-                SortColumn::Pid => Box::new(move |a: &ProcessInfo, b: &ProcessInfo| {
-                    let cmp = a.pid.cmp(&b.pid);
-                    if asc { cmp } else { cmp.reverse() }
-                }),
-                SortColumn::Name => Box::new(move |a: &ProcessInfo, b: &ProcessInfo| {
-                    let cmp = a.name.to_lowercase().cmp(&b.name.to_lowercase());
-                    if asc { cmp } else { cmp.reverse() }
-                }),
-                SortColumn::Port => Box::new(move |a: &ProcessInfo, b: &ProcessInfo| {
-                    // Ports live on deep leaves (e.g. next-server), not on the
-                    // shell/runner roots, so compare each subtree's lowest port
-                    // — otherwise portless roots all tie and the tree won't sort.
-                    let cmp = Self::subtree_port_key(a).cmp(&Self::subtree_port_key(b));
-                    if asc { cmp } else { cmp.reverse() }
-                }),
-                SortColumn::Threads => Box::new(move |a: &ProcessInfo, b: &ProcessInfo| {
-                    let cmp = a.threads.cmp(&b.threads);
-                    if asc { cmp } else { cmp.reverse() }
-                }),
-                SortColumn::Cpu => Box::new(move |a: &ProcessInfo, b: &ProcessInfo| {
-                    let cmp = a.cpu_percent.partial_cmp(&b.cpu_percent).unwrap_or(std::cmp::Ordering::Equal);
-                    if asc { cmp } else { cmp.reverse() }
-                }),
-                SortColumn::Memory => Box::new(move |a: &ProcessInfo, b: &ProcessInfo| {
-                    let cmp = a.memory_rss.cmp(&b.memory_rss);
-                    if asc { cmp } else { cmp.reverse() }
-                }),
-                SortColumn::User => Box::new(move |a: &ProcessInfo, b: &ProcessInfo| {
-                    let cmp = a.user.cmp(&b.user);
-                    if asc { cmp } else { cmp.reverse() }
-                }),
-                SortColumn::Status => Box::new(move |a: &ProcessInfo, b: &ProcessInfo| {
-                    let cmp = a.status.cmp(&b.status);
-                    if asc { cmp } else { cmp.reverse() }
-                }),
-                SortColumn::Uptime => Box::new(move |a: &ProcessInfo, b: &ProcessInfo| {
-                    let cmp = a.uptime.cmp(&b.uptime);
-                    if asc { cmp } else { cmp.reverse() }
-                }),
-            };
+        let sort_cmp = move |a: &ProcessInfo, b: &ProcessInfo| {
+            let cmp = Self::cmp_column(col, a, b);
+            if asc { cmp } else { cmp.reverse() }
+        };
         TreeBuilder::sort_recursive(&mut self.process_trees, &sort_cmp);
 
         // Flatten for display, respecting expanded state
@@ -344,6 +311,27 @@ impl App {
             self.selected_index = 0;
         }
         self.sync_table_state();
+    }
+
+    /// Compare two processes by the given column (ascending). Direction is
+    /// applied by the caller. Port comparison uses each subtree's lowest port
+    /// (see `subtree_port_key`).
+    fn cmp_column(col: SortColumn, a: &ProcessInfo, b: &ProcessInfo) -> std::cmp::Ordering {
+        use std::cmp::Ordering;
+        match col {
+            SortColumn::Pid => a.pid.cmp(&b.pid),
+            SortColumn::Name => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+            SortColumn::Port => Self::subtree_port_key(a).cmp(&Self::subtree_port_key(b)),
+            SortColumn::Threads => a.threads.cmp(&b.threads),
+            SortColumn::Cpu => a
+                .cpu_percent
+                .partial_cmp(&b.cpu_percent)
+                .unwrap_or(Ordering::Equal),
+            SortColumn::Memory => a.memory_rss.cmp(&b.memory_rss),
+            SortColumn::User => a.user.cmp(&b.user),
+            SortColumn::Status => a.status.cmp(&b.status),
+            SortColumn::Uptime => a.uptime.cmp(&b.uptime),
+        }
     }
 
     /// Lowest non-zero port found in `p` or any descendant; 0 if none in the
@@ -427,11 +415,7 @@ impl App {
                 } else {
                     self.expanded_pids.insert(pid);
                 }
-                self.flat_list = Self::flatten_with_expand(&self.process_trees, &self.expanded_pids);
-                if self.selected_index >= self.flat_list.len() && !self.flat_list.is_empty() {
-                    self.selected_index = self.flat_list.len() - 1;
-                }
-                self.sync_table_state();
+                self.reflatten();
             }
         }
     }
@@ -448,8 +432,7 @@ impl App {
                     }
                 } else {
                     self.expanded_pids.insert(pid);
-                    self.flat_list = Self::flatten_with_expand(&self.process_trees, &self.expanded_pids);
-                    self.sync_table_state();
+                    self.reflatten();
                 }
             }
         }
@@ -462,11 +445,7 @@ impl App {
             let depth = *depth;
             if self.expanded_pids.contains(&pid) {
                 self.expanded_pids.remove(&pid);
-                self.flat_list = Self::flatten_with_expand(&self.process_trees, &self.expanded_pids);
-                if self.selected_index >= self.flat_list.len() && !self.flat_list.is_empty() {
-                    self.selected_index = self.flat_list.len() - 1;
-                }
-                self.sync_table_state();
+                self.reflatten();
             } else if depth > 0 {
                 for i in (0..self.selected_index).rev() {
                     if let Some((_, d)) = self.flat_list.get(i) {
@@ -483,18 +462,8 @@ impl App {
 
     /// Check if a PID has children anywhere in the tree.
     fn has_children_in_tree(&self, pid: u32) -> bool {
-        fn find(trees: &[ProcessInfo], pid: u32) -> bool {
-            for tree in trees {
-                if tree.pid == pid {
-                    return !tree.children.is_empty();
-                }
-                if find(&tree.children, pid) {
-                    return true;
-                }
-            }
-            false
-        }
-        find(&self.process_trees, pid)
+        TreeBuilder::find_by_pid(&self.process_trees, pid)
+            .is_some_and(|node| !node.children.is_empty())
     }
 
     fn collect_all_pids(trees: &[ProcessInfo], set: &mut HashSet<u32>) {
@@ -515,11 +484,7 @@ impl App {
             self.expanded_pids.clear();
             self.default_expanded = false;
         }
-        self.flat_list = Self::flatten_with_expand(&self.process_trees, &self.expanded_pids);
-        if self.selected_index >= self.flat_list.len() && !self.flat_list.is_empty() {
-            self.selected_index = self.flat_list.len() - 1;
-        }
-        self.sync_table_state();
+        self.reflatten();
     }
 
     /// Toggle multi-select for the selected process.
@@ -569,6 +534,17 @@ impl App {
         signals[self.signal_picker_index % signals.len()]
     }
 
+    /// Re-flatten the trees with the current expanded state, clamp the
+    /// selection into range, and sync the table cursor. Call after any
+    /// expand/collapse change to the tree.
+    fn reflatten(&mut self) {
+        self.flat_list = Self::flatten_with_expand(&self.process_trees, &self.expanded_pids);
+        if self.selected_index >= self.flat_list.len() && !self.flat_list.is_empty() {
+            self.selected_index = self.flat_list.len() - 1;
+        }
+        self.sync_table_state();
+    }
+
     /// Sync table_state.selected with selected_index.
     fn sync_table_state(&mut self) {
         if self.flat_list.is_empty() {
@@ -599,17 +575,6 @@ impl App {
 
     /// Find a process in the original trees by PID (for getting full children info).
     pub fn find_process_in_trees(&self, pid: u32) -> Option<&ProcessInfo> {
-        fn find(trees: &[ProcessInfo], pid: u32) -> Option<&ProcessInfo> {
-            for tree in trees {
-                if tree.pid == pid {
-                    return Some(tree);
-                }
-                if let Some(found) = find(&tree.children, pid) {
-                    return Some(found);
-                }
-            }
-            None
-        }
-        find(&self.process_trees, pid)
+        TreeBuilder::find_by_pid(&self.process_trees, pid)
     }
 }

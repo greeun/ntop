@@ -85,6 +85,19 @@ impl TreeBuilder {
         }
     }
 
+    /// Find the node with the given PID anywhere in the trees (depth-first).
+    pub fn find_by_pid(trees: &[ProcessInfo], pid: u32) -> Option<&ProcessInfo> {
+        for tree in trees {
+            if tree.pid == pid {
+                return Some(tree);
+            }
+            if let Some(found) = Self::find_by_pid(&tree.children, pid) {
+                return Some(found);
+            }
+        }
+        None
+    }
+
     /// Collect the node's PID and all descendant PIDs recursively.
     pub fn collect_pids(node: &ProcessInfo) -> Vec<u32> {
         let mut pids = vec![node.pid];

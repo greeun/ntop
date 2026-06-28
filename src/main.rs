@@ -150,46 +150,50 @@ fn do_scan(app: &mut App, scanner: &mut ProcessScanner<'_>, sys: &mut System) {
 
     // Framework/runtime already set by the scanner's classify(); only
     // listening ports remain to be filled in here.
-    let net_map = NetworkInspector::connections_by_pid();
-    for proc in &mut processes {
-        if let Some(conns) = net_map.get(&proc.pid) {
-            let ports: Vec<u16> = conns
-                .iter()
-                .filter(|c| c.state == "LISTEN")
-                .map(|c| c.local_addr.port())
-                .collect();
-            if !ports.is_empty() {
-                proc.ports = ports;
-            }
-        }
-    }
+    NetworkInspector::fill_listening_ports(&mut processes);
 
     app.update_processes(processes);
 }
 
 /// Update the log streamer to match the currently selected process.
+/// Re-opens the streamer only when the selected PID differs from the one the
+/// current streamer was opened for (tracked in `app.log_streamer_pid`).
 fn update_log_streamer(app: &mut App) {
     let current_pid = app.selected_process().map(|p| p.pid);
-    let streamer_pid = app.log_streamer.as_ref().and_then(|_| {
-        // We track which PID the streamer is for by checking if it matches
-        app.selected_process().map(|p| p.pid)
-    });
 
-    if current_pid != streamer_pid || app.log_streamer.is_none() {
-        if let Some(proc) = app.selected_process() {
-            let cwd = proc.cwd.clone();
-            if !cwd.is_empty() {
-                app.log_streamer = Some(LogStreamer::detect_and_open(&cwd));
-            } else {
-                app.log_streamer = Some(LogStreamer::new());
-            }
-        } else {
-            app.log_streamer = None;
-        }
+    if current_pid == app.log_streamer_pid && app.log_streamer.is_some() {
+        return;
     }
+
+    app.log_streamer = match app.selected_process() {
+        Some(proc) if !proc.cwd.is_empty() => {
+            let cwd = proc.cwd.clone();
+            Some(LogStreamer::detect_and_open(&cwd))
+        }
+        Some(_) => Some(LogStreamer::new()),
+        None => None,
+    };
+    app.log_streamer_pid = current_pid;
 }
 
 // ─── CLI Command Handlers ──────────────────────────────────────────────
+
+/// Print `{prompt} [y/N] ` and return true only if the user types `y`.
+fn confirm(prompt: &str) -> io::Result<bool> {
+    println!("{prompt} [y/N] ");
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+    Ok(input.trim().eq_ignore_ascii_case("y"))
+}
+
+/// Join ports with `sep`; empty list yields an empty string.
+fn join_ports(ports: &[u16], sep: &str) -> String {
+    ports
+        .iter()
+        .map(|p| p.to_string())
+        .collect::<Vec<_>>()
+        .join(sep)
+}
 
 /// `ntop list` — scan processes and output in table/json/csv format.
 fn cmd_list(config: &Config, json: bool, format: Option<ListFormat>) -> anyhow::Result<()> {
@@ -198,19 +202,7 @@ fn cmd_list(config: &Config, json: bool, format: Option<ListFormat>) -> anyhow::
 
     // Framework/runtime already set by the scanner's classify(); only
     // listening ports remain to be filled in here.
-    let net_map = NetworkInspector::connections_by_pid();
-    for proc in &mut processes {
-        if let Some(conns) = net_map.get(&proc.pid) {
-            let ports: Vec<u16> = conns
-                .iter()
-                .filter(|c| c.state == "LISTEN")
-                .map(|c| c.local_addr.port())
-                .collect();
-            if !ports.is_empty() {
-                proc.ports = ports;
-            }
-        }
-    }
+    NetworkInspector::fill_listening_ports(&mut processes);
 
     // Build trees for display
     let trees = TreeBuilder::build(processes);
@@ -248,11 +240,7 @@ fn print_table(flat: &[(&ProcessInfo, usize)]) {
         let ports_str = if proc.ports.is_empty() {
             "-".to_string()
         } else {
-            proc.ports
-                .iter()
-                .map(|p| p.to_string())
-                .collect::<Vec<_>>()
-                .join(",")
+            join_ports(&proc.ports, ",")
         };
 
         println!(
@@ -305,12 +293,7 @@ fn print_csv(flat: &[(&ProcessInfo, usize)]) -> anyhow::Result<()> {
     wtr.write_record(["PID", "PPID", "NAME", "FRAMEWORK", "PORTS", "CPU", "MEMORY", "UPTIME", "STATUS"])?;
 
     for (proc, _) in flat {
-        let ports_str = proc
-            .ports
-            .iter()
-            .map(|p| p.to_string())
-            .collect::<Vec<_>>()
-            .join(";");
+        let ports_str = join_ports(&proc.ports, ";");
 
         wtr.write_record([
             &proc.pid.to_string(),
@@ -358,10 +341,7 @@ fn cmd_kill(
             for p in &processes {
                 println!("  PID {} ({})", p.pid, p.name);
             }
-            println!("\nProceed? [y/N] ");
-            let mut input = String::new();
-            io::stdin().read_line(&mut input)?;
-            if !input.trim().eq_ignore_ascii_case("y") {
+            if !confirm("\nProceed?")? {
                 println!("Cancelled.");
                 return Ok(());
             }
@@ -378,7 +358,7 @@ fn cmd_kill(
             let processes = scanner.scan();
             let trees = TreeBuilder::build(processes);
 
-            if let Some(node) = find_in_trees(&trees, target_pid) {
+            if let Some(node) = TreeBuilder::find_by_pid(&trees, target_pid) {
                 let pids = TreeBuilder::collect_pids(node);
 
                 if !no_confirm && config.general.confirm_before_kill {
@@ -386,10 +366,7 @@ fn cmd_kill(
                     for p in &pids {
                         println!("  PID {}", p);
                     }
-                    println!("\nProceed? [y/N] ");
-                    let mut input = String::new();
-                    io::stdin().read_line(&mut input)?;
-                    if !input.trim().eq_ignore_ascii_case("y") {
+                    if !confirm("\nProceed?")? {
                         println!("Cancelled.");
                         return Ok(());
                     }
@@ -405,10 +382,8 @@ fn cmd_kill(
         } else {
             // Single process kill
             if !no_confirm && config.general.confirm_before_kill {
-                println!("Kill process {} with {}? [y/N] ", target_pid, kill_signal.name());
-                let mut input = String::new();
-                io::stdin().read_line(&mut input)?;
-                if !input.trim().eq_ignore_ascii_case("y") {
+                let prompt = format!("Kill process {} with {}?", target_pid, kill_signal.name());
+                if !confirm(&prompt)? {
                     println!("Cancelled.");
                     return Ok(());
                 }
@@ -435,19 +410,6 @@ fn cmd_kill(
     Ok(())
 }
 
-/// Find a process node in the tree by PID.
-fn find_in_trees(trees: &[ProcessInfo], pid: u32) -> Option<&ProcessInfo> {
-    for tree in trees {
-        if tree.pid == pid {
-            return Some(tree);
-        }
-        if let Some(found) = find_in_trees(&tree.children, pid) {
-            return Some(found);
-        }
-    }
-    None
-}
-
 /// `ntop info` — display detailed info about a specific process.
 fn cmd_info(config: &Config, pid: u32) -> anyhow::Result<()> {
     let mut scanner = ProcessScanner::new(config);
@@ -458,11 +420,7 @@ fn cmd_info(config: &Config, pid: u32) -> anyhow::Result<()> {
     match proc {
         Some(process) => {
             let connections = NetworkInspector::connections_for_pid(pid);
-            let ports: Vec<u16> = connections
-                .iter()
-                .filter(|c| c.state == "LISTEN")
-                .map(|c| c.local_addr.port())
-                .collect();
+            let ports = NetworkInspector::listening_ports(&connections);
 
             println!("Process Information");
             println!("{}", "=".repeat(40));
@@ -483,7 +441,7 @@ fn cmd_info(config: &Config, pid: u32) -> anyhow::Result<()> {
                 if ports.is_empty() {
                     "-".to_string()
                 } else {
-                    ports.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(", ")
+                    join_ports(&ports, ", ")
                 }
             );
             println!("  CPU:       {:.1}%", process.cpu_percent);
