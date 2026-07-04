@@ -44,10 +44,7 @@ fn test_detect_framework_by_command() {
         FrameworkDetector::detect_by_command("node node_modules/.bin/nest start"),
         Some(FrameworkKind::NestJs)
     );
-    assert_eq!(
-        FrameworkDetector::detect_by_command("node server.js"),
-        None
-    );
+    assert_eq!(FrameworkDetector::detect_by_command("node server.js"), None);
     // Production Nest: compiled entrypoint at the Nest CLI default path.
     assert_eq!(
         FrameworkDetector::detect_by_command("node dist/main.js"),
@@ -58,32 +55,21 @@ fn test_detect_framework_by_command() {
 #[test]
 fn test_detect_combined_priority() {
     // Process name takes priority over command keywords.
-    let (kind, version) = FrameworkDetector::detect(
-        "next-server",
-        "node node_modules/.bin/nuxt start",
-        "",
-    );
+    let (kind, version) =
+        FrameworkDetector::detect("next-server", "node node_modules/.bin/nuxt start", "");
     assert_eq!(kind, FrameworkKind::NextJs);
     assert_eq!(version, None);
 }
 
 #[test]
 fn test_detect_nuxt_by_process_name_priority() {
-    let (kind, _) = FrameworkDetector::detect(
-        "nuxt",
-        "node node_modules/.bin/next start",
-        "",
-    );
+    let (kind, _) = FrameworkDetector::detect("nuxt", "node node_modules/.bin/next start", "");
     assert_eq!(kind, FrameworkKind::Nuxt);
 }
 
 #[test]
 fn test_detect_fallback_to_generic() {
-    let (kind, version) = FrameworkDetector::detect(
-        "node",
-        "node server.js",
-        "",
-    );
+    let (kind, version) = FrameworkDetector::detect("node", "node server.js", "");
     assert_eq!(kind, FrameworkKind::Generic);
     assert_eq!(version, None);
 }
@@ -106,11 +92,8 @@ fn test_detect_npx_mcp_server_is_generic_even_in_nextjs_cwd() {
 /// a Next.js project running an unrelated script stays Generic.
 #[test]
 fn test_detect_node_in_framework_cwd_is_generic() {
-    let (kind, _) = FrameworkDetector::detect(
-        "node",
-        "node /tmp/scratch.js",
-        "/some/nextjs/project",
-    );
+    let (kind, _) =
+        FrameworkDetector::detect("node", "node /tmp/scratch.js", "/some/nextjs/project");
     assert_eq!(kind, FrameworkKind::Generic);
 }
 
@@ -120,11 +103,7 @@ fn test_detect_node_in_framework_cwd_is_generic() {
 /// as Next.js by normalizing the name.
 #[test]
 fn test_detect_nextjs_from_truncated_macos_comm() {
-    let (kind, _) = FrameworkDetector::detect(
-        "next-server (v16",
-        "next-server (v16.2.4)",
-        "",
-    );
+    let (kind, _) = FrameworkDetector::detect("next-server (v16", "next-server (v16.2.4)", "");
     assert_eq!(kind, FrameworkKind::NextJs);
 }
 
@@ -132,17 +111,15 @@ fn test_detect_nextjs_from_truncated_macos_comm() {
 /// starts with a known framework binary (process.title style), detect it.
 #[test]
 fn test_detect_nextjs_from_command_binary_when_name_is_node() {
-    let (kind, _) = FrameworkDetector::detect(
-        "node",
-        "next-server (v16.2.4)",
-        "",
-    );
+    let (kind, _) = FrameworkDetector::detect("node", "next-server (v16.2.4)", "");
     assert_eq!(kind, FrameworkKind::NextJs);
 }
 
 // ─── classify: runtime + framework ───────────────────────────────────
 
-fn cfg() -> Config { Config::default() }
+fn cfg() -> Config {
+    Config::default()
+}
 
 #[test]
 fn test_classify_node_generic() {
@@ -198,7 +175,11 @@ fn test_classify_python_generic_uvicorn() {
 #[test]
 fn test_classify_fastapi_beats_python_name() {
     assert_eq!(
-        FrameworkDetector::classify("python", "python -m uvicorn main:app --factory fastapi", &cfg()),
+        FrameworkDetector::classify(
+            "python",
+            "python -m uvicorn main:app --factory fastapi",
+            &cfg()
+        ),
         Some((Runtime::Python, FrameworkKind::FastApi))
     );
 }
@@ -218,7 +199,11 @@ fn test_classify_java_generic_and_spring() {
         Some((Runtime::Java, FrameworkKind::Generic))
     );
     assert_eq!(
-        FrameworkDetector::classify("java", "java org.springframework.boot.loader.JarLauncher", &cfg()),
+        FrameworkDetector::classify(
+            "java",
+            "java org.springframework.boot.loader.JarLauncher",
+            &cfg()
+        ),
         Some((Runtime::Java, FrameworkKind::SpringBoot))
     );
 }
@@ -265,14 +250,23 @@ fn test_classify_dotnet_deno_bun() {
 
 #[test]
 fn test_classify_non_server_is_none() {
-    assert_eq!(FrameworkDetector::classify("bash", "bash deploy.sh", &cfg()), None);
-    assert_eq!(FrameworkDetector::classify("ssh", "ssh user@host", &cfg()), None);
+    assert_eq!(
+        FrameworkDetector::classify("bash", "bash deploy.sh", &cfg()),
+        None
+    );
+    assert_eq!(
+        FrameworkDetector::classify("ssh", "ssh user@host", &cfg()),
+        None
+    );
 }
 
 #[test]
 fn test_classify_tsx_is_config_gated() {
     let mut c = Config::default();
-    assert_eq!(FrameworkDetector::classify("tsx", "tsx watch src/index.ts", &c), None);
+    assert_eq!(
+        FrameworkDetector::classify("tsx", "tsx watch src/index.ts", &c),
+        None
+    );
     c.filter.include_tsx = true;
     assert_eq!(
         FrameworkDetector::classify("tsx", "tsx watch src/index.ts", &c),
@@ -281,14 +275,87 @@ fn test_classify_tsx_is_config_gated() {
 }
 
 #[test]
-fn test_classify_npx_mcp_in_nextjs_cwd_is_node_generic() {
+fn test_classify_npx_mcp_in_nextjs_cwd_is_node_mcp() {
+    // An npx-launched MCP server inheriting a Next.js project's cwd must NOT
+    // be tagged Next.js (cwd is never read), and IS tagged MCP via the
+    // `context7-mcp` binary name — while keeping the real Node runtime.
     assert_eq!(
         FrameworkDetector::classify(
             "node",
             "node /Users/u/.npm/_npx/abc/node_modules/.bin/context7-mcp",
             &cfg()
         ),
+        Some((Runtime::Node, FrameworkKind::Mcp))
+    );
+}
+
+// ─── classify: MCP overlay (cross-runtime) ───────────────────────────
+
+#[test]
+fn test_classify_mcp_official_modelcontextprotocol_node() {
+    // Official servers ship under @modelcontextprotocol/ — the deep path's
+    // basename is `index.js`, so the `modelcontextprotocol` substring is what
+    // must tag it, keeping the Node runtime.
+    assert_eq!(
+        FrameworkDetector::classify(
+            "node",
+            "node /home/u/node_modules/@modelcontextprotocol/server-filesystem/dist/index.js /data",
+            &cfg()
+        ),
+        Some((Runtime::Node, FrameworkKind::Mcp))
+    );
+}
+
+#[test]
+fn test_classify_mcp_python_module() {
+    // Python MCP server via `-m mcp_server_fetch` must stay on the Python
+    // runtime, not be dragged onto Node by the overlay.
+    assert_eq!(
+        FrameworkDetector::classify("python", "python -m mcp_server_fetch", &cfg()),
+        Some((Runtime::Python, FrameworkKind::Mcp))
+    );
+}
+
+#[test]
+fn test_classify_mcp_community_naming_variants() {
+    // `mcp-server-*` prefix (Node).
+    assert_eq!(
+        FrameworkDetector::classify("node", "node node_modules/mcp-server-git/index.js", &cfg()),
+        Some((Runtime::Node, FrameworkKind::Mcp))
+    );
+    // `*-mcp` suffix on a Bun-run server.
+    assert_eq!(
+        FrameworkDetector::classify("bun", "bun run figma-developer-mcp", &cfg()),
+        Some((Runtime::Bun, FrameworkKind::Mcp))
+    );
+    // uvx-style Python MCP with a `mcp-server-*` package name.
+    assert_eq!(
+        FrameworkDetector::classify("python3", "python3 /opt/venv/bin/mcp-server-time", &cfg()),
+        Some((Runtime::Python, FrameworkKind::Mcp))
+    );
+}
+
+#[test]
+fn test_classify_mcp_no_false_positive_on_lookalike() {
+    // `mcpherson` in a path must NOT trigger the MCP overlay — it is neither a
+    // segment boundary match nor the `modelcontextprotocol` substring.
+    assert_eq!(
+        FrameworkDetector::classify("node", "node /Users/mcpherson/app/server.js", &cfg()),
         Some((Runtime::Node, FrameworkKind::Generic))
+    );
+}
+
+#[test]
+fn test_classify_mcp_does_not_override_real_framework() {
+    // A Next.js process whose path happens to contain an mcp-ish token is
+    // still Next.js: framework rules resolve before the MCP overlay.
+    assert_eq!(
+        FrameworkDetector::classify(
+            "node",
+            "node /srv/mcp-dashboard/node_modules/.bin/next start",
+            &cfg()
+        ),
+        Some((Runtime::Node, FrameworkKind::NextJs))
     );
 }
 

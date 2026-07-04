@@ -1,10 +1,10 @@
-pub mod scanner;
 pub mod framework;
 pub mod framework_rules;
-pub mod tree;
 pub mod killer;
 pub mod network;
 pub mod platform;
+pub mod scanner;
+pub mod tree;
 
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -55,6 +55,10 @@ pub enum FrameworkKind {
     Rails,
     Laravel,
     AspNet,
+    /// Model Context Protocol server. Cross-runtime (Node/Python/Bun/…), so it
+    /// is detected as an overlay on a generic-runtime process rather than by a
+    /// single `Rule` (which fixes one runtime).
+    Mcp,
     Generic,
 }
 
@@ -75,6 +79,7 @@ impl fmt::Display for FrameworkKind {
             FrameworkKind::Rails => write!(f, "Rails"),
             FrameworkKind::Laravel => write!(f, "Laravel"),
             FrameworkKind::AspNet => write!(f, "ASP.NET"),
+            FrameworkKind::Mcp => write!(f, "MCP"),
             FrameworkKind::Generic => write!(f, "Generic"),
         }
     }
@@ -235,14 +240,18 @@ impl ProcessInfo {
 
         fn is_subcommand(s: &str) -> bool {
             s.len() <= 20
-                && s.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_')
+                && s.chars()
+                    .all(|c| c.is_alphanumeric() || c == '-' || c == '_')
                 && s.chars().next().map(|c| c.is_alphabetic()).unwrap_or(false)
         }
 
         fn is_script(s: &str) -> bool {
             let name = s.rsplit('/').next().unwrap_or(s);
-            name.ends_with(".js") || name.ends_with(".ts") || name.ends_with(".mjs")
-                || name.ends_with(".cjs") || name.ends_with(".sh")
+            name.ends_with(".js")
+                || name.ends_with(".ts")
+                || name.ends_with(".mjs")
+                || name.ends_with(".cjs")
+                || name.ends_with(".sh")
         }
 
         fn is_package(s: &str) -> bool {
@@ -250,7 +259,8 @@ impl ProcessInfo {
         }
 
         // Find node_modules tool if present
-        let modules_tool = all_parts[1..].iter()
+        let modules_tool = all_parts[1..]
+            .iter()
             .find(|s| s.contains("node_modules/"))
             .map(|s| s.rsplit('/').next().unwrap_or(s));
 

@@ -43,6 +43,13 @@ This is the main extension point.
 - **To add a runtime or framework:** append one `Rule` to the appropriate table and
   add the variant to `Runtime` / `FrameworkKind` in `src/process/mod.rs`. No other
   code changes needed.
+- **MCP is the exception — a cross-runtime overlay, not a `Rule`.** A `Rule` fixes a
+  single `runtime`, but MCP servers run on Node/Python/Bun/…, so `classify` layers
+  `is_mcp_command` on top of a *generic*-runtime match: it upgrades `Generic` →
+  `Mcp` while keeping the real runtime. Specific framework rules resolve first, so
+  MCP never overrides Next.js/FastAPI/etc. The signature stays process-local — the
+  `@modelcontextprotocol/*` packages plus `mcp-server-*` / `*-mcp` / `mcp_server_*`
+  naming, matched per path segment (so `mcpherson` is not a false positive).
 
 **Detection is process-local only** — name + command line, never filesystem reads.
 This is deliberate: reading `package.json` would misclassify globally-launched

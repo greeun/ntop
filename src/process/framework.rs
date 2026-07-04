@@ -22,21 +22,36 @@ impl FrameworkDetector {
     /// Two tiers: framework rules resolve first (so a specific framework
     /// substring beats a generic runtime name), then runtime-generic rules,
     /// then config-gated dev runners (tsx / ts-node).
-    pub fn classify(name: &str, command: &str, config: &Config) -> Option<(Runtime, FrameworkKind)> {
+    pub fn classify(
+        name: &str,
+        command: &str,
+        config: &Config,
+    ) -> Option<(Runtime, FrameworkKind)> {
         if let Some(rule) = match_tier(FRAMEWORK_RULES, name, command) {
             return Some((rule.runtime, rule.framework.clone()));
         }
         if let Some(rule) = match_tier(RUNTIME_RULES, name, command) {
+            // MCP overlay: an otherwise-generic runtime process whose command
+            // line carries an MCP signature is tagged MCP while keeping its
+            // real runtime (Node/Python/Bun/…). Specific frameworks already
+            // returned above, so this never overrides Next.js/FastAPI/etc.
+            if rule.framework == FrameworkKind::Generic && is_mcp_command(command) {
+                return Some((rule.runtime, FrameworkKind::Mcp));
+            }
             return Some((rule.runtime, rule.framework.clone()));
         }
         // Config-gated dev runners — opt-in JS/TS runners on the Node runtime.
         let nn = normalize_name(name);
         let bin = command_binary(command);
-        if config.filter.include_tsx && (nn == "tsx" || bin == Some("tsx")) {
-            return Some((Runtime::Node, FrameworkKind::Generic));
-        }
-        if config.filter.include_ts_node && (nn == "ts-node" || bin == Some("ts-node")) {
-            return Some((Runtime::Node, FrameworkKind::Generic));
+        let is_dev_runner = (config.filter.include_tsx && (nn == "tsx" || bin == Some("tsx")))
+            || (config.filter.include_ts_node && (nn == "ts-node" || bin == Some("ts-node")));
+        if is_dev_runner {
+            let framework = if is_mcp_command(command) {
+                FrameworkKind::Mcp
+            } else {
+                FrameworkKind::Generic
+            };
+            return Some((Runtime::Node, framework));
         }
         None
     }
@@ -94,6 +109,33 @@ fn match_tier(rules: &'static [Rule], name: &str, command: &str) -> Option<&'sta
 /// trailing version blob by taking the first whitespace-separated token.
 fn normalize_name(name: &str) -> &str {
     name.split_whitespace().next().unwrap_or(name)
+}
+
+/// True if the command line looks like an MCP (Model Context Protocol) server.
+///
+/// MCP servers span runtimes, so this is an overlay on the generic-runtime
+/// classification rather than a `Rule` (a `Rule` fixes one runtime). Matching
+/// stays process-local:
+/// - the official `@modelcontextprotocol/*` packages (substring), and
+/// - the community `mcp-server-*` / `*-mcp` / `mcp_server_*` naming conventions,
+///   checked per path segment so a deep `node_modules/...` path still matches
+///   while unrelated names like `mcpherson` do not.
+fn is_mcp_command(command: &str) -> bool {
+    if command.contains("modelcontextprotocol") {
+        return true;
+    }
+    command
+        .split_whitespace()
+        .flat_map(|token| token.split('/'))
+        .any(|seg| {
+            seg == "mcp"
+                || seg.starts_with("mcp-")
+                || seg.starts_with("mcp_")
+                || seg.ends_with("-mcp")
+                || seg.ends_with("_mcp")
+                || seg.contains("mcp-server")
+                || seg.contains("mcp_server")
+        })
 }
 
 /// Basename of the command's first whitespace-separated token.
