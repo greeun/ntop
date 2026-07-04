@@ -14,6 +14,10 @@ pub struct ProcessScanner<'a> {
     // Constructing a fresh System on every scan would make cpu_usage()
     // permanently 0.0.
     sys: System,
+    // Total physical RAM in bytes, used to turn each process's resident
+    // memory into a percentage for health classification. Captured once —
+    // installed RAM doesn't change over a run.
+    total_memory: u64,
 }
 
 impl<'a> ProcessScanner<'a> {
@@ -27,7 +31,14 @@ impl<'a> ProcessScanner<'a> {
         Self::refresh_processes(&mut sys);
         std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
         Self::refresh_processes(&mut sys);
-        Self { config, sys }
+        // Total RAM for the memory-percent used by health classification.
+        sys.refresh_memory();
+        let total_memory = sys.total_memory();
+        Self {
+            config,
+            sys,
+            total_memory,
+        }
     }
 
     fn refresh_processes(sys: &mut System) {
@@ -44,7 +55,11 @@ impl<'a> ProcessScanner<'a> {
         );
     }
 
-    fn collect_process_info(process: &sysinfo::Process, pid: u32) -> ProcessInfo {
+    fn collect_process_info(
+        process: &sysinfo::Process,
+        pid: u32,
+        total_memory: u64,
+    ) -> ProcessInfo {
         let name = process.name().to_string_lossy().to_string();
         let cmd_parts: Vec<String> = process
             .cmd()
@@ -68,6 +83,13 @@ impl<'a> ProcessScanner<'a> {
         info.memory_rss =
             crate::process::platform::phys_footprint(pid).unwrap_or_else(|| process.memory());
         info.memory_vms = process.virtual_memory();
+        // Percentage of total system RAM — the value health() thresholds on.
+        // Guard against a zero total (memory not yet refreshed) to avoid NaN.
+        info.memory_percent = if total_memory > 0 {
+            (info.memory_rss as f64 / total_memory as f64 * 100.0) as f32
+        } else {
+            0.0
+        };
         info.status = format!("{:?}", process.status());
         info.uptime = Duration::from_secs(process.run_time());
         info.threads = crate::process::platform::thread_count(pid);
@@ -117,7 +139,7 @@ impl<'a> ProcessScanner<'a> {
                 continue;
             };
 
-            let mut info = Self::collect_process_info(process, pid.as_u32());
+            let mut info = Self::collect_process_info(process, pid.as_u32(), self.total_memory);
             info.runtime = Some(runtime);
             info.framework = framework;
             server_pids.insert(pid.as_u32());
@@ -136,7 +158,7 @@ impl<'a> ProcessScanner<'a> {
         for ppid in parent_ppids {
             let sysinfo_pid = sysinfo::Pid::from_u32(ppid);
             if let Some(process) = self.sys.process(sysinfo_pid) {
-                let info = Self::collect_process_info(process, ppid);
+                let info = Self::collect_process_info(process, ppid, self.total_memory);
                 results.push(info);
             }
         }

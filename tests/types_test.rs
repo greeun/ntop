@@ -181,6 +181,7 @@ fn test_health_running_with_low_resources_is_healthy() {
     info.status = "Running".to_string();
     info.cpu_percent = 10.0;
     info.memory_rss = 64 * 1_048_576; // 64 MB
+    info.memory_percent = 3.0; // 3% of RAM — not memory-bound
     assert_eq!(info.health(), HealthStatus::Healthy);
 }
 
@@ -189,7 +190,7 @@ fn test_health_high_cpu_is_warning() {
     let mut info = ProcessInfo::new(1, "node");
     info.status = "Running".to_string();
     info.cpu_percent = 85.0;
-    info.memory_rss = 0;
+    info.memory_percent = 0.0;
     assert_eq!(info.health(), HealthStatus::Warning);
 }
 
@@ -198,7 +199,39 @@ fn test_health_very_high_cpu_is_critical() {
     let mut info = ProcessInfo::new(1, "node");
     info.status = "Running".to_string();
     info.cpu_percent = 95.0;
-    info.memory_rss = 0;
+    info.memory_percent = 0.0;
+    assert_eq!(info.health(), HealthStatus::Critical);
+}
+
+// Health thresholds on the RAM *percentage*, never the raw byte count. A
+// process using hundreds of MB is still healthy if it's a small share of
+// system RAM — regression guard for the old bug that treated RSS-in-MB as a
+// percentage and flagged every >90 MB process Critical.
+#[test]
+fn test_health_large_rss_small_ram_share_is_healthy() {
+    let mut info = ProcessInfo::new(1, "node");
+    info.status = "Running".to_string();
+    info.cpu_percent = 2.0;
+    info.memory_rss = 300 * 1_048_576; // 300 MB
+    info.memory_percent = 0.9; // <1% of a 32 GB machine
+    assert_eq!(info.health(), HealthStatus::Healthy);
+}
+
+#[test]
+fn test_health_high_memory_share_is_warning() {
+    let mut info = ProcessInfo::new(1, "node");
+    info.status = "Running".to_string();
+    info.cpu_percent = 5.0;
+    info.memory_percent = 85.0;
+    assert_eq!(info.health(), HealthStatus::Warning);
+}
+
+#[test]
+fn test_health_very_high_memory_share_is_critical() {
+    let mut info = ProcessInfo::new(1, "node");
+    info.status = "Running".to_string();
+    info.cpu_percent = 5.0;
+    info.memory_percent = 95.0;
     assert_eq!(info.health(), HealthStatus::Critical);
 }
 

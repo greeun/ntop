@@ -144,6 +144,10 @@ pub struct ProcessInfo {
     pub cpu_percent: f32,
     pub memory_rss: u64,
     pub memory_vms: u64,
+    /// Resident memory as a percentage of total system RAM (0.0–100.0).
+    /// This is what health() compares against its thresholds — NOT the raw
+    /// byte count. Populated by the scanner using the machine's total RAM.
+    pub memory_percent: f32,
     pub threads: u32,
     pub uptime: Duration,
     pub user: String,
@@ -172,6 +176,7 @@ impl ProcessInfo {
             cpu_percent: 0.0,
             memory_rss: 0,
             memory_vms: 0,
+            memory_percent: 0.0,
             threads: 0,
             uptime: Duration::from_secs(0),
             user: String::new(),
@@ -309,6 +314,6 @@ impl ProcessInfo {
         if status_health == HealthStatus::Critical {
             return HealthStatus::Critical;
         }
-        HealthStatus::from_cpu_mem(self.cpu_percent, self.memory_rss as f32 / 1_048_576.0)
+        HealthStatus::from_cpu_mem(self.cpu_percent, self.memory_percent)
     }
 }

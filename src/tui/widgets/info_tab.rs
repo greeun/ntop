@@ -24,7 +24,7 @@ pub fn render_info_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, scroll:
 
     let version_str = process.framework_version.as_deref().unwrap_or("-");
 
-    let fields: Vec<(&str, String)> = vec![
+    let mut fields: Vec<(&str, String)> = vec![
         ("CWD", process.cwd.clone()),
         ("Command", process.command.clone()),
         ("PID", process.pid.to_string()),
@@ -42,14 +42,23 @@ pub fn render_info_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, scroll:
         ("Ports", ports_str),
         ("CPU", format!("{:.1}%", process.cpu_percent)),
         ("Memory", process.memory_display()),
-        ("Memory (VMS)", format_bytes(process.memory_vms)),
+    ];
+
+    // Virtual memory size is only a meaningful signal on Linux/Windows. On
+    // macOS `virtual_memory()` reports hundreds of GB of reserved address
+    // space (shared caches, guard pages), which is alarming and useless, so
+    // we omit the row there entirely.
+    #[cfg(not(target_os = "macos"))]
+    fields.push(("Memory (VMS)", format_bytes(process.memory_vms)));
+
+    fields.extend([
         ("Threads", process.threads.to_string()),
         ("Uptime", process.uptime_display()),
         ("User", process.user.clone()),
         ("Status", process.status.clone()),
         ("Health", process.health().to_string()),
         ("Open FDs", process.open_fds.to_string()),
-    ];
+    ]);
 
     let lines: Vec<Line> = fields
         .into_iter()
@@ -75,6 +84,8 @@ pub fn render_info_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, scroll:
     line_count
 }
 
+// Only referenced by the VMS row, which is compiled out on macOS.
+#[cfg(not(target_os = "macos"))]
 fn format_bytes(bytes: u64) -> String {
     let b = bytes as f64;
     if b >= 1_073_741_824.0 {
