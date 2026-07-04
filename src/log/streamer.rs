@@ -91,7 +91,10 @@ impl LogStreamer {
                 match reader.read_line(&mut line) {
                     Ok(0) => break, // No more data
                     Ok(_) => {
-                        let trimmed = line.trim_end_matches('\n').trim_end_matches('\r').to_string();
+                        let trimmed = line
+                            .trim_end_matches('\n')
+                            .trim_end_matches('\r')
+                            .to_string();
                         self.buffer.push_back(trimmed.clone());
                         new_lines.push(trimmed);
 

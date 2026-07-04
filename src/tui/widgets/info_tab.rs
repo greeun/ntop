@@ -22,10 +22,7 @@ pub fn render_info_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, scroll:
             .join(", ")
     };
 
-    let version_str = process
-        .framework_version
-        .as_deref()
-        .unwrap_or("-");
+    let version_str = process.framework_version.as_deref().unwrap_or("-");
 
     let fields: Vec<(&str, String)> = vec![
         ("CWD", process.cwd.clone()),
@@ -35,7 +32,10 @@ pub fn render_info_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, scroll:
         ("Name", process.name.clone()),
         (
             "Runtime",
-            process.runtime.map(|r| r.to_string()).unwrap_or_else(|| "-".to_string()),
+            process
+                .runtime
+                .map(|r| r.to_string())
+                .unwrap_or_else(|| "-".to_string()),
         ),
         ("Framework", process.framework.to_string()),
         ("Version", version_str.to_string()),

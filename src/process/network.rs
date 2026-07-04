@@ -93,10 +93,7 @@ impl NetworkInspector {
         // Handle wildcard: *:port
         if let Some(port_str) = s.strip_prefix("*:") {
             let port: u16 = port_str.parse().ok()?;
-            return Some(SocketAddr::new(
-                IpAddr::V4(Ipv4Addr::UNSPECIFIED),
-                port,
-            ));
+            return Some(SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), port));
         }
 
         // Handle plain IPv4: host:port
@@ -143,8 +140,7 @@ impl NetworkInspector {
 
             if let Some(pid_str) = line.strip_prefix('p') {
                 if let (Some(pid), Some(ref name)) = (current_pid, &current_name) {
-                    if let Some(conn) =
-                        Self::parse_connection(name, current_state.as_deref(), pid)
+                    if let Some(conn) = Self::parse_connection(name, current_state.as_deref(), pid)
                     {
                         result.entry(pid).or_default().push(conn);
                     }
@@ -212,9 +208,7 @@ impl NetworkInspector {
 impl NetworkInspector {
     /// Run `netstat -ano` and parse TCP connections into a map of PID -> connections.
     fn parse_netstat() -> HashMap<u32, Vec<NetworkConnection>> {
-        let output = Command::new("netstat")
-            .args(["-ano", "-p", "TCP"])
-            .output();
+        let output = Command::new("netstat").args(["-ano", "-p", "TCP"]).output();
 
         let output = match output {
             Ok(o) => o,

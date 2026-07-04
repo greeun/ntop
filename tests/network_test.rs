@@ -57,8 +57,7 @@ fn test_parse_addr_invalid_port_returns_none() {
 #[cfg(unix)]
 #[test]
 fn test_parse_connection_listen() {
-    let conn =
-        NetworkInspector::parse_connection("127.0.0.1:3000", Some("LISTEN"), 42).unwrap();
+    let conn = NetworkInspector::parse_connection("127.0.0.1:3000", Some("LISTEN"), 42).unwrap();
     assert_eq!(conn.pid, 42);
     assert_eq!(conn.state, "LISTEN");
     assert_eq!(conn.local_addr.port(), 3000);
@@ -106,8 +105,7 @@ fn test_parse_connection_invalid_addr_returns_none() {
 #[cfg(unix)]
 #[test]
 fn test_parse_connection_ipv6_listen() {
-    let conn =
-        NetworkInspector::parse_connection("[::]:3000", Some("LISTEN"), 7).unwrap();
+    let conn = NetworkInspector::parse_connection("[::]:3000", Some("LISTEN"), 7).unwrap();
     assert_eq!(conn.local_addr.port(), 3000);
     assert_eq!(conn.local_addr.ip(), IpAddr::V6(Ipv6Addr::UNSPECIFIED));
     assert!(conn.remote_addr.is_none());

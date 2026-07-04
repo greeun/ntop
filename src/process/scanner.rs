@@ -16,7 +16,6 @@ pub struct ProcessScanner<'a> {
     sys: System,
 }
 
-
 impl<'a> ProcessScanner<'a> {
     pub fn new(config: &'a Config) -> Self {
         let mut sys = System::new();
@@ -66,8 +65,8 @@ impl<'a> ProcessScanner<'a> {
         // On macOS, prefer phys_footprint (what Activity Monitor shows) over
         // sysinfo's RSS, which excludes compressed memory and can underreport
         // by 100×+ for idle Node processes.
-        info.memory_rss = crate::process::platform::phys_footprint(pid)
-            .unwrap_or_else(|| process.memory());
+        info.memory_rss =
+            crate::process::platform::phys_footprint(pid).unwrap_or_else(|| process.memory());
         info.memory_vms = process.virtual_memory();
         info.status = format!("{:?}", process.status());
         info.uptime = Duration::from_secs(process.run_time());
@@ -154,5 +153,4 @@ impl<'a> ProcessScanner<'a> {
         std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
         self.scan()
     }
-
 }

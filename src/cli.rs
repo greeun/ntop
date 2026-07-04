@@ -3,7 +3,11 @@
 use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Parser, Debug)]
-#[command(name = "ntop", version, about = "Node Top - Monitor and manage server processes (Node, Python, Java, and more)")]
+#[command(
+    name = "ntop",
+    version,
+    about = "Node Top - Monitor and manage server processes (Node, Python, Java, and more)"
+)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Option<Commands>,
@@ -29,8 +33,12 @@ pub enum Commands {
         #[arg(long)]
         no_confirm: bool,
     },
-    Info { pid: u32 },
-    Log { pid: u32 },
+    Info {
+        pid: u32,
+    },
+    Log {
+        pid: u32,
+    },
     Config,
 }
 

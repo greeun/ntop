@@ -35,11 +35,9 @@ pub fn render(f: &mut Frame, app: &mut App) {
         empty_state::render_empty_state(f, main_content, app.tick_count);
     } else {
         // Vertical split: 55% process list (top), 45% detail panel (bottom)
-        let [top_panel, bottom_panel] = Layout::vertical([
-            Constraint::Percentage(55),
-            Constraint::Percentage(45),
-        ])
-        .areas(main_content);
+        let [top_panel, bottom_panel] =
+            Layout::vertical([Constraint::Percentage(55), Constraint::Percentage(45)])
+                .areas(main_content);
 
         process_list::render_process_list(f, top_panel, app);
         detail_panel::render_detail_panel(f, bottom_panel, app);
@@ -56,9 +54,9 @@ pub fn render(f: &mut Frame, app: &mut App) {
             }
             _ => {
                 let process = app.selected_process().cloned();
-                let tree_process = process.as_ref().and_then(|p| {
-                    app.find_process_in_trees(p.pid).cloned()
-                });
+                let tree_process = process
+                    .as_ref()
+                    .and_then(|p| app.find_process_in_trees(p.pid).cloned());
                 kill_dialog::render_kill_dialog(
                     f,
                     area,

@@ -29,11 +29,8 @@ pub fn render_detail_panel(f: &mut Frame, area: Rect, app: &mut App) {
     }
 
     // Split into tab bar + content area
-    let [tab_area, content_area] = Layout::vertical([
-        Constraint::Length(1),
-        Constraint::Fill(1),
-    ])
-    .areas(inner);
+    let [tab_area, content_area] =
+        Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(inner);
 
     // Render tab bar
     let tab_titles: Vec<String> = DetailTab::all()
@@ -63,10 +60,14 @@ pub fn render_detail_panel(f: &mut Frame, area: Rect, app: &mut App) {
     // Render active tab content
     if let Some(process) = app.selected_process().cloned() {
         let lines = match app.active_tab {
-            DetailTab::Info => info_tab::render_info_tab(f, content_area, &process, app.detail_scroll),
+            DetailTab::Info => {
+                info_tab::render_info_tab(f, content_area, &process, app.detail_scroll)
+            }
             DetailTab::Log => log_tab::render_log_tab(f, content_area, app),
             DetailTab::Net => net_tab::render_net_tab(f, content_area, &process, app.detail_scroll),
-            DetailTab::Env => env_tab::render_env_tab(f, content_area, &process, &app.config, app.detail_scroll),
+            DetailTab::Env => {
+                env_tab::render_env_tab(f, content_area, &process, &app.config, app.detail_scroll)
+            }
         };
         app.detail_content_lines = lines;
     } else {

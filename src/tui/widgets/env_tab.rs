@@ -31,7 +31,13 @@ fn is_sensitive(key: &str) -> bool {
 
 /// Render the Env tab with KEY=VALUE pairs.
 /// Returns total content line count.
-pub fn render_env_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, config: &Config, scroll: u16) -> u16 {
+pub fn render_env_tab(
+    f: &mut Frame,
+    area: Rect,
+    process: &ProcessInfo,
+    config: &Config,
+    scroll: u16,
+) -> u16 {
     if process.env_vars.is_empty() {
         let msg = ratatui::widgets::Paragraph::new("  No environment variables available.")
             .style(Style::default().fg(Color::DarkGray));

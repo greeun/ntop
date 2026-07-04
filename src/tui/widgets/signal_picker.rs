@@ -41,10 +41,7 @@ pub fn render_signal_picker(f: &mut Frame, area: Rect, selected_index: usize) {
 
         lines.push(Line::from(vec![
             Span::styled(indicator, style),
-            Span::styled(
-                format!("{:<10}", signal.name()),
-                style,
-            ),
+            Span::styled(format!("{:<10}", signal.name()), style),
             Span::styled(
                 format!(" - {}", signal.description()),
                 Style::default().fg(if is_selected {

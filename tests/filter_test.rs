@@ -1,6 +1,6 @@
+use ntop::config::Config;
 use ntop::process::{FrameworkKind, ProcessInfo, Runtime};
 use ntop::tui::app::App;
-use ntop::config::Config;
 
 #[test]
 fn test_matches_filter_empty_matches_all() {

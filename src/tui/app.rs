@@ -49,7 +49,12 @@ impl DetailTab {
     }
 
     pub fn all() -> &'static [DetailTab] {
-        &[DetailTab::Info, DetailTab::Log, DetailTab::Net, DetailTab::Env]
+        &[
+            DetailTab::Info,
+            DetailTab::Log,
+            DetailTab::Net,
+            DetailTab::Env,
+        ]
     }
 }
 
@@ -248,7 +253,8 @@ impl App {
             || p.command.to_lowercase().contains(&f)
             || p.pid.to_string().contains(&f)
             || p.framework.to_string().to_lowercase().contains(&f)
-            || p.runtime.is_some_and(|r| r.to_string().to_lowercase().contains(&f))
+            || p.runtime
+                .is_some_and(|r| r.to_string().to_lowercase().contains(&f))
             || p.ports.iter().any(|port| port.to_string().contains(&f))
     }
 
@@ -295,7 +301,11 @@ impl App {
         let asc = self.sort_ascending;
         let sort_cmp = move |a: &ProcessInfo, b: &ProcessInfo| {
             let cmp = Self::cmp_column(col, a, b);
-            if asc { cmp } else { cmp.reverse() }
+            if asc {
+                cmp
+            } else {
+                cmp.reverse()
+            }
         };
         TreeBuilder::sort_recursive(&mut self.process_trees, &sort_cmp);
 
@@ -349,7 +359,10 @@ impl App {
     }
 
     /// Flatten trees, only expanding children whose parent PID is in expanded_pids.
-    fn flatten_with_expand(trees: &[ProcessInfo], expanded: &HashSet<u32>) -> Vec<(ProcessInfo, usize)> {
+    fn flatten_with_expand(
+        trees: &[ProcessInfo],
+        expanded: &HashSet<u32>,
+    ) -> Vec<(ProcessInfo, usize)> {
         let mut result = Vec::new();
         for tree in trees {
             Self::flatten_recursive(tree, 0, expanded, &mut result);
@@ -369,11 +382,15 @@ impl App {
         let has_children = !node.children.is_empty();
         // We store children count info in the clone for the tree connector rendering
         if !expanded.contains(&node.pid) {
-            display_node.children = node.children.iter().map(|c| {
-                let mut stub = ProcessInfo::new(c.pid, &c.name);
-                stub.children = Vec::new();
-                stub
-            }).collect();
+            display_node.children = node
+                .children
+                .iter()
+                .map(|c| {
+                    let mut stub = ProcessInfo::new(c.pid, &c.name);
+                    stub.children = Vec::new();
+                    stub
+                })
+                .collect();
         }
         result.push((display_node, depth));
 
@@ -563,7 +580,8 @@ impl App {
 
     /// Max scroll offset for the detail panel.
     pub fn detail_max_scroll(&self) -> u16 {
-        self.detail_content_lines.saturating_sub(self.detail_view_height)
+        self.detail_content_lines
+            .saturating_sub(self.detail_view_height)
     }
 
     /// Clamp detail/log scroll to valid range.

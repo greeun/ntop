@@ -12,14 +12,20 @@ use crate::tui::app::{App, DialogKind, FocusPanel};
 pub fn render_top_bar(f: &mut Frame, area: Rect, app: &App) {
     let version = env!("CARGO_PKG_VERSION");
     let server_count = app.flat_list.iter().filter(|(p, _)| p.is_server()).count();
-    let count_label = if app.node_only { "Nodes: " } else { "Servers: " };
+    let count_label = if app.node_only {
+        "Nodes: "
+    } else {
+        "Servers: "
+    };
     let mem_used_mb = app.system_memory_used / (1024 * 1024);
     let mem_total_mb = app.system_memory_total / (1024 * 1024);
 
     let spans = vec![
         Span::styled(
             format!(" ntop v{}", version),
-            Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
         ),
         Span::styled("  |  ", Style::default().fg(Color::DarkGray)),
         Span::styled("CPU: ", Style::default().fg(Color::Gray)),
@@ -46,7 +52,9 @@ pub fn render_top_bar(f: &mut Frame, area: Rect, app: &App) {
         ),
         Span::styled(
             if app.node_only { " [Node-only]" } else { "" },
-            Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
         ),
         Span::styled("  |  ", Style::default().fg(Color::DarkGray)),
         Span::styled("Refresh: ", Style::default().fg(Color::Gray)),
@@ -70,9 +78,7 @@ pub fn render_bottom_bar(f: &mut Frame, area: Rect, app: &App) {
     let spans = if app.dialog.is_some() {
         match app.dialog.as_ref().unwrap() {
             DialogKind::Help => {
-                vec![
-                    key_hint("Esc", "Close"),
-                ]
+                vec![key_hint("Esc", "Close")]
             }
             DialogKind::KillConfirm | DialogKind::KillTreeConfirm | DialogKind::ForceKillPrompt => {
                 vec![
@@ -93,10 +99,17 @@ pub fn render_bottom_bar(f: &mut Frame, area: Rect, app: &App) {
         }
     } else if app.filter_active {
         vec![
-            Span::styled(" /", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                " /",
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            ),
             Span::styled(
                 format!("{}", app.filter_text),
-                Style::default().fg(Color::White).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::White)
+                    .add_modifier(Modifier::BOLD),
             ),
             Span::styled("█", Style::default().fg(Color::Yellow)),
             Span::styled("  ", Style::default()),
@@ -146,8 +159,8 @@ pub fn render_bottom_bar(f: &mut Frame, area: Rect, app: &App) {
     };
 
     let line = Line::from(spans);
-    let paragraph = Paragraph::new(line)
-        .style(Style::default().bg(Color::DarkGray).fg(Color::White));
+    let paragraph =
+        Paragraph::new(line).style(Style::default().bg(Color::DarkGray).fg(Color::White));
     f.render_widget(paragraph, area);
 }
 

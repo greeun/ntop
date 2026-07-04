@@ -1,14 +1,14 @@
-pub mod process_list;
 pub mod detail_panel;
-pub mod info_tab;
-pub mod log_tab;
-pub mod net_tab;
+pub mod empty_state;
 pub mod env_tab;
 pub mod help_dialog;
+pub mod info_tab;
 pub mod kill_dialog;
+pub mod log_tab;
+pub mod net_tab;
+pub mod process_list;
 pub mod signal_picker;
 pub mod status_bar;
-pub mod empty_state;
 
 use ratatui::text::Line;
 

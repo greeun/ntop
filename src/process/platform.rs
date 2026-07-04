@@ -76,15 +76,29 @@ mod macos {
         unsafe {
             let mut info: ProcTaskInfo = mem::zeroed();
             let size = mem::size_of::<ProcTaskInfo>() as i32;
-            let ret = proc_pidinfo(pid as i32, PROC_PIDTASKINFO, 0, &mut info as *mut _ as *mut c_void, size);
-            if ret > 0 { info.pti_threadnum as u32 } else { 0 }
+            let ret = proc_pidinfo(
+                pid as i32,
+                PROC_PIDTASKINFO,
+                0,
+                &mut info as *mut _ as *mut c_void,
+                size,
+            );
+            if ret > 0 {
+                info.pti_threadnum as u32
+            } else {
+                0
+            }
         }
     }
 
     pub fn open_fd_count(pid: u32) -> u32 {
         unsafe {
             let size = proc_pidinfo(pid as i32, PROC_PIDLISTFDS, 0, std::ptr::null_mut(), 0);
-            if size > 0 { (size as usize / mem::size_of::<ProcFdInfo>()) as u32 } else { 0 }
+            if size > 0 {
+                (size as usize / mem::size_of::<ProcFdInfo>()) as u32
+            } else {
+                0
+            }
         }
     }
 
@@ -115,8 +129,7 @@ pub use macos::{open_fd_count, phys_footprint, thread_count};
 mod windows {
     use windows_sys::Win32::Foundation::CloseHandle;
     use windows_sys::Win32::System::Diagnostics::ToolHelp::{
-        CreateToolhelp32Snapshot, Thread32First, Thread32Next,
-        TH32CS_SNAPTHREAD, THREADENTRY32,
+        CreateToolhelp32Snapshot, Thread32First, Thread32Next, TH32CS_SNAPTHREAD, THREADENTRY32,
     };
 
     pub fn thread_count(pid: u32) -> u32 {
@@ -155,10 +168,16 @@ mod windows {
 pub use windows::{open_fd_count, thread_count};
 
 #[cfg(not(any(target_os = "macos", windows)))]
-pub fn thread_count(_pid: u32) -> u32 { 0 }
+pub fn thread_count(_pid: u32) -> u32 {
+    0
+}
 
 #[cfg(not(any(target_os = "macos", windows)))]
-pub fn open_fd_count(_pid: u32) -> u32 { 0 }
+pub fn open_fd_count(_pid: u32) -> u32 {
+    0
+}
 
 #[cfg(not(target_os = "macos"))]
-pub fn phys_footprint(_pid: u32) -> Option<u64> { None }
+pub fn phys_footprint(_pid: u32) -> Option<u64> {
+    None
+}

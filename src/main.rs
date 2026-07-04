@@ -290,7 +290,17 @@ fn print_json(flat: &[(&ProcessInfo, usize)]) -> anyhow::Result<()> {
 
 fn print_csv(flat: &[(&ProcessInfo, usize)]) -> anyhow::Result<()> {
     let mut wtr = csv::Writer::from_writer(io::stdout());
-    wtr.write_record(["PID", "PPID", "NAME", "FRAMEWORK", "PORTS", "CPU", "MEMORY", "UPTIME", "STATUS"])?;
+    wtr.write_record([
+        "PID",
+        "PPID",
+        "NAME",
+        "FRAMEWORK",
+        "PORTS",
+        "CPU",
+        "MEMORY",
+        "UPTIME",
+        "STATUS",
+    ])?;
 
     for (proc, _) in flat {
         let ports_str = join_ports(&proc.ports, ";");
@@ -337,7 +347,11 @@ fn cmd_kill(
         }
 
         if !no_confirm && config.general.confirm_before_kill {
-            println!("About to kill {} server process(es) with {}:", processes.len(), kill_signal.name());
+            println!(
+                "About to kill {} server process(es) with {}:",
+                processes.len(),
+                kill_signal.name()
+            );
             for p in &processes {
                 println!("  PID {} ({})", p.pid, p.name);
             }
@@ -362,7 +376,11 @@ fn cmd_kill(
                 let pids = TreeBuilder::collect_pids(node);
 
                 if !no_confirm && config.general.confirm_before_kill {
-                    println!("About to kill process tree (PID {}) with {}:", target_pid, kill_signal.name());
+                    println!(
+                        "About to kill process tree (PID {}) with {}:",
+                        target_pid,
+                        kill_signal.name()
+                    );
                     for p in &pids {
                         println!("  PID {}", p);
                     }
@@ -392,14 +410,18 @@ fn cmd_kill(
             let timeout = config.graceful_duration();
             let result = ProcessKiller::graceful_kill(target_pid, timeout);
             match result {
-                GracefulResult::Terminated => println!("Process {} terminated gracefully.", target_pid),
+                GracefulResult::Terminated => {
+                    println!("Process {} terminated gracefully.", target_pid)
+                }
                 GracefulResult::TimedOut => {
                     println!("Graceful kill timed out. Force killing...");
                     let force_result = ProcessKiller::force_kill(target_pid);
                     println!("Force kill: {:?}", force_result);
                 }
                 GracefulResult::AlreadyDead => println!("Process {} is already dead.", target_pid),
-                GracefulResult::PermissionDenied => println!("Permission denied to kill process {}.", target_pid),
+                GracefulResult::PermissionDenied => {
+                    println!("Permission denied to kill process {}.", target_pid)
+                }
                 GracefulResult::Error(e) => println!("Error killing process {}: {}", target_pid, e),
             }
         }
@@ -429,7 +451,10 @@ fn cmd_info(config: &Config, pid: u32) -> anyhow::Result<()> {
             println!("  Name:      {}", process.name);
             println!(
                 "  Runtime:   {}",
-                process.runtime.map(|r| r.to_string()).unwrap_or_else(|| "—".to_string())
+                process
+                    .runtime
+                    .map(|r| r.to_string())
+                    .unwrap_or_else(|| "—".to_string())
             );
             println!("  Framework: {}", process.framework);
             println!(
@@ -471,10 +496,7 @@ fn cmd_info(config: &Config, pid: u32) -> anyhow::Result<()> {
                         .remote_addr
                         .map(|a| a.to_string())
                         .unwrap_or_else(|| "-".to_string());
-                    println!(
-                        "  {} -> {} [{}]",
-                        conn.local_addr, remote, conn.state
-                    );
+                    println!("  {} -> {} [{}]", conn.local_addr, remote, conn.state);
                 }
             }
         }
@@ -549,16 +571,28 @@ fn cmd_config() -> anyhow::Result<()> {
     println!();
     println!("Current settings:");
     println!("  [general]");
-    println!("    refresh_interval:   {}s", config.general.refresh_interval);
+    println!(
+        "    refresh_interval:   {}s",
+        config.general.refresh_interval
+    );
     println!("    default_signal:     {}", config.general.default_signal);
-    println!("    graceful_timeout:   {}s", config.general.graceful_timeout);
-    println!("    confirm_before_kill: {}", config.general.confirm_before_kill);
+    println!(
+        "    graceful_timeout:   {}s",
+        config.general.graceful_timeout
+    );
+    println!(
+        "    confirm_before_kill: {}",
+        config.general.confirm_before_kill
+    );
     println!("  [display]");
     println!("    show_tree:          {}", config.display.show_tree);
     println!("    color_theme:        {}", config.display.color_theme);
     println!("    mask_env_values:    {}", config.display.mask_env_values);
     println!("  [filter]");
-    println!("    include_bun (deprecated): {}", config.filter.include_bun);
+    println!(
+        "    include_bun (deprecated): {}",
+        config.filter.include_bun
+    );
     println!("    include_tsx:        {}", config.filter.include_tsx);
     println!("    include_ts_node:    {}", config.filter.include_ts_node);
 

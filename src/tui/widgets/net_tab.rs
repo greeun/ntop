@@ -46,12 +46,8 @@ pub fn render_net_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, scroll: 
                 _ => Color::White,
             };
 
-            Row::new(vec![
-                local,
-                remote,
-                conn.state.clone(),
-            ])
-            .style(Style::default().fg(state_color))
+            Row::new(vec![local, remote, conn.state.clone()])
+                .style(Style::default().fg(state_color))
         })
         .collect();
 
@@ -63,9 +59,7 @@ pub fn render_net_tab(f: &mut Frame, area: Rect, process: &ProcessInfo, scroll: 
 
     let line_count = (connections.len() + 1) as u16; // +1 for header
 
-    let table = Table::new(rows, widths)
-        .header(header)
-        .column_spacing(1);
+    let table = Table::new(rows, widths).header(header).column_spacing(1);
 
     f.render_widget(table, area);
     line_count

@@ -19,7 +19,9 @@ pub fn render_empty_state(f: &mut Frame, area: Rect, tick_count: u64) {
         Line::from(vec![
             Span::styled(
                 spinner,
-                Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
             ),
             Span::styled(
                 " Scanning for server processes...",
@@ -38,15 +40,13 @@ pub fn render_empty_state(f: &mut Frame, area: Rect, tick_count: u64) {
         )),
     ];
 
-    let paragraph = Paragraph::new(text)
-        .alignment(Alignment::Center)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::DarkGray))
-                .title(" ntop ")
-                .title_alignment(Alignment::Center),
-        );
+    let paragraph = Paragraph::new(text).alignment(Alignment::Center).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::DarkGray))
+            .title(" ntop ")
+            .title_alignment(Alignment::Center),
+    );
 
     f.render_widget(paragraph, area);
 }

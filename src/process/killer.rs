@@ -63,11 +63,7 @@ impl KillSignal {
         }
         #[cfg(windows)]
         {
-            &[
-                KillSignal::Term,
-                KillSignal::Kill,
-                KillSignal::Int,
-            ]
+            &[KillSignal::Term, KillSignal::Kill, KillSignal::Int]
         }
     }
 
@@ -194,8 +190,8 @@ mod windows_impl {
     use super::*;
     use windows_sys::Win32::Foundation::{CloseHandle, HANDLE, WAIT_OBJECT_0};
     use windows_sys::Win32::System::Threading::{
-        OpenProcess, TerminateProcess, WaitForSingleObject,
-        PROCESS_QUERY_INFORMATION, PROCESS_TERMINATE,
+        OpenProcess, TerminateProcess, WaitForSingleObject, PROCESS_QUERY_INFORMATION,
+        PROCESS_TERMINATE,
     };
 
     const SYNCHRONIZE: u32 = 0x00100000;

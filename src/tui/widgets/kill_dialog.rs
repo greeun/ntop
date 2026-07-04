@@ -46,7 +46,11 @@ pub fn render_kill_dialog(
                     lines.push(Line::from(vec![
                         Span::styled("    Port: ", Style::default().fg(Color::Cyan)),
                         Span::styled(
-                            proc.ports.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(", "),
+                            proc.ports
+                                .iter()
+                                .map(|p| p.to_string())
+                                .collect::<Vec<_>>()
+                                .join(", "),
                             Style::default().fg(Color::White),
                         ),
                     ]));
@@ -144,9 +148,7 @@ pub fn render_kill_dialog(
             lines.push(Line::from(""));
             lines.push(Line::from(Span::styled(
                 "  WARNING: SIGKILL cannot be caught or ignored.",
-                Style::default()
-                    .fg(Color::Red)
-                    .add_modifier(Modifier::BOLD),
+                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
             )));
             lines.push(Line::from(""));
             lines.push(Line::from(vec![

@@ -15,11 +15,26 @@ fn test_framework_kind_display() {
 
 #[test]
 fn test_health_status_from_metrics() {
-    assert_eq!(HealthStatus::from_cpu_mem(50.0, 50.0), HealthStatus::Healthy);
-    assert_eq!(HealthStatus::from_cpu_mem(85.0, 50.0), HealthStatus::Warning);
-    assert_eq!(HealthStatus::from_cpu_mem(50.0, 85.0), HealthStatus::Warning);
-    assert_eq!(HealthStatus::from_cpu_mem(95.0, 50.0), HealthStatus::Critical);
-    assert_eq!(HealthStatus::from_cpu_mem(50.0, 95.0), HealthStatus::Critical);
+    assert_eq!(
+        HealthStatus::from_cpu_mem(50.0, 50.0),
+        HealthStatus::Healthy
+    );
+    assert_eq!(
+        HealthStatus::from_cpu_mem(85.0, 50.0),
+        HealthStatus::Warning
+    );
+    assert_eq!(
+        HealthStatus::from_cpu_mem(50.0, 85.0),
+        HealthStatus::Warning
+    );
+    assert_eq!(
+        HealthStatus::from_cpu_mem(95.0, 50.0),
+        HealthStatus::Critical
+    );
+    assert_eq!(
+        HealthStatus::from_cpu_mem(50.0, 95.0),
+        HealthStatus::Critical
+    );
 }
 
 #[test]
@@ -234,8 +249,14 @@ fn test_runtime_display() {
 #[test]
 fn test_runtime_serialization() {
     let variants = vec![
-        Runtime::Node, Runtime::Python, Runtime::Java, Runtime::Deno,
-        Runtime::Bun, Runtime::Ruby, Runtime::Php, Runtime::DotNet,
+        Runtime::Node,
+        Runtime::Python,
+        Runtime::Java,
+        Runtime::Deno,
+        Runtime::Bun,
+        Runtime::Ruby,
+        Runtime::Php,
+        Runtime::DotNet,
     ];
     for v in variants {
         let json = serde_json::to_string(&v).unwrap();

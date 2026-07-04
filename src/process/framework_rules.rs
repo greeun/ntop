@@ -32,8 +32,16 @@ pub const FRAMEWORK_RULES: &[Rule] = &[
     Rule {
         runtime: Runtime::Node,
         framework: FrameworkKind::NextJs,
-        name_exact: &["next-server", "next-router-worker", "next-router-page-worker"],
-        command_binary: &["next-server", "next-router-worker", "next-router-page-worker"],
+        name_exact: &[
+            "next-server",
+            "next-router-worker",
+            "next-router-page-worker",
+        ],
+        command_binary: &[
+            "next-server",
+            "next-router-worker",
+            "next-router-page-worker",
+        ],
         command_contains: &["node_modules/.bin/next"],
     },
     Rule {
@@ -119,8 +127,22 @@ pub const RUNTIME_RULES: &[Rule] = &[
     Rule {
         runtime: Runtime::Python,
         framework: FrameworkKind::Generic,
-        name_exact: &["python", "python3", "uvicorn", "gunicorn", "hypercorn", "celery"],
-        command_binary: &["python", "python3", "uvicorn", "gunicorn", "hypercorn", "celery"],
+        name_exact: &[
+            "python",
+            "python3",
+            "uvicorn",
+            "gunicorn",
+            "hypercorn",
+            "celery",
+        ],
+        command_binary: &[
+            "python",
+            "python3",
+            "uvicorn",
+            "gunicorn",
+            "hypercorn",
+            "celery",
+        ],
         command_contains: &[],
     },
     Rule {

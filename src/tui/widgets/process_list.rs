@@ -14,7 +14,11 @@ pub fn render_process_list(f: &mut Frame, area: Rect, app: &mut App) {
     // Column headers with sort indicators
     let sort_indicator = |col: SortColumn| -> &'static str {
         if app.sort_column == col {
-            if app.sort_ascending { " ^" } else { " v" }
+            if app.sort_ascending {
+                " ^"
+            } else {
+                " v"
+            }
         } else {
             ""
         }
@@ -42,20 +46,24 @@ pub fn render_process_list(f: &mut Frame, area: Rect, app: &mut App) {
         .bottom_margin(0);
 
     // Calculate available width for adaptive column sizes
-    let inner_width = if area.width > 2 { area.width - 2 } else { area.width };
+    let inner_width = if area.width > 2 {
+        area.width - 2
+    } else {
+        area.width
+    };
 
     let widths = if inner_width > 100 {
         vec![
-            Constraint::Length(3),   // checkbox/health
-            Constraint::Length(7),   // PID
-            Constraint::Min(12),     // NAME (flexible)
-            Constraint::Length(7),   // PORT
-            Constraint::Length(4),   // THR
-            Constraint::Length(7),   // CPU
-            Constraint::Length(9),   // MEM
-            Constraint::Length(8),   // USER
-            Constraint::Length(7),   // STATUS
-            Constraint::Length(10),  // UPTIME
+            Constraint::Length(3),  // checkbox/health
+            Constraint::Length(7),  // PID
+            Constraint::Min(12),    // NAME (flexible)
+            Constraint::Length(7),  // PORT
+            Constraint::Length(4),  // THR
+            Constraint::Length(7),  // CPU
+            Constraint::Length(9),  // MEM
+            Constraint::Length(8),  // USER
+            Constraint::Length(7),  // STATUS
+            Constraint::Length(10), // UPTIME
         ]
     } else {
         vec![
@@ -92,7 +100,11 @@ pub fn render_process_list(f: &mut Frame, area: Rect, app: &mut App) {
             let checkbox = if is_multi_selected { "[x]" } else { "[ ]" };
             let checkbox_span = Span::styled(
                 format!("{}", checkbox),
-                Style::default().fg(if is_multi_selected { Color::Cyan } else { Color::DarkGray }),
+                Style::default().fg(if is_multi_selected {
+                    Color::Cyan
+                } else {
+                    Color::DarkGray
+                }),
             );
 
             // Tree prefix
@@ -100,7 +112,11 @@ pub fn render_process_list(f: &mut Frame, area: Rect, app: &mut App) {
             let is_expanded = app.expanded_pids.contains(&proc_info.pid);
             let tree_prefix = if *depth == 0 {
                 if has_children {
-                    if is_expanded { "▾ " } else { "▸ " }
+                    if is_expanded {
+                        "▾ "
+                    } else {
+                        "▸ "
+                    }
                 } else {
                     "  "
                 }

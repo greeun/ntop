@@ -58,10 +58,7 @@ pub fn render_log_tab(f: &mut Frame, area: Rect, app: &App) -> u16 {
                     } else {
                         Style::default().fg(Color::White)
                     };
-                    lines.push(Line::from(Span::styled(
-                        format!("  {}", log_line),
-                        style,
-                    )));
+                    lines.push(Line::from(Span::styled(format!("  {}", log_line), style)));
                 }
 
                 let line_count = lines.len() as u16;

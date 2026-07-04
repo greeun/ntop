@@ -19,7 +19,9 @@ pub fn render_help_dialog(f: &mut Frame, area: Rect, app: &mut App) {
         Line::from(""),
         Line::from(Span::styled(
             format!("  ntop v{}", version),
-            Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
         section_header("Process List (default focus)"),
@@ -51,7 +53,10 @@ pub fn render_help_dialog(f: &mut Frame, area: Rect, app: &mut App) {
         Line::from(""),
         section_header("General"),
         key_line("e", "Toggle expand/collapse all"),
-        key_line("+/-", "Adjust refresh interval (1-60s, shown in status bar)"),
+        key_line(
+            "+/-",
+            "Adjust refresh interval (1-60s, shown in status bar)",
+        ),
         key_line("H", "Show this help"),
         key_line("q / Ctrl+C", "Quit"),
         Line::from(""),
@@ -111,10 +116,7 @@ fn section_header(title: &str) -> Line<'static> {
 
 fn key_line(key: &str, desc: &str) -> Line<'static> {
     Line::from(vec![
-        Span::styled(
-            format!("    {:14}", key),
-            Style::default().fg(Color::Green),
-        ),
+        Span::styled(format!("    {:14}", key), Style::default().fg(Color::Green)),
         Span::styled(desc.to_string(), Style::default().fg(Color::White)),
     ])
 }
