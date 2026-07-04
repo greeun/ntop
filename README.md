@@ -9,7 +9,7 @@ Built with Rust for instant startup and minimal resource usage.
 ## Features
 
 - **Real-time process monitoring** with configurable refresh rate (default 3s)
-- **Rule-based runtime & framework detection** — Node/Next/Nuxt/Nest, Python/FastAPI/Flask/Django, Java/Spring Boot, Ruby/Rails, PHP/Laravel, Deno, Bun, .NET (no filesystem reads, so globally-launched CLIs aren't misclassified)
+- **Rule-based runtime & framework detection** — Node/Next/Nuxt/Nest, Python/FastAPI/Flask/Django, Java/Spring Boot, Ruby/Rails, PHP/Laravel, Deno, Bun, .NET, plus **MCP** servers across runtimes (no filesystem reads, so globally-launched CLIs aren't misclassified)
 - **Node-only toggle** — press `n` to show only Node servers
 - **Process tree view** — parent-child relationships with expand/collapse, with distinct coloring for node leaves vs. tree-parent rows
 - **Split-panel TUI** — process list + tabbed detail panel (Info / Log / Net / Env)
@@ -142,10 +142,18 @@ include_ts_node = false
 
 Detection is **process-local only** — based on the process name and command
 line. ntop deliberately does not read `package.json` so that globally launched
-processes (e.g. `npx`-run MCP servers, CLI tools) are not misclassified.
+processes (e.g. `npx`-run CLI tools) are not misclassified by their inherited
+working directory.
 
 Detection is two-tier: framework-specific rules resolve first, then
 runtime-generic rules. A process matching no rule is not shown.
+
+**MCP** (Model Context Protocol) servers are detected as a cross-runtime
+overlay: a process whose command line carries an MCP signature — the
+`@modelcontextprotocol/*` packages, or the `mcp-server-*` / `*-mcp` /
+`mcp_server_*` naming conventions — is tagged **MCP** while keeping its real
+runtime (Node/Python/Bun/…). Framework-specific rules resolve first, so this
+never overrides Next.js/FastAPI/etc.
 
 | Runtime | Frameworks detected | Generic match (name) |
 |---------|---------------------|----------------------|
