@@ -24,3 +24,8 @@ linkedin-post/
 # superpowers (auto-installed; do not track)
 .superpowers/
 docs/superpowers/
+
+# env files
+.env*
+!.env*.example
+!.env*.template
