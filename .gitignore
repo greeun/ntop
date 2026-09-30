@@ -29,3 +29,6 @@ docs/superpowers/
 .env*
 !.env*.example
 !.env*.template
+
+# Synology links restored by mac-setup (lists/project-links.txt)
+/linkedin-post
