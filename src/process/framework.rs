@@ -40,6 +40,17 @@ impl FrameworkDetector {
             }
             return Some((rule.runtime, rule.framework.clone()));
         }
+        // JVM overlay: a JVM started under a name other than `java` (bundled
+        // JRE launchers, app-named binaries) still carries HotSpot/JVM flags
+        // on its command line. Shells passing those flags along are excluded.
+        if is_jvm_command(name, command) {
+            let framework = if is_mcp_command(command) {
+                FrameworkKind::Mcp
+            } else {
+                FrameworkKind::Generic
+            };
+            return Some((Runtime::Java, framework));
+        }
         // Config-gated dev runners — opt-in JS/TS runners on the Node runtime.
         let nn = normalize_name(name);
         let bin = command_binary(command);
@@ -136,6 +147,39 @@ fn is_mcp_command(command: &str) -> bool {
                 || seg.contains("mcp-server")
                 || seg.contains("mcp_server")
         })
+}
+
+/// Option prefixes only a JVM launcher accepts. Matched against whole
+/// whitespace-separated tokens (prefix), never as a free substring.
+const JVM_FLAG_PREFIXES: &[&str] = &[
+    "-XX:",
+    "-Xmx",
+    "-Xms",
+    "-Xss",
+    "-Xmn",
+    "-Djava.",
+    "-Djdk.",
+    "-javaagent:",
+    "-agentlib:jdwp",
+    "--add-opens",
+    "--add-exports",
+];
+
+/// Shells and wrappers that may forward JVM flags without being a JVM.
+const JVM_WRAPPERS: &[&str] = &["sh", "bash", "zsh", "dash", "ksh", "fish", "env", "exec"];
+
+/// True if the process looks like a JVM by its launch flags, even when its
+/// binary is not named `java`.
+fn is_jvm_command(name: &str, command: &str) -> bool {
+    let nn = normalize_name(name);
+    let bin = command_binary(command);
+    if JVM_WRAPPERS.contains(&nn) || bin.is_some_and(|b| JVM_WRAPPERS.contains(&b)) {
+        return false;
+    }
+    command
+        .split_whitespace()
+        .skip(1)
+        .any(|tok| JVM_FLAG_PREFIXES.iter().any(|p| tok.starts_with(p)))
 }
 
 /// Basename of the command's first whitespace-separated token.

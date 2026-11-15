@@ -209,6 +209,76 @@ fn test_classify_java_generic_and_spring() {
 }
 
 #[test]
+fn test_classify_jvm_without_java_binary_name() {
+    // Apache Commons Daemon (Tomcat under jsvc).
+    assert_eq!(
+        FrameworkDetector::classify(
+            "jsvc",
+            "jsvc -cp /opt/tomcat/bin/bootstrap.jar -Dcatalina.home=/opt/tomcat org.apache.catalina.startup.Bootstrap",
+            &cfg()
+        ),
+        Some((Runtime::Java, FrameworkKind::Generic))
+    );
+    // Custom launcher on a bundled JRE: name is the app, but the args are JVM flags.
+    assert_eq!(
+        FrameworkDetector::classify(
+            "kafka-server",
+            "/opt/kafka/jre/bin/kafka-server -Xmx1G -Xms1G -XX:+UseG1GC kafka.Kafka config/server.properties",
+            &cfg()
+        ),
+        Some((Runtime::Java, FrameworkKind::Generic))
+    );
+    assert_eq!(
+        FrameworkDetector::classify(
+            "myapp",
+            "/Applications/MyApp.app/Contents/MacOS/myapp -Djava.awt.headless=true -javaagent:/opt/agent.jar",
+            &cfg()
+        ),
+        Some((Runtime::Java, FrameworkKind::Generic))
+    );
+    // Spring Boot still wins over the generic JVM signature.
+    assert_eq!(
+        FrameworkDetector::classify(
+            "myapp",
+            "myapp -Xmx512m org.springframework.boot.loader.JarLauncher",
+            &cfg()
+        ),
+        Some((Runtime::Java, FrameworkKind::SpringBoot))
+    );
+    // A Java MCP server keeps the MCP overlay.
+    assert_eq!(
+        FrameworkDetector::classify(
+            "mcp-launcher",
+            "mcp-launcher -Xmx256m -jar /opt/mcp-server-jira.jar",
+            &cfg()
+        ),
+        Some((Runtime::Java, FrameworkKind::Mcp))
+    );
+}
+
+#[test]
+fn test_classify_jvm_signature_negatives() {
+    // A shell wrapper that merely passes JVM flags along is not the JVM itself.
+    assert_eq!(
+        FrameworkDetector::classify("bash", "bash -c java -Xmx1G -jar app.jar", &cfg()),
+        None
+    );
+    assert_eq!(
+        FrameworkDetector::classify("sh", "/bin/sh /usr/bin/gradle -Xmx1G build", &cfg()),
+        None
+    );
+    // Flags embedded mid-token or with unrelated meaning don't count.
+    assert_eq!(
+        FrameworkDetector::classify("grep", "grep -- --Xmx1G file.txt", &cfg()),
+        None
+    );
+    assert_eq!(
+        FrameworkDetector::classify("tar", "tar -Xexclude.txt -cf a.tar dir", &cfg()),
+        None
+    );
+}
+
+#[test]
 fn test_classify_ruby_and_rails() {
     assert_eq!(
         FrameworkDetector::classify("ruby", "bin/rails server", &cfg()),

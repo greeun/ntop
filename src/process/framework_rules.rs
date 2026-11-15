@@ -148,8 +148,12 @@ pub const RUNTIME_RULES: &[Rule] = &[
     Rule {
         runtime: Runtime::Java,
         framework: FrameworkKind::Generic,
-        name_exact: &["java"],
-        command_binary: &["java"],
+        // `jsvc`: Apache Commons Daemon, the JVM launcher Tomcat uses as a
+        // Unix service. JVMs started by other launchers (bundled JREs,
+        // app-named binaries) are caught by the JVM-flag overlay in
+        // `framework.rs` instead.
+        name_exact: &["java", "jsvc"],
+        command_binary: &["java", "jsvc"],
         command_contains: &[],
     },
     Rule {
