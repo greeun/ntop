@@ -51,6 +51,11 @@ This is the main extension point.
   `@modelcontextprotocol/*` packages plus `mcp-server-*` / `*-mcp` / `mcp_server_*`
   naming, matched per path segment (so `mcpherson` is not a false positive).
 
+- **JVM is a second overlay.** After the runtime tier misses, `is_jvm_command`
+  tags a process as Java when a whole argv token starts with a JVM-only flag
+  (`-XX:`, `-Xmx`, `-Djava.`, `-javaagent:`, …), so bundled-JRE / app-named
+  launchers are caught. Shell wrappers (`sh`/`bash`/`env`…) are excluded.
+
 **Detection is process-local only** — name + command line, never filesystem reads.
 This is deliberate: reading `package.json` would misclassify globally-launched
 processes (npx MCP servers, CLI tools) by their inherited cwd. Don't add fs-based

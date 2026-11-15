@@ -159,12 +159,16 @@ never overrides Next.js/FastAPI/etc.
 |---------|---------------------|----------------------|
 | Node    | Next.js, Nuxt.js, NestJS | `node` |
 | Python  | FastAPI, Flask, Django | `python`, `python3`, `uvicorn`, `gunicorn`, `hypercorn`, `celery` |
-| Java    | Spring Boot | `java` |
+| Java    | Spring Boot | `java`, `jsvc`, or any process with JVM flags (`-XX:`, `-Xmx`, `-Djava.`, `-javaagent:` …) |
 | Ruby    | Rails | `ruby`, `puma`, `unicorn`, `rackup` |
 | PHP     | Laravel | `php`, `php-fpm` |
 | .NET    | ASP.NET | `dotnet` |
 | Deno    | — | `deno` |
 | Bun     | — | `bun` |
+
+**JVM** processes started under a name other than `java` (bundled-JRE or
+app-named launchers) are detected by their JVM launch flags. Shells that only
+forward those flags (`sh -c "java -Xmx…"`) are not tagged.
 
 Add a runtime or framework by appending one entry to
 `src/process/framework_rules.rs` (`RUNTIME_RULES` or `FRAMEWORK_RULES`) — no
